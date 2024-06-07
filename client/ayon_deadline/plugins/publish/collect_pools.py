@@ -36,22 +36,20 @@ class CollectDeadlinePools(pyblish.api.InstancePlugin,
         "nuke",
     ]
 
-    families = [
-        "render",
-        "prerender",
-        "rendering",
-        "render.farm",
-        "renderFarm",
-        "renderlayer",
-        "maxrender",
-        "usdrender",
-        "redshift_rop",
-        "arnold_rop",
-        "mantra_rop",
-        "karma_rop",
-        "vray_rop",
-        "publish.hou",
-    ]
+    families = ["render",
+                "prerender",
+                "rendering",
+                "render.farm",
+                "renderFarm",
+                "renderlayer",
+                "maxrender",
+                "usdrender",
+                "redshift_rop",
+                "arnold_rop",
+                "mantra_rop",
+                "karma_rop",
+                "vray_rop",
+                "publish.hou"]
 
     primary_pool = None
     secondary_pool = None

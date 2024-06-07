@@ -32,6 +32,7 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
              "houdini"]
 
     families = ["render",
+                "prerender",
                 "rendering",
                 "render.farm",
                 "renderFarm",
