@@ -26,6 +26,8 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "client/ayon_deadline/repository/custom/plugins/CelAction/*",
+    "client/ayon_deadline/repository/custom/plugins/HarmonyAYON/*",
 ]
 
 # Same as Black.
