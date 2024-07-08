@@ -7,6 +7,8 @@ import six
 from ayon_core.lib import Logger
 from ayon_core.addon import AYONAddon, IPluginPaths
 
+import pyblish.api
+
 from .version import __version__
 
 
@@ -41,6 +43,13 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return {
             "publish": [os.path.join(current_dir, "plugins", "publish")]
         }
+
+    def on_host_install(self, host, host_name, project_name):
+        print(f"Registering deadline publish plug-ins for host {host_name}..")
+        # Register host-specific publish plugins
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(current_dir, "plugins", "publish", host_name)
+        pyblish.api.register_plugin_path(path)
 
     @staticmethod
     def get_deadline_pools(webservice, auth=None, log=None):
