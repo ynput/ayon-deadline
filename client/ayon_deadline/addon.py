@@ -6,10 +6,12 @@ import six
 
 from ayon_core.lib import Logger
 from ayon_core.addon import AYONAddon, IPluginPaths
-
-import pyblish.api
+from ayon_core.pipeline.context_tools import get_current_host_name
 
 from .version import __version__
+
+
+DEADLINE_ADDON_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class DeadlineWebserviceError(Exception):
@@ -39,17 +41,16 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
     def get_plugin_paths(self):
         """Deadline plugin paths."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
         return {
-            "publish": [os.path.join(current_dir, "plugins", "publish")]
+            "publish": self.get_publish_plugin_paths(),
         }
-
-    def on_host_install(self, host, host_name, project_name):
-        print(f"Registering deadline publish plug-ins for host {host_name}..")
-        # Register host-specific publish plugins
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(current_dir, "plugins", "publish", host_name)
-        pyblish.api.register_plugin_path(path)
+    
+    def get_publish_plugin_paths(self, host_name=None):
+        paths = [os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish", "default")]
+        if host_name:
+            paths.append(os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish", host_name))
+        
+        return paths
 
     @staticmethod
     def get_deadline_pools(webservice, auth=None, log=None):
