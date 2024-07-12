@@ -10,6 +10,9 @@ from ayon_core.addon import AYONAddon, IPluginPaths
 from .version import __version__
 
 
+DEADLINE_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
 class DeadlineWebserviceError(Exception):
     """
     Exception to throw when connection to Deadline server fails.
@@ -37,10 +40,18 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
     def get_plugin_paths(self):
         """Deadline plugin paths."""
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        return {
-            "publish": [os.path.join(current_dir, "plugins", "publish")]
-        }
+        # Note: We are not returning `publish` key because we have overridden
+        # `get_publish_plugin_paths` to return paths host-specific. However,
+        # `get_plugin_paths` still needs to be implemented because it's
+        # abstract on the parent class
+        return {}
+    
+    def get_publish_plugin_paths(self, host_name=None):
+        publish_dir = os.path.join(DEADLINE_ADDON_ROOT, "plugins", "publish")
+        paths = [os.path.join(publish_dir, "global")]
+        if host_name:
+            paths.append(os.path.join(publish_dir, host_name))
+        return paths
 
     @staticmethod
     def get_deadline_pools(webservice, auth=None, log=None):

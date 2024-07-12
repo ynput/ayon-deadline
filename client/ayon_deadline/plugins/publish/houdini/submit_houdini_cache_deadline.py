@@ -101,12 +101,15 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             "FTRACK_API_USER",
             "FTRACK_SERVER",
             "OPENPYPE_SG_USER",
+            "AYON_BUNDLE_NAME",
+            "AYON_DEFAULT_SETTINGS_VARIANT",
             "AYON_PROJECT_NAME",
             "AYON_FOLDER_PATH",
             "AYON_TASK_NAME",
             "AYON_WORKDIR",
             "AYON_APP_NAME",
             "AYON_LOG_NO_COLORS",
+            "AYON_IN_TESTS"
         ]
 
         environment = {

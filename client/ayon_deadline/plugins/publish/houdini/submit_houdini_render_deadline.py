@@ -248,12 +248,15 @@ class HoudiniSubmitDeadline(
             "FTRACK_API_USER",
             "FTRACK_SERVER",
             "OPENPYPE_SG_USER",
+            "AYON_BUNDLE_NAME",
+            "AYON_DEFAULT_SETTINGS_VARIANT",
             "AYON_PROJECT_NAME",
             "AYON_FOLDER_PATH",
             "AYON_TASK_NAME",
             "AYON_WORKDIR",
             "AYON_APP_NAME",
             "AYON_LOG_NO_COLORS",
+            "AYON_IN_TESTS"
         ]
 
         environment = {
@@ -396,8 +399,10 @@ class HoudiniSubmitDeadline(
 
 
 class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
+    label = "Submit Render to Deadline (USD)"
+    families = ["usdrender"]
+
     # Do not use published workfile paths for USD Render ROP because the
     # Export Job doesn't seem to occur using the published path either, so
     # output paths then do not match the actual rendered paths
     use_published = False
-    families = ["usdrender"]
