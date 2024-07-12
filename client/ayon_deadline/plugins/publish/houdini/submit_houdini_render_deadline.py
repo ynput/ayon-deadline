@@ -399,8 +399,10 @@ class HoudiniSubmitDeadline(
 
 
 class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
+    label = "Submit Render to Deadline (USD)"
+    families = ["usdrender"]
+
     # Do not use published workfile paths for USD Render ROP because the
     # Export Job doesn't seem to occur using the published path either, so
     # output paths then do not match the actual rendered paths
     use_published = False
-    families = ["usdrender"]
