@@ -10,7 +10,7 @@ from ayon_core.addon import AYONAddon, IPluginPaths
 from .version import __version__
 
 
-DEADLINE_ADDON_DIR = os.path.dirname(os.path.abspath(__file__))
+DEADLINE_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 class DeadlineWebserviceError(Exception):
@@ -47,7 +47,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return {}
     
     def get_publish_plugin_paths(self, host_name=None):
-        publish_dir = os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish")
+        publish_dir = os.path.join(DEADLINE_ADDON_ROOT, "plugins", "publish")
         paths = [os.path.join(publish_dir, "global")]
         if host_name:
             paths.append(os.path.join(publish_dir, host_name))
