@@ -6,7 +6,6 @@ import six
 
 from ayon_core.lib import Logger
 from ayon_core.addon import AYONAddon, IPluginPaths
-from ayon_core.pipeline.context_tools import get_current_host_name
 
 from .version import __version__
 
