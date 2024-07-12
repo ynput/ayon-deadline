@@ -47,10 +47,10 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return {}
     
     def get_publish_plugin_paths(self, host_name=None):
-        paths = [os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish", "default")]
+        publish_dir = os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish")
+        paths = [os.path.join(publish_dir, "default")]
         if host_name:
-            paths.append(os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish", host_name))
-        
+            paths.append(os.path.join(publish_dir, host_name))
         return paths
 
     @staticmethod
