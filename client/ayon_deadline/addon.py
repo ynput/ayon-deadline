@@ -41,9 +41,11 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
     def get_plugin_paths(self):
         """Deadline plugin paths."""
-        return {
-            "publish": self.get_publish_plugin_paths(),
-        }
+        # Note: We are not returning `publish` key because we have overridden
+        # `get_publish_plugin_paths` to return paths host-specific. However,
+        # `get_plugin_paths` still needs to be implemented because it's
+        # abstract on the parent class
+        return {}
     
     def get_publish_plugin_paths(self, host_name=None):
         paths = [os.path.join(DEADLINE_ADDON_DIR, "plugins", "publish", "default")]
