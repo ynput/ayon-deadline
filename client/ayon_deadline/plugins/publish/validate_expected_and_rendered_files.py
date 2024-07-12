@@ -14,6 +14,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
     order = pyblish.api.ValidatorOrder
     families = ["render"]
     targets = ["deadline"]
+    settings_category = "deadline"
 
     # check if actual frame range on render job wasn't different
     # case when artists wants to render only subset of frames

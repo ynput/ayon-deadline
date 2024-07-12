@@ -13,7 +13,7 @@ from Deadline.Scripting import (
     FileUtils,
     DirectoryUtils,
 )
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -496,6 +496,13 @@ def inject_ayon_environment(deadlinePlugin):
             "extractenvironments",
             export_url
         ]
+
+        # staging requires passing argument
+        # TODO could be switched to env var after https://github.com/ynput/ayon-launcher/issues/123
+        settings_variant = job.GetJobEnvironmentKeyValue("AYON_DEFAULT_SETTINGS_VARIANT")  # noqa
+        if settings_variant == "staging":
+            args.append("--use-staging")
+
         # Backwards compatibility for older versions
         legacy_args = [
             "--headless",
