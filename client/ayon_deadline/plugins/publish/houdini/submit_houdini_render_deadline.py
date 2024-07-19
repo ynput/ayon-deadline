@@ -224,7 +224,9 @@ class HoudiniSubmitDeadline(
             job_info.ChunkSize = attribute_values.get(
                 "export_chunk", self.export_chunk_size
             )
-            job_info.Group = self.export_group
+            job_info.Group = attribute_values.get(
+                "export_group", self.export_group
+            )
         else:
             job_info.Priority = attribute_values.get(
                 "priority", self.priority
@@ -232,7 +234,9 @@ class HoudiniSubmitDeadline(
             job_info.ChunkSize = attribute_values.get(
                 "chunk", self.chunk_size
             )
-            job_info.Group = self.group
+            job_info.Group = attribute_values.get(
+                "group", self.group
+            )
 
         # Apply render globals, like e.g. data from collect machine list
         render_globals = instance.data.get("renderGlobals", {})
