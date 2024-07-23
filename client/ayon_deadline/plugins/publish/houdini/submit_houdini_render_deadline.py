@@ -224,7 +224,9 @@ class HoudiniSubmitDeadline(
             job_info.ChunkSize = attribute_values.get(
                 "export_chunk", self.export_chunk_size
             )
-            job_info.Group = self.export_group
+            job_info.Group = attribute_values.get(
+                "export_group", self.export_group
+            )
         else:
             job_info.Priority = attribute_values.get(
                 "priority", self.priority
@@ -232,7 +234,9 @@ class HoudiniSubmitDeadline(
             job_info.ChunkSize = attribute_values.get(
                 "chunk", self.chunk_size
             )
-            job_info.Group = self.group
+            job_info.Group = attribute_values.get(
+                "group", self.group
+            )
 
         # Apply render globals, like e.g. data from collect machine list
         render_globals = instance.data.get("renderGlobals", {})
@@ -248,12 +252,15 @@ class HoudiniSubmitDeadline(
             "FTRACK_API_USER",
             "FTRACK_SERVER",
             "OPENPYPE_SG_USER",
+            "AYON_BUNDLE_NAME",
+            "AYON_DEFAULT_SETTINGS_VARIANT",
             "AYON_PROJECT_NAME",
             "AYON_FOLDER_PATH",
             "AYON_TASK_NAME",
             "AYON_WORKDIR",
             "AYON_APP_NAME",
             "AYON_LOG_NO_COLORS",
+            "AYON_IN_TESTS"
         ]
 
         environment = {
@@ -396,8 +403,10 @@ class HoudiniSubmitDeadline(
 
 
 class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
+    label = "Submit Render to Deadline (USD)"
+    families = ["usdrender"]
+
     # Do not use published workfile paths for USD Render ROP because the
     # Export Job doesn't seem to occur using the published path either, so
     # output paths then do not match the actual rendered paths
     use_published = False
-    families = ["usdrender"]
