@@ -106,7 +106,7 @@ class StoppableThread(threading.Thread):
 class PerforceUtils(object):
     def __init__(self, stream, gamePath, env):
         # The hostname of the perforce server. Defaults to the "P4PORT" Environment Var.
-        self._serverName = self._FindServerHostName()
+        self._serverName = self._FindServerHostName(env)
         if not self._serverName:
             raise PerforceError('"P4PORT" has not been set in the Slave environment!')
 
@@ -175,10 +175,13 @@ class PerforceUtils(object):
     def setChangelist(self, value):
         self._changelist = value
 
-    def _FindServerHostName(self):
+    def _FindServerHostName(self, env):
         # The hostname of the perforce server. Defaults to the "P4PORT" Environment Var.
         # If it's not set, try to find it from 'p4 set' command
-        name = os.getenv("P4PORT")
+        if env:
+            name = env.get("P4PORT")
+        else:
+            name = os.getenv("P4PORT")
         if name:
             return name
         output = subprocess.check_output(["p4", "set"])

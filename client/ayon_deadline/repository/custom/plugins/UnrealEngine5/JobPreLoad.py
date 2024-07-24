@@ -15,6 +15,7 @@ def __main__( deadlinePlugin ):
     stream      = deadlinePlugin.GetPluginInfoEntry("PerforceStream")
     if not stream:
         print("Perforce info not collected, skipping!")
+        return
     changelist  = int(deadlinePlugin.GetPluginInfoEntryWithDefault("PerforceChangelist", "0"))
     gamePath    = deadlinePlugin.GetPluginInfoEntry("PerforceGamePath")
     projectFile = deadlinePlugin.GetPluginInfoEntry("ProjectFile")
@@ -26,14 +27,10 @@ def __main__( deadlinePlugin ):
     bForceFullSync    = deadlinePlugin.GetPluginInfoEntryWithDefault("ForceFullSync",    "false").lower() == "true"
     bSyncProject      = deadlinePlugin.GetPluginInfoEntryWithDefault("SyncProject",      "true" ).lower() == "true"
     bSyncEntireStream = deadlinePlugin.GetPluginInfoEntryWithDefault("SyncEntireStream", "false").lower() == "true"
-    bBuildProject     = True 
-
-    print("bSyncProject::: "      + str(bSyncProject))
-    print("bSyncEntireStream: " + str(bSyncEntireStream))
-
+    bBuildProject     = True
 
     #
-    # Set up PerforceUtil 
+    # Set up PerforceUtil
     #
 
     try:
@@ -62,7 +59,7 @@ def __main__( deadlinePlugin ):
         deadlinePlugin.FailRender(argError.message)
     except UnrealSyncUtil.PerforceMultipleWorkspaceError as argError:
         deadlinePlugin.LogWarning(argError.message)
-        deadlinePlugin.FailRender(argError.message)    
+        deadlinePlugin.FailRender(argError.message)
 
     # Set project root
     # This resolves gamePath in case it contains "...""
@@ -74,7 +71,7 @@ def __main__( deadlinePlugin ):
     except UnrealSyncUtil.PerforceError as argError:
         deadlinePlugin.LogWarning(argError.message)
         deadlinePlugin.FailRender(argError.message)
-    
+
     projectRoot = perforceTools.projectRoot.replace('\\','/')
     deadlinePlugin.LogInfo( "Storing UnrealProjectRoot (\"%s\") in environment variable..." % projectRoot )
     deadlinePlugin.SetProcessEnvironmentVariable( "UnrealProjectRoot", projectRoot )
@@ -85,7 +82,7 @@ def __main__( deadlinePlugin ):
 
 
     # Set the option if it's syncing entire stream or just game path
-    perforceTools.SetSyncEntireStream( bSyncEntireStream ) 
+    perforceTools.SetSyncEntireStream( bSyncEntireStream )
 
     #
     # Clean workspace
@@ -97,9 +94,9 @@ def __main__( deadlinePlugin ):
         deadlinePlugin.LogInfo("Performing a perforce clean to bring local files in sync with depot.")
         perforceTools.CleanWorkspace()
         deadlinePlugin.LogInfo("Finished p4 clean.")
-    
+
     deadlinePlugin.LogInfo("Perforce Command Prefix: " + " ".join(perforceTools.GetP4CommandPrefix()))
-    
+
     # Determine the latest changelist to sync to if unspecified.
     try:
         if changelist == 0:
@@ -116,7 +113,7 @@ def __main__( deadlinePlugin ):
 
     #
     # Sync project
-    #       
+    #
     if bSyncProject:
 
         # Estimate how much work there is to do for a sync operation.
@@ -127,7 +124,7 @@ def __main__( deadlinePlugin ):
         except UnrealSyncUtil.PerforceResponseError as argError:
             deadlinePlugin.LogWarning(str(argError))
             deadlinePlugin.LogWarning("No sync estimates will be available.")
-            
+
         # If there's no files to sync, let's skip running the sync. It takes a lot of time as it's a double-estimate.
         if perforceTools.syncEstimates[0] == 0 and perforceTools.syncEstimates[1] == 0 and perforceTools.syncEstimates[2] == 0:
             deadlinePlugin.LogInfo("Skipping sync command as estimated says there's no work to sync!")
@@ -138,13 +135,13 @@ def __main__( deadlinePlugin ):
                 deadlinePlugin.LogInfo("Syncing to CL %d" % perforceTools.changelist)
                 deadlinePlugin.SetProgress(0)
                 deadlinePlugin.LogInfo("Estimated Files %s (added/updated/deleted)" % ("/".join(map(str, perforceTools.syncEstimates))))
-                
+
                 logCallback = lambda tools: deadlinePlugin.SetProgress(perforceTools.GetSyncProgress() * 100)
 
-                
+
                 # Perform the sync. This could take a while.
                 perforceTools.Sync(logCallback, bForceFullSync)
-                    
+
                 # The estimates are only estimates, so when the command is complete we'll ensure  it looks complete.
                 deadlinePlugin.SetStatusMessage("Synced Workspace to CL " + str(perforceTools.changelist))
                 deadlinePlugin.LogInfo("Synced Workspace to CL " + str(perforceTools.changelist))
@@ -154,10 +151,10 @@ def __main__( deadlinePlugin ):
                 deadlinePlugin.FailRender("Suspected Out of Disk Error while syncing: \"%s\"" % str(ioError))
     else:
         deadlinePlugin.LogInfo("Skipping Project Sync due to job settings.")
-        
 
 
-    #      
+
+    #
     # Build project
     #
     if bBuildProject:
@@ -181,7 +178,7 @@ def __main__( deadlinePlugin ):
         engine_root = unreal_executable.split('/Engine/Binaries/')[0]
 
         uproject_path = perforceTools.uprojectPath
-                
+
         buildtool = UnrealSyncUtil.BuildUtils( engine_root, uproject_path, editorName )
 
         if not buildtool.IsCppProject():
@@ -189,7 +186,7 @@ def __main__( deadlinePlugin ):
         else:
             deadlinePlugin.LogInfo("Starting a local build")
 
-            try:                
+            try:
                 deadlinePlugin.LogInfo("Generating project files...")
                 deadlinePlugin.SetStatusMessage("Generating project files")
                 buildtool.GenerateProjectFiles()
