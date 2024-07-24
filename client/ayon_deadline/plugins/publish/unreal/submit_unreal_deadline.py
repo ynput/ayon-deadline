@@ -3,6 +3,7 @@ import attr
 import getpass
 import pyblish.api
 from datetime import datetime
+from pathlib import Path
 
 from ayon_core.lib import (
     env_value_to_bool,
@@ -128,7 +129,6 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.ProjectFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
 
-        deadline_plugin_info.ProjectFile = self.scene_path
         deadline_plugin_info.EditorExecutableName = "UnrealEditor-Cmd.exe"  # parse ayon+settings://applications/applications/unreal/variants/3/environmen
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
@@ -148,8 +148,17 @@ class UnrealSubmitDeadline(
         # if Perforce - triggered by active `publish_commit` instance!!
         collected_version_control = self._get_version_control()
         if collected_version_control:
-            self._update_version_control_data(collected_version_control,
-                                              deadline_plugin_info)
+            version_control_data = self._instance.context.data[
+                "version_control"]
+            workspace_dir = version_control_data["workspace_dir"]
+            stream = version_control_data["stream"]
+            self._update_version_control_data(
+                self.scene_path,
+                workspace_dir,
+                stream,
+                collected_version_control["change_info"]["change"],
+                deadline_plugin_info
+            )
 
         return attr.asdict(deadline_plugin_info)
 
@@ -195,8 +204,14 @@ class UnrealSubmitDeadline(
                 break
         return change_list_version
 
-    def _update_version_control_data(self, collected_version_control,
-                                     deadline_plugin_info):
+    def _update_version_control_data(
+        self,
+        scene_path, 
+        workspace_dir,
+        stream,
+        change_list_id,
+        deadline_plugin_info
+    ):
         """Adds Perforce metadata which causes DL pre job to sync to change.
 
         It triggers only in presence of activated `publish_commit` instance,
@@ -205,20 +220,20 @@ class UnrealSubmitDeadline(
         `publish_commit` replaces `workfile` as there are no versioned Unreal
         projects (because of size).
         """
-        self.log.info(f"collected_version_control::{collected_version_control}")
+        # normalize paths, c:/ vs C:/
+        scene_path = str(Path(scene_path).resolve())
+        workspace_dir = str(Path(workspace_dir).resolve())
 
-        unreal_project_file_name = os.path.basename(self.scene_path)
-        version_control_data = self._instance.context.data["version_control"]
-        workspace_dir = version_control_data["workspace_dir"]
-        unreal_project_hierarchy = self.scene_path.replace(workspace_dir,
-                                                           "")
+        unreal_project_file_name = os.path.basename(scene_path)
+
+        unreal_project_hierarchy = self.scene_path.replace(workspace_dir, "")
         unreal_project_hierarchy = (
             unreal_project_hierarchy.replace(unreal_project_file_name, ""))
+        # relative path from workspace dir to last folder
         unreal_project_hierarchy = unreal_project_hierarchy.strip("\\")
 
         deadline_plugin_info.ProjectFile = unreal_project_file_name
 
-        deadline_plugin_info.PerforceStream = version_control_data["stream"]
-        deadline_plugin_info.PerforceChangelist = collected_version_control[
-            "change_info"]["change"]
+        deadline_plugin_info.PerforceStream = stream
+        deadline_plugin_info.PerforceChangelist = change_list_id
         deadline_plugin_info.PerforceGamePath = unreal_project_hierarchy
