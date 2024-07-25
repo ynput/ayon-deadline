@@ -407,7 +407,6 @@ def inject_openpype_environment(deadlinePlugin):
         import traceback
         print(traceback.format_exc())
         print("!!! Injection failed.")
-        RepositoryUtils.FailJob(job)
         raise
 
 
@@ -581,7 +580,6 @@ def inject_ayon_environment(deadlinePlugin):
         import traceback
         print(traceback.format_exc())
         print("!!! Injection failed.")
-        RepositoryUtils.FailJob(job)
         raise
 
 
