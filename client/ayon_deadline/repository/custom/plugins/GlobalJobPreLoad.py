@@ -13,7 +13,7 @@ from Deadline.Scripting import (
     FileUtils,
     DirectoryUtils,
 )
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -407,7 +407,6 @@ def inject_openpype_environment(deadlinePlugin):
         import traceback
         print(traceback.format_exc())
         print("!!! Injection failed.")
-        RepositoryUtils.FailJob(job)
         raise
 
 
@@ -581,7 +580,6 @@ def inject_ayon_environment(deadlinePlugin):
         import traceback
         print(traceback.format_exc())
         print("!!! Injection failed.")
-        RepositoryUtils.FailJob(job)
         raise
 
 
