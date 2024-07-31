@@ -142,7 +142,7 @@ class UnrealSubmitDeadline(
             "-allowStdOutLogVerbosity"
             "-Unattended"
         ])
-        self.log.info(f"cmd-args::{cmd_args}")
+        self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
         # if Perforce - triggered by active `publish_commit` instance!!
