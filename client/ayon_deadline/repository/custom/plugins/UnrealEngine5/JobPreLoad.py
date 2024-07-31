@@ -138,7 +138,6 @@ def __main__( deadlinePlugin ):
 
                 logCallback = lambda tools: deadlinePlugin.SetProgress(perforceTools.GetSyncProgress() * 100)
 
-
                 # Perform the sync. This could take a while.
                 perforceTools.Sync(logCallback, bForceFullSync)
 
@@ -166,7 +165,6 @@ def __main__( deadlinePlugin ):
         executable_key = f"UnrealEditorExecutable_{version_string}"
         unreal_exe_list = (deadlinePlugin.GetEnvironmentVariable(executable_key)
             or deadlinePlugin.GetEnvironmentVariable("UnrealExecutable"))
-        unreal_exe_list = r"C:\Program Files\Epic Games\UE_5.3\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"  # TODO TEMP!
         if not unreal_exe_list:
             deadlinePlugin.FailRender( "Unreal Engine " + str(version) + " entry not found in .param file" )
         unreal_executable = FileUtils.SearchFileList( unreal_exe_list )
