@@ -145,7 +145,7 @@ class UnrealSubmitDeadline(
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
-        # if Perforce - triggered by active `publish_commit` instance!!
+        # if Perforce - triggered by active `changelist_metadata` instance!!
         collected_version_control = self._get_version_control()
         if collected_version_control:
             version_control_data = self._instance.context.data[
@@ -188,14 +188,14 @@ class UnrealSubmitDeadline(
         return batch_name
 
     def _get_version_control(self):
-        """Look if publish_commit is published to get change list info.
+        """Look if changelist_metadata is published to get change list info.
 
         Context version_control contains universal connection info, instance
         version_control contains detail about change list.
         """
         change_list_version = {}
         for inst in self._instance.context:
-            # get change info from `publish_commit` instance
+            # get change info from `changelist_metadata` instance
             change_list_version = inst.data.get("version_control")
             if change_list_version:
                 context_version = (
@@ -214,10 +214,10 @@ class UnrealSubmitDeadline(
     ):
         """Adds Perforce metadata which causes DL pre job to sync to change.
 
-        It triggers only in presence of activated `publish_commit` instance,
+        It triggers only in presence of activated `changelist_metadata` instance,
         which materialize info about commit. Artists could return to any
         published commit and re-render if they choose.
-        `publish_commit` replaces `workfile` as there are no versioned Unreal
+        `changelist_metadata` replaces `workfile` as there are no versioned Unreal
         projects (because of size).
         """
         # normalize paths, c:/ vs C:/
