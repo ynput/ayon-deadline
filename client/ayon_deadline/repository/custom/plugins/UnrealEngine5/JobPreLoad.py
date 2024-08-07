@@ -163,8 +163,8 @@ def __main__( deadlinePlugin ):
         deadlinePlugin.LogInfo('Version defined: %s' % version )
         version_string = str(version).replace(".", "_")
         executable_key = f"UnrealEditorExecutable_{version_string}"
-        unreal_exe_list = (deadlinePlugin.GetEnvironmentVariable(executable_key)
-            or deadlinePlugin.GetEnvironmentVariable("UnrealExecutable"))
+        unreal_exe_list = (deadlinePlugin.GetProcessEnvironmentVariable(executable_key)
+            or deadlinePlugin.GetProcessEnvironmentVariable("UnrealExecutable"))
         if not unreal_exe_list:
             deadlinePlugin.FailRender( "Unreal Engine " + str(version) + " entry not found in .param file" )
         unreal_executable = FileUtils.SearchFileList( unreal_exe_list )
