@@ -28,6 +28,7 @@ exclude = [
     "venv",
     "client/ayon_deadline/repository/custom/plugins/CelAction/*",
     "client/ayon_deadline/repository/custom/plugins/HarmonyAYON/*",
+    "client/ayon_deadline/repository/custom/plugins/UnrealEngine5",
 ]
 
 # Same as Black.
