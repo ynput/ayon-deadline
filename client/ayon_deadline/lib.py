@@ -22,6 +22,10 @@ def get_ayon_render_job_envs() -> "dict[str, str]":
 
 
 def get_instance_job_envs(instance) -> "dict[str, str]":
+    """Add all job environments as specified on the instance and context.
+
+    Any instance `job_env` vars will override the context `job_env` vars.
+    """
     key = "job_env"
     env = {}
     for job_env in [
