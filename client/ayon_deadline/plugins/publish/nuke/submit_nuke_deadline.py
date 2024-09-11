@@ -15,6 +15,7 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline.abstract_submit_deadline import requests_post
+from ayon_deadline.lib import get_instance_job_envs
 
 
 class NukeSubmitDeadline(pyblish.api.InstancePlugin,
@@ -362,22 +363,8 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin,
 
         # Include critical environment variables with submission
         keys = [
-            "PYTHONPATH",
-            "PATH",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_APP_NAME",
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "PYBLISHPLUGINPATH",
             "NUKE_PATH",
-            "TOOL_ENV",
-            "FOUNDRY_LICENSE",
-            "OPENPYPE_SG_USER",
+            "FOUNDRY_LICENSE"
         ]
 
         # add allowed keys from preset if any

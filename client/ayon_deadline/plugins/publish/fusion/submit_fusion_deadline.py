@@ -5,6 +5,7 @@ import getpass
 import pyblish.api
 
 from ayon_deadline.abstract_submit_deadline import requests_post
+from ayon_deadline.lib import get_ayon_render_job_envs, get_instance_job_envs
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin
 )
@@ -204,31 +205,9 @@ class FusionSubmitDeadline(
             payload["JobInfo"]["OutputDirectory%d" % index] = folder
             payload["JobInfo"]["OutputFilename%d" % index] = filename
 
-        # Include critical variables with submission
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_LOG_NO_COLORS",
-            "AYON_IN_TESTS",
-            "AYON_BUNDLE_NAME",
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-
-        # to recognize render jobs
-        environment["AYON_RENDER_JOB"] = "1"
+        # Set job environment variables
+        environment = get_instance_job_envs(instance)
+        environment.update(get_ayon_render_job_envs())
 
         payload["JobInfo"].update({
             "EnvironmentKeyValue%d" % index: "{key}={value}".format(

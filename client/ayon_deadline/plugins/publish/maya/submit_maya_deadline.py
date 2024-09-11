@@ -204,32 +204,9 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         render_globals = instance.data.get("renderGlobals", {})
         job_info.update(render_globals)
 
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "OPENPYPE_SG_USER",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_IN_TESTS"
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-
-        for key in keys:
-            value = environment.get(key)
-            if not value:
-                continue
-            job_info.EnvironmentKeyValue[key] = value
+        # Set job environment variables
+        job_info.add_render_job_env_var()
+        job_info.add_instance_job_env_vars(self._instance)
 
         # to recognize render jobs
         job_info.add_render_job_env_var()

@@ -270,30 +270,10 @@ class HarmonySubmitDeadline(
         job_info.Department = self.department
         job_info.Group = self.group
 
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_LOG_NO_COLORS"
-            "AYON_IN_TESTS"
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-        for key in keys:
-            value = environment.get(key)
-            if value:
-                job_info.EnvironmentKeyValue[key] = value
+=
+        # Set job environment variables
+        job_info.add_render_job_env_var()
+        job_info.add_instance_job_env_vars(self._instance)
 
         # to recognize render jobs
         job_info.add_render_job_env_var()

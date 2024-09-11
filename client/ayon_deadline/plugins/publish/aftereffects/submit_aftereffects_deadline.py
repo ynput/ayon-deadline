@@ -76,32 +76,8 @@ class AfterEffectsSubmitDeadline(
             os.path.dirname(self._instance.data["expectedFiles"][0])
         dln_job_info.JobDelay = "00:00:00"
 
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_LOG_NO_COLORS",
-            "AYON_IN_TESTS"
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-        for key in keys:
-            value = environment.get(key)
-            if value:
-                dln_job_info.EnvironmentKeyValue[key] = value
-
-        # to recognize render jobs
+        # Set job environment variables
+        dln_job_info.add_instance_job_env_vars(self._instance)
         dln_job_info.add_render_job_env_var()
 
         return dln_job_info

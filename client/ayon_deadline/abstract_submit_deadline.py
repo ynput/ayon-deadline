@@ -26,6 +26,8 @@ from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
 
+from .lib import get_instance_job_envs
+
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
 
@@ -398,10 +400,17 @@ class DeadlineJobInfo(object):
             setattr(self, key, value)
 
     def add_render_job_env_var(self):
-        """Check if in OP or AYON mode and use appropriate env var."""
-        self.EnvironmentKeyValue["AYON_RENDER_JOB"] = "1"
-        self.EnvironmentKeyValue["AYON_BUNDLE_NAME"] = (
-            os.environ["AYON_BUNDLE_NAME"])
+        """Add required env vars for valid render job submission."""
+        for key, value in get_render_job_env_vars().items():
+            self.EnvironmentKeyValue[key] = value
+
+    def add_instance_job_env_vars(self, instance):
+        """Add all job environments as specified on the instance and context
+
+        Any instance `job_env` vars will override the context `job_env` vars.
+        """
+        for key, value in get_instance_job_envs(instance).items():
+            self.EnvironmentKeyValue[key] = value
 
 
 @six.add_metaclass(AbstractMetaInstancePlugin)
