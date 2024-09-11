@@ -270,7 +270,6 @@ class HarmonySubmitDeadline(
         job_info.Department = self.department
         job_info.Group = self.group
 
-=
         # Set job environment variables
         job_info.add_render_job_env_var()
         job_info.add_instance_job_env_vars(self._instance)
