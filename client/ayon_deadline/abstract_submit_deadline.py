@@ -26,7 +26,7 @@ from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
 
-from .lib import get_instance_job_envs
+from .lib import get_ayon_render_job_envs, get_instance_job_envs
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
@@ -401,7 +401,7 @@ class DeadlineJobInfo(object):
 
     def add_render_job_env_var(self):
         """Add required env vars for valid render job submission."""
-        for key, value in get_render_job_env_vars().items():
+        for key, value in get_ayon_render_job_envs().items():
             self.EnvironmentKeyValue[key] = value
 
     def add_instance_job_env_vars(self, instance):
