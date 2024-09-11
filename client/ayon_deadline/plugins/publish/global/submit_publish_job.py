@@ -22,6 +22,13 @@ from ayon_core.pipeline.farm.pyblish_functions import (
 )
 from ayon_deadline.abstract_submit_deadline import requests_post
 
+try:
+    from ayon_usd import get_usd_pinning_envs
+except ImportError:
+    # usd is not enabled or available, so we just mock the function
+    def get_usd_pinning_envs(representations):
+        return {}
+
 
 def get_resource_files(resources, frame_range=None):
     """Get resource files at given path.
@@ -215,6 +222,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
             ),
         }
+
+        # TODO (antirotor): there should be better way to handle this.
+        #   see https://github.com/ynput/ayon-core/issues/876
+        environment.update(get_usd_pinning_envs(
+            instance.data.get("published_representations")))
 
         # add environments from self.environ_keys
         for env_key in self.environ_keys:

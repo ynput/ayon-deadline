@@ -10,6 +10,13 @@ from ayon_core.lib import is_in_tests
 from ayon_deadline import abstract_submit_deadline
 from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
+try:
+    from ayon_usd import get_usd_pinning_envs
+except ImportError:
+    # usd is not enabled or available, so we just mock the function
+    def get_usd_pinning_envs(representations):
+        return {}
+
 
 @attr.s
 class DeadlinePluginInfo():
@@ -99,6 +106,12 @@ class UnrealSubmitDeadline(
             for key in keys
             if key in os.environ
         }
+
+        # TODO (antirotor): there should be better way to handle this.
+        #   see https://github.com/ynput/ayon-core/issues/876
+        environment.update(get_usd_pinning_envs(
+            self._instance.data.get("published_representations")))
+
         for key in keys:
             value = environment.get(key)
             if value:
