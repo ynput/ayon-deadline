@@ -77,16 +77,12 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
     deadline_pool = ""
     deadline_pool_secondary = ""
     deadline_group = ""
-    deadline_chunk_size = 1
     deadline_priority = None
 
     # regex for finding frame number in string
     R_FRAME_NUMBER = re.compile(r'.+\.(?P<frame>[0-9]+)\..+')
 
     plugin_pype_version = "3.0"
-
-    # script path for publish_filesequence.py
-    publishing_script = None
 
     def _submit_deadline_post_job(self, instance, job):
         """Submit publish job to Deadline.
@@ -169,7 +165,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
                 "Comment": instance.context.data.get("comment", ""),
 
                 "Department": self.deadline_department,
-                "ChunkSize": self.deadline_chunk_size,
+                "ChunkSize": 1,
                 "Priority": priority,
                 "InitialStatus": initial_status,
 
