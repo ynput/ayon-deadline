@@ -51,7 +51,7 @@ try:
     from ayon_usd import get_usd_pinning_envs
 except ImportError:
     # usd is not enabled or available, so we just mock the function
-    def get_usd_pinning_envs(representations):
+    def get_usd_pinning_envs(instance):
         return {}
 
 
@@ -234,8 +234,9 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         # TODO (antirotor): there should be better way to handle this.
         #   see https://github.com/ynput/ayon-core/issues/876
-        environment.update(get_usd_pinning_envs(
-            instance.data.get("published_representations")))
+        usd_env = get_usd_pinning_envs(instance)
+        environment.update(usd_env)
+        keys += list(usd_env.keys())
 
         for key in keys:
             value = environment.get(key)

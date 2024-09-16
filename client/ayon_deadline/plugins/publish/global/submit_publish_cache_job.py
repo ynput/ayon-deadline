@@ -24,7 +24,7 @@ try:
     from ayon_usd import get_usd_pinning_envs
 except ImportError:
     # usd is not enabled or available, so we just mock the function
-    def get_usd_pinning_envs(representations):
+    def get_usd_pinning_envs(instance):
         return {}
 
 
@@ -152,8 +152,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
         # TODO (antirotor): there should be better way to handle this.
         #   see https://github.com/ynput/ayon-core/issues/876
-        environment.update(get_usd_pinning_envs(
-            instance.data.get("published_representations")))
+        environment.update(get_usd_pinning_envs(instance))
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
