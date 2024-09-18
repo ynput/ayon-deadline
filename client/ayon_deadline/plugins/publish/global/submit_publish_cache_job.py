@@ -20,13 +20,6 @@ from ayon_core.pipeline.farm.pyblish_functions import (
 )
 from ayon_deadline.abstract_submit_deadline import requests_post
 
-try:
-    from ayon_usd import get_usd_pinning_envs
-except ImportError:
-    # usd is not enabled or available, so we just mock the function
-    def get_usd_pinning_envs(instance):
-        return {}
-
 
 class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
                                      publish.AYONPyblishPluginMixin,
@@ -145,10 +138,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         for env_key in self.environ_keys:
             if os.getenv(env_key):
                 environment[env_key] = os.environ[env_key]
-
-        # TODO (antirotor): there should be better way to handle this.
-        #   see https://github.com/ynput/ayon-core/issues/876
-        environment.update(get_usd_pinning_envs(instance))
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
