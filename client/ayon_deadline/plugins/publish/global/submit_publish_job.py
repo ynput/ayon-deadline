@@ -141,6 +141,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     deadline_pool = ""
     deadline_pool_secondary = ""
     deadline_group = ""
+    deadline_chunk_size = 1
     deadline_priority = None
 
     # regex for finding frame number in string
@@ -158,6 +159,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # list of family names to transfer to new family if present
     families_transfer = ["render3d", "render2d", "ftrack", "slate"]
     plugin_pype_version = "3.0"
+
+    # script path for publish_filesequence.py
+    publishing_script = None
 
     # poor man exclusion
     skip_integration_repre_list = []
@@ -243,7 +247,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Comment": instance.context.data.get("comment", ""),
 
                 "Department": self.deadline_department,
-                "ChunkSize": 1,
+                "ChunkSize": self.deadline_chunk_size,
                 "Priority": priority,
                 "InitialStatus": initial_status,
 
