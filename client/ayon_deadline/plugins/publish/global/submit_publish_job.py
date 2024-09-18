@@ -22,13 +22,6 @@ from ayon_core.pipeline.farm.pyblish_functions import (
 )
 from ayon_deadline.abstract_submit_deadline import requests_post
 
-try:
-    from ayon_usd import get_usd_pinning_envs
-except ImportError:
-    # usd is not enabled or available, so we just mock the function
-    def get_usd_pinning_envs(instance):
-        return {}
-
 
 def get_resource_files(resources, frame_range=None):
     """Get resource files at given path.
@@ -148,6 +141,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     deadline_pool = ""
     deadline_pool_secondary = ""
     deadline_group = ""
+    deadline_chunk_size = 1
     deadline_priority = None
 
     # regex for finding frame number in string
@@ -165,6 +159,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # list of family names to transfer to new family if present
     families_transfer = ["render3d", "render2d", "ftrack", "slate"]
     plugin_pype_version = "3.0"
+
+    # script path for publish_filesequence.py
+    publishing_script = None
 
     # poor man exclusion
     skip_integration_repre_list = []
@@ -219,10 +216,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             ),
         }
 
-        # TODO (antirotor): there should be better way to handle this.
-        #   see https://github.com/ynput/ayon-core/issues/876
-        environment.update(get_usd_pinning_envs(instance))
-
         # add environments from self.environ_keys
         for env_key in self.environ_keys:
             if os.getenv(env_key):
@@ -254,7 +247,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Comment": instance.context.data.get("comment", ""),
 
                 "Department": self.deadline_department,
-                "ChunkSize": 1,
+                "ChunkSize": self.deadline_chunk_size,
                 "Priority": priority,
                 "InitialStatus": initial_status,
 
