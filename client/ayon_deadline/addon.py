@@ -45,7 +45,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         # `get_plugin_paths` still needs to be implemented because it's
         # abstract on the parent class
         return {}
-    
+
     def get_publish_plugin_paths(self, host_name=None):
         publish_dir = os.path.join(DEADLINE_ADDON_ROOT, "plugins", "publish")
         paths = [os.path.join(publish_dir, "global")]
