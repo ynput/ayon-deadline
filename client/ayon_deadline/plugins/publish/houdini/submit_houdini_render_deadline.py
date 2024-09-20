@@ -19,7 +19,7 @@ try:
 except ImportError:
     # usd is not enabled or available, so we just mock the function
     def get_usd_pinning_envs(instance):
-        return {"error": "USD is not enabled or available"}
+        return {}
 
 
 @attr.s
