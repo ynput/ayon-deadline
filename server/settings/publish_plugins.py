@@ -215,7 +215,7 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    
+
     priority: int = SettingsField(title="Priority")
     chunk_size: int = SettingsField(title="Chunk Size")
     group: str = SettingsField(title="Group")
@@ -230,7 +230,7 @@ class HoudiniCacheSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    
+
     priority: int = SettingsField(title="Priority")
     chunk_size: int = SettingsField(title="Chunk Size")
     group: str = SettingsField(title="Group")

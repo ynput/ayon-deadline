@@ -63,7 +63,7 @@ class AyonDeadlinePlugin(DeadlinePlugin):
         self.LogInfo("Single Frames Only: %s" % self.SingleFramesOnly)
 
         self.AddStdoutHandlerCallback(
-            ".*Progress: (\d+)%.*").HandleCallback += self.HandleProgress
+            ".*Progress: (\\d+)%.*").HandleCallback += self.HandleProgress
 
     def RenderExecutable(self):
         job = self.GetJob()
