@@ -61,7 +61,7 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
                 break
 
         if not deadline_server_name:
-            raise ValueError(f"Collected {collected_deadline_url} doesn't " 
+            raise ValueError(f"Collected {collected_deadline_url} doesn't "
                               "match any site configured in Studio Settings")
 
         instance.data["deadline"]["require_authentication"] = (

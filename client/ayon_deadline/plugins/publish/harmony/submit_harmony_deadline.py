@@ -395,8 +395,8 @@ class HarmonySubmitDeadline(
             ResolutionY=self._instance.data["resolutionHeight"]
         )
 
-        pattern = '[0]{' + str(self._instance.data["leadingZeros"]) + \
-                  '}1\.[a-zA-Z]{3}'
+        leading_zeros = str(self._instance.data["leadingZeros"])
+        pattern = f"[0]{leading_zeros}1\\.[a-zA-Z]{3}"
         render_prefix = re.sub(pattern, '',
                                self._instance.data["expectedFiles"][0])
         harmony_plugin_info.set_output(
