@@ -196,6 +196,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         metadata_path, rootless_metadata_path = \
             create_metadata_path(instance, anatomy)
 
+        settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
         environment = {
             "AYON_PROJECT_NAME": instance.context.data["projectName"],
             "AYON_FOLDER_PATH": instance.context.data["folderPath"],
@@ -207,9 +208,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "AYON_RENDER_JOB": "0",
             "AYON_REMOTE_PUBLISH": "0",
             "AYON_BUNDLE_NAME": os.environ["AYON_BUNDLE_NAME"],
-            "AYON_DEFAULT_SETTINGS_VARIANT": (
-                os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
-            ),
+            "AYON_DEFAULT_SETTINGS_VARIANT": settings_variant,
         }
 
         # add environments from self.environ_keys
@@ -227,8 +226,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             'publish',
             '"{}"'.format(rootless_metadata_path),
             "--targets", "deadline",
-            "--targets", "farm"
+            "--targets", "farm",
         ]
+        # TODO remove when AYON launcher respects environment variable
+        #   'AYON_DEFAULT_SETTINGS_VARIANT'
+        if settings_variant == "staging":
+            args.append("--use-staging")
 
         # Generate the payload for Deadline submission
         secondary_pool = (
