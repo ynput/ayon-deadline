@@ -215,7 +215,7 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    
+
     priority: int = SettingsField(title="Priority")
     chunk_size: int = SettingsField(title="Chunk Size")
     group: str = SettingsField(title="Group")
@@ -230,7 +230,7 @@ class HoudiniCacheSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    
+
     priority: int = SettingsField(title="Priority")
     chunk_size: int = SettingsField(title="Chunk Size")
     group: str = SettingsField(title="Group")
@@ -295,7 +295,6 @@ class ProcessCacheJobFarmModel(BaseSettingsModel):
     deadline_department: str = SettingsField(title="Department")
     deadline_pool: str = SettingsField(title="Pool")
     deadline_group: str = SettingsField(title="Group")
-    deadline_chunk_size: int = SettingsField(title="Chunk Size")
     deadline_priority: int = SettingsField(title="Priority")
 
 
@@ -306,9 +305,7 @@ class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
     deadline_department: str = SettingsField(title="Department")
     deadline_pool: str = SettingsField(title="Pool")
     deadline_group: str = SettingsField(title="Group")
-    deadline_chunk_size: int = SettingsField(title="Chunk Size")
     deadline_priority: int = SettingsField(title="Priority")
-    publishing_script: str = SettingsField(title="Publishing script path")
     skip_integration_repre_list: list[str] = SettingsField(
         default_factory=list,
         title="Skip integration of representation with ext"
@@ -517,7 +514,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "deadline_department": "",
         "deadline_pool": "",
         "deadline_group": "",
-        "deadline_chunk_size": 1,
         "deadline_priority": 50
     },
     "ProcessSubmittedJobOnFarm": {
@@ -525,9 +521,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "deadline_department": "",
         "deadline_pool": "",
         "deadline_group": "",
-        "deadline_chunk_size": 1,
         "deadline_priority": 50,
-        "publishing_script": "",
         "skip_integration_repre_list": [],
         "families_transfer": ["render3d", "render2d", "ftrack", "slate"],
         "aov_filter": [

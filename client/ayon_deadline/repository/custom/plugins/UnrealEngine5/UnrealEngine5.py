@@ -103,7 +103,7 @@ class UnrealEnginePlugin(DeadlinePlugin):
 
         if self._commandline_mode:
             self.AddStdoutHandlerCallback(
-                ".*Progress: (\d+)%.*"
+                ".*Progress: (\\d+)%.*"
             ).HandleCallback += self._handle_progress
             self.AddStdoutHandlerCallback(
                 ".*"

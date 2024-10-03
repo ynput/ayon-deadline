@@ -40,7 +40,8 @@ class CollectDefaultDeadlineServer(pyblish.api.ContextPlugin):
         if dl_server_info:
             deadline_url = dl_server_info["value"]
         else:
-            default_dl_server_info = deadline_addon.deadline_servers_info[0]
+            key = next(k for k in deadline_addon.deadline_servers_info.keys())
+            default_dl_server_info = deadline_addon.deadline_servers_info[key]
             deadline_url = default_dl_server_info["value"]
 
         context.data["deadline"] = {}

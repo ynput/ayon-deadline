@@ -141,7 +141,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     deadline_pool = ""
     deadline_pool_secondary = ""
     deadline_group = ""
-    deadline_chunk_size = 1
     deadline_priority = None
 
     # regex for finding frame number in string
@@ -159,9 +158,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # list of family names to transfer to new family if present
     families_transfer = ["render3d", "render2d", "ftrack", "slate"]
     plugin_pype_version = "3.0"
-
-    # script path for publish_filesequence.py
-    publishing_script = None
 
     # poor man exclusion
     skip_integration_repre_list = []
@@ -200,6 +196,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         metadata_path, rootless_metadata_path = \
             create_metadata_path(instance, anatomy)
 
+        settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
         environment = {
             "AYON_PROJECT_NAME": instance.context.data["projectName"],
             "AYON_FOLDER_PATH": instance.context.data["folderPath"],
@@ -211,9 +208,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "AYON_RENDER_JOB": "0",
             "AYON_REMOTE_PUBLISH": "0",
             "AYON_BUNDLE_NAME": os.environ["AYON_BUNDLE_NAME"],
-            "AYON_DEFAULT_SETTINGS_VARIANT": (
-                os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
-            ),
+            "AYON_DEFAULT_SETTINGS_VARIANT": settings_variant,
         }
 
         # add environments from self.environ_keys
@@ -231,8 +226,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             'publish',
             '"{}"'.format(rootless_metadata_path),
             "--targets", "deadline",
-            "--targets", "farm"
+            "--targets", "farm",
         ]
+        # TODO remove when AYON launcher respects environment variable
+        #   'AYON_DEFAULT_SETTINGS_VARIANT'
+        if settings_variant == "staging":
+            args.append("--use-staging")
 
         # Generate the payload for Deadline submission
         secondary_pool = (
@@ -247,7 +246,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Comment": instance.context.data.get("comment", ""),
 
                 "Department": self.deadline_department,
-                "ChunkSize": self.deadline_chunk_size,
+                "ChunkSize": 1,
                 "Priority": priority,
                 "InitialStatus": initial_status,
 

@@ -132,7 +132,7 @@ class UnrealSubmitDeadline(
                 workspace_dir,
                 stream,
                 collected_version_control["change_info"]["change"],
-                deadline_plugin_info
+                deadline_plugin_info,
             )
 
         return attr.asdict(deadline_plugin_info)
@@ -181,11 +181,11 @@ class UnrealSubmitDeadline(
 
     def _update_version_control_data(
         self,
-        scene_path, 
+        scene_path,
         workspace_dir,
         stream,
         change_list_id,
-        deadline_plugin_info
+        deadline_plugin_info,
     ):
         """Adds Perforce metadata which causes DL pre job to sync to change.
 
