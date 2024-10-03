@@ -16,9 +16,6 @@ These environment variables are injected into rendering process.
 
 Deadline triggers the `GlobalJobPreLoad.py` for each Worker as it starts the 
 Job.  
-
-<!-- *Note*: It also contains backward compatible logic to preserve functionality 
-for old Pype2 and non-OpenPype triggered jobs. -->
  
  Plugin
  ------
