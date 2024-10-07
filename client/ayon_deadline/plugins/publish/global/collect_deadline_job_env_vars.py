@@ -66,3 +66,13 @@ class CollectDeadlineNukeJobEnvVars(CollectDeadlineJobEnvVars):
         "PYTHONPATH",
         "PATH",
     ]
+
+
+class CollectAYONServerUrlToFarmJob(CollectDeadlineJobEnvVars):
+    label = "Submit AYON server URL to farm job"
+
+    # TODO: Expose the enabled/optional state to settings
+    ENV_KEYS = [
+        "AYON_SERVER_URL",
+        "AYON_USE_DEV",
+    ]
