@@ -108,7 +108,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     targets = ["local"]
     settings_category = "deadline"
 
-    tile_assembler_plugin = "OpenPypeTileAssembler"
+    tile_assembler_plugin = "DraftTileAssembler"
     priority = 50
     tile_priority = 50
     limit = []  # limit groups
@@ -793,6 +793,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         ])
 
         return defs
+
 
 def _format_tiles(
         filename,
