@@ -48,6 +48,7 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
         for key in self.ENV_KEYS:
             value = os.getenv(key)
             if value:
+                self.log.debug(f"Setting job env: {key}: {value}")
                 env[key] = value
 
         # Transfer some environment variables from current context
