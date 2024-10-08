@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""Collect Deadline servers from instance.
-
-This is resolving index of server lists stored in `deadlineServers` instance
-attribute or using default server if that attribute doesn't exists.
-
-"""
 import os
 
 import pyblish.api
