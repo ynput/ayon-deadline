@@ -48,6 +48,8 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
     priority = 50
     chunk_size = 999999
     group = None
+    limits = ""
+    machine_limit = 0
     jobInfo = {}
     pluginInfo = {}
 
@@ -95,6 +97,10 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         job_info.Comment = context.data.get("comment")
         job_info.Priority = attr_values.get("priority", self.priority)
         job_info.Group = attr_values.get("group", self.group)
+        job_info.LimitGroups = attr_values.get("limits", self.limits)
+        job_info.MachineLimit = attr_values.get(
+            "machine_limit", self.machine_limit
+        )
 
         # Set job environment variables
         job_info.add_instance_job_env_vars(self._instance)
@@ -153,6 +159,19 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             TextDef("group",
                     default=cls.group,
                     label="Group Name"),
+            TextDef(
+                "limits",
+                default=cls.limits,
+                label="Limit Groups",
+                placeholder="value1,value2",
+                tooltip="Enter a comma separated list of limit groups."
+            ),
+            NumberDef(
+                "machine_limit",
+                default=cls.machine_limit,
+                label="Machine Limit",
+                tooltip="maximum number of machines for this job."
+            ),
         ])
 
         return defs
