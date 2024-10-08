@@ -40,5 +40,10 @@ class CollectUSDPinningEnvVars(pyblish.api.InstancePlugin):
             return
 
         job_env = instance.data.setdefault("job_env", {})
-        job_env.update(get_usd_pinning_envs(instance))
+        usd_pinning_envs: dict = get_usd_pinning_envs(instance)
 
+        # Log the job envs that are set
+        for key, value in usd_pinning_envs.items():
+            self.log.debug(f"Setting job env: {key}: {value}")
+
+        job_env.update(usd_pinning_envs)
