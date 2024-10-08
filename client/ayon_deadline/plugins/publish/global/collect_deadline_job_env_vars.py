@@ -9,7 +9,7 @@ import os
 
 import pyblish.api
 
-from ayon_deadline.lib import FARM_FAMILIES
+from ayon_deadline.lib import FARM_FAMILIES, JOB_ENV_DATA_KEY
 
 
 class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
@@ -52,4 +52,4 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
                 env[key] = value
 
         # Transfer some environment variables from current context
-        context.data.setdefault("job_env", {}).update(env)
+        context.data.setdefault(JOB_ENV_DATA_KEY, {}).update(env)
