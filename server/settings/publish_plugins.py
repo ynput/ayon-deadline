@@ -7,6 +7,12 @@ from ayon_server.settings import (
 )
 
 
+class EnabledStateModel(BaseSettingsModel):
+    enabled: bool = SettingsField(True, title="Enabled")
+    optional: bool = SettingsField(True, title="Active")
+    active: bool = SettingsField(True, title="Active")
+
+
 class CollectDeadlinePoolsModel(BaseSettingsModel):
     """Settings Deadline default pools."""
 
@@ -328,6 +334,10 @@ class PublishPluginsModel(BaseSettingsModel):
     CollectDeadlinePools: CollectDeadlinePoolsModel = SettingsField(
         default_factory=CollectDeadlinePoolsModel,
         title="Default Pools")
+    CollectAYONServerUrlToFarmJob: EnabledStateModel = SettingsField(
+        default_factory=EnabledStateModel,
+        title="Submit AYON server URL to farm job"
+    )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
         title="Validate Expected Files"
@@ -379,6 +389,11 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
     "CollectDeadlinePools": {
         "primary_pool": "",
         "secondary_pool": ""
+    },
+    "CollectAYONServerUrlToFarmJob": {
+        "enabled": False,
+        "active": True,
+        "optional": False,
     },
     "ValidateExpectedFiles": {
         "enabled": True,

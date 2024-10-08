@@ -50,6 +50,10 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
 
 class CollectAYONServerUrlToFarmJob(CollectDeadlineJobEnvVars):
     label = "Submit AYON server URL to farm job"
+    settings_category = "deadline"
+
+    # Enable in settings
+    enabled = False
 
     # TODO: Expose the enabled/optional state to settings
     ENV_KEYS = [
