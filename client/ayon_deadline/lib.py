@@ -11,6 +11,10 @@ FARM_FAMILIES = [
     "renderFarm", "usdrender", "publish.hou"
 ]
 
+# Constant defining where we store job environment variables on instance or
+# context data
+JOB_ENV_DATA_KEY: str = "farmJobEnv"
+
 
 def get_ayon_render_job_envs() -> "dict[str, str]":
     """Get required env vars for valid render job submission."""
@@ -26,11 +30,10 @@ def get_instance_job_envs(instance) -> "dict[str, str]":
 
     Any instance `job_env` vars will override the context `job_env` vars.
     """
-    key = "job_env"
     env = {}
     for job_env in [
-        instance.context.data.get(key, {}),
-        instance.data.get(key, {})
+        instance.context.data.get(JOB_ENV_DATA_KEY, {}),
+        instance.data.get(JOB_ENV_DATA_KEY, {})
     ]:
         if job_env:
             env.update(job_env)
