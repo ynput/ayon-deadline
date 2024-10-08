@@ -81,29 +81,7 @@ class UnrealSubmitDeadline(
             os.path.dirname(self._instance.data["expectedFiles"][0])
         dln_job_info.JobDelay = "00:00:00"
 
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_LOG_NO_COLORS",
-            "IS_TEST",
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-        for key in keys:
-            value = environment.get(key)
-            if value:
-                dln_job_info.EnvironmentKeyValue[key] = value
-
+        dln_job_info.add_instance_job_env_vars(self._instance)
         dln_job_info.EnvironmentKeyValue["AYON_UNREAL_VERSION"] = (
             self._instance.data)["app_version"]
 

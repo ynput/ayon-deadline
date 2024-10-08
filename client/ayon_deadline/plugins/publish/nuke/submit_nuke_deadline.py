@@ -15,6 +15,7 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline.abstract_submit_deadline import requests_post
+from ayon_deadline.lib import get_instance_job_envs, get_ayon_render_job_envs
 
 
 class NukeSubmitDeadline(pyblish.api.InstancePlugin,
@@ -362,36 +363,24 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin,
 
         # Include critical environment variables with submission
         keys = [
-            "PYTHONPATH",
-            "PATH",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_APP_NAME",
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "PYBLISHPLUGINPATH",
             "NUKE_PATH",
-            "TOOL_ENV",
-            "FOUNDRY_LICENSE",
-            "OPENPYPE_SG_USER",
+            "FOUNDRY_LICENSE"
         ]
 
         # add allowed keys from preset if any
         if self.env_allowed_keys:
             keys += self.env_allowed_keys
 
-        environment = {
+        nuke_specific_env = {
             key: os.environ[key]
             for key in keys
             if key in os.environ
         }
 
-        # to recognize render jobs
-        environment["AYON_RENDER_JOB"] = "1"
+        # Set job environment variables
+        environment = get_instance_job_envs(instance)
+        environment.update(get_ayon_render_job_envs())
+        environment.update(nuke_specific_env)
 
         # finally search replace in values of any key
         if self.env_search_replace_values:
