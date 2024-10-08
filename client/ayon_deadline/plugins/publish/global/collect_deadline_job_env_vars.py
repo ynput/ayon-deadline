@@ -54,5 +54,6 @@ class CollectAYONServerUrlToFarmJob(CollectDeadlineJobEnvVars):
     # TODO: Expose the enabled/optional state to settings
     ENV_KEYS = [
         "AYON_SERVER_URL",
+        "AYON_API_KEY",
         "AYON_USE_DEV",
     ]
