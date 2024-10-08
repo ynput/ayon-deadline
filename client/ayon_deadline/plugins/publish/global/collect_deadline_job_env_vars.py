@@ -53,16 +53,3 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
 
         # Transfer some environment variables from current context
         context.data.setdefault("job_env", {}).update(env)
-
-
-class CollectDeadlineNukeJobEnvVars(CollectDeadlineJobEnvVars):
-    """Collect set of environment variables to submit with deadline jobs"""
-    label = "Deadline Farm Environment Variables (Nuke)"
-    hosts = ["nuke"]
-    families = ["render", "prerender"]
-
-    ENV_KEYS = [
-        # Backwards compatibility
-        "PYTHONPATH",
-        "PATH",
-    ]
