@@ -9,7 +9,7 @@ from ayon_server.settings import (
 
 class EnabledStateModel(BaseSettingsModel):
     enabled: bool = SettingsField(True, title="Enabled")
-    optional: bool = SettingsField(True, title="Active")
+    optional: bool = SettingsField(True, title="Optional")
     active: bool = SettingsField(True, title="Active")
 
 
