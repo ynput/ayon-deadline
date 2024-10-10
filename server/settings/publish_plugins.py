@@ -7,10 +7,21 @@ from ayon_server.settings import (
 )
 
 
-class EnabledStateModel(BaseSettingsModel):
+class CollectAYONServerToFarmJobModel(BaseSettingsModel):
     enabled: bool = SettingsField(True, title="Enabled")
     optional: bool = SettingsField(True, title="Active")
     active: bool = SettingsField(True, title="Active")
+    ayon_api_key: str = SettingsField(
+        "",
+        title="AYON API Key",
+        description=(
+            "The AYON API key to submit with Deadline submissions. When empty"
+            " and the plug-in is enabled it will submit the user's API key."
+            " However, it is strongly recommended to provide a service user"
+            " API Key to avoid issues if a user were to be removed."
+        ),
+        placeholder="Provide an AYON Server User API key..."
+    )
 
 
 class CollectDeadlinePoolsModel(BaseSettingsModel):
@@ -334,9 +345,16 @@ class PublishPluginsModel(BaseSettingsModel):
     CollectDeadlinePools: CollectDeadlinePoolsModel = SettingsField(
         default_factory=CollectDeadlinePoolsModel,
         title="Default Pools")
-    CollectAYONServerUrlToFarmJob: EnabledStateModel = SettingsField(
-        default_factory=EnabledStateModel,
-        title="Submit AYON server URL to farm job"
+    CollectAYONServerToFarmJob: CollectAYONServerToFarmJobModel = SettingsField(  # noqa
+        default_factory=CollectAYONServerToFarmJobModel,
+        title="Add AYON server to farm job",
+        description=(
+            "When enabled submit along your `AYON_SERVER_URL` and a"
+            " `AYON_API_KEY` to the job so you can enforce your current"
+            " server even if the Deadline Repository is configured for another"
+            " AYON server. This can be useful for example for submissions from"
+            " a separate dev server."
+        )
     )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
@@ -394,6 +412,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": False,
         "active": True,
         "optional": False,
+        "ayon_api_key": ""
     },
     "ValidateExpectedFiles": {
         "enabled": True,
