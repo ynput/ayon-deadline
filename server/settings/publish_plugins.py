@@ -8,7 +8,7 @@ from ayon_server.settings import (
 
 
 class CollectAYONServerToFarmJobModel(BaseSettingsModel):
-    enabled: bool = SettingsField(True, title="Enabled")
+    enabled: bool = SettingsField(False, title="Enabled")
     ayon_api_key: str = SettingsField(
         "",
         title="AYON API Key",
