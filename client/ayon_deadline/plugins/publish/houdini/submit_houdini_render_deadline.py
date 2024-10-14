@@ -106,9 +106,13 @@ class HoudiniSubmitDeadline(
     export_priority = 50
     export_chunk_size = 10
     export_group = ""
+    export_limits = ""
+    export_machine_limit = 0
     priority = 50
     chunk_size = 1
     group = ""
+    limits = ""
+    machine_limit = 0
 
     @classmethod
     def get_attribute_defs(cls):
@@ -132,6 +136,19 @@ class HoudiniSubmitDeadline(
                 default=cls.group,
                 label="Group Name"
             ),
+            TextDef(
+                "limits",
+                default=cls.limits,
+                label="Limit Groups",
+                placeholder="value1,value2",
+                tooltip="Enter a comma separated list of limit groups."
+            ),
+            NumberDef(
+                "machine_limit",
+                default=cls.machine_limit,
+                label="Machine Limit",
+                tooltip="maximum number of machines for this job."
+            ),
             NumberDef(
                 "export_priority",
                 label="Export Priority",
@@ -150,6 +167,19 @@ class HoudiniSubmitDeadline(
                 "export_group",
                 default=cls.export_group,
                 label="Export Group Name"
+            ),
+            TextDef(
+                "export_limits",
+                default=cls.export_limits,
+                label="Export Limit Groups",
+                placeholder="value1,value2",
+                tooltip="Enter a comma separated list of limit groups."
+            ),
+            NumberDef(
+                "export_machine_limit",
+                default=cls.export_machine_limit,
+                label="Export Machine Limit",
+                tooltip="maximum number of machines for this job."
             ),
         ]
 
@@ -227,6 +257,12 @@ class HoudiniSubmitDeadline(
             job_info.Group = attribute_values.get(
                 "export_group", self.export_group
             )
+            job_info.LimitGroups = attribute_values.get(
+                "export_limits", self.export_limits
+            )
+            job_info.MachineLimit = attribute_values.get(
+                "export_machine_limit", self.export_machine_limit
+            )
         else:
             job_info.Priority = attribute_values.get(
                 "priority", self.priority
@@ -236,6 +272,12 @@ class HoudiniSubmitDeadline(
             )
             job_info.Group = attribute_values.get(
                 "group", self.group
+            )
+            job_info.LimitGroups = attribute_values.get(
+                "limits", self.limits
+            )
+            job_info.MachineLimit = attribute_values.get(
+                "machine_limit", self.machine_limit
             )
 
         # Apply render globals, like e.g. data from collect machine list
