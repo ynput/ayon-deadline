@@ -5,7 +5,6 @@ It provides Deadline JobInfo data class.
 
 """
 import json.decoder
-import os
 from abc import abstractmethod
 import platform
 import getpass
@@ -25,6 +24,8 @@ from ayon_core.pipeline.publish import (
 from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
+
+from .lib import get_ayon_render_job_envs, get_instance_job_envs
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
@@ -398,10 +399,17 @@ class DeadlineJobInfo(object):
             setattr(self, key, value)
 
     def add_render_job_env_var(self):
-        """Check if in OP or AYON mode and use appropriate env var."""
-        self.EnvironmentKeyValue["AYON_RENDER_JOB"] = "1"
-        self.EnvironmentKeyValue["AYON_BUNDLE_NAME"] = (
-            os.environ["AYON_BUNDLE_NAME"])
+        """Add required env vars for valid render job submission."""
+        for key, value in get_ayon_render_job_envs().items():
+            self.EnvironmentKeyValue[key] = value
+
+    def add_instance_job_env_vars(self, instance):
+        """Add all job environments as specified on the instance and context
+
+        Any instance `job_env` vars will override the context `job_env` vars.
+        """
+        for key, value in get_instance_job_envs(instance).items():
+            self.EnvironmentKeyValue[key] = value
 
 
 @six.add_metaclass(AbstractMetaInstancePlugin)

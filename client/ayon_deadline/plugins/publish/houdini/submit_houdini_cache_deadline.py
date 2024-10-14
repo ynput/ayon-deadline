@@ -15,13 +15,6 @@ from ayon_core.pipeline import (
 from ayon_deadline import abstract_submit_deadline
 from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
-try:
-    from ayon_usd import get_usd_pinning_envs
-except ImportError:
-    # usd is not enabled or available, so we just mock the function
-    def get_usd_pinning_envs(instance):
-        return {}
-
 
 @attr.s
 class HoudiniPluginInfo(object):
@@ -109,40 +102,8 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             "machine_limit", self.machine_limit
         )
 
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "OPENPYPE_SG_USER",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_LOG_NO_COLORS",
-            "AYON_IN_TESTS"
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-
-        # TODO (antirotor): there should be better way to handle this.
-        #   see https://github.com/ynput/ayon-core/issues/876
-        usd_env = get_usd_pinning_envs(instance)
-        environment.update(usd_env)
-        keys += list(usd_env.keys())
-
-        for key in keys:
-            value = environment.get(key)
-            if not value:
-                continue
-            job_info.EnvironmentKeyValue[key] = value
-        # to recognize render jobs
+        # Set job environment variables
+        job_info.add_instance_job_env_vars(self._instance)
         job_info.add_render_job_env_var()
 
         return job_info
