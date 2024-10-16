@@ -4,7 +4,23 @@ from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
     ensure_unique_names,
+    task_types_enum,
 )
+
+
+class LimitGroupsSubmodel(BaseSettingsModel):
+    _layout = "expanded"
+    name: str = SettingsField(title="Name")
+    value: list[str] = SettingsField(
+        default_factory=list,
+        title="Limit Groups"
+    )
+
+
+class EnvSearchReplaceSubmodel(BaseSettingsModel):
+    _layout = "compact"
+    name: str = SettingsField(title="Name")
+    value: str = SettingsField(title="Value")
 
 
 class CollectDeadlinePoolsModel(BaseSettingsModel):
@@ -13,6 +29,79 @@ class CollectDeadlinePoolsModel(BaseSettingsModel):
     primary_pool: str = SettingsField(title="Primary Pool")
 
     secondary_pool: str = SettingsField(title="Secondary Pool")
+
+
+def extract_jobinfo_overrides_enum():
+    return [
+        {"label": "Frames per Task", "value": "chunk_size"},
+        {"label": "Priority", "value": "priority"},
+        {"label": "Group", "value": "group"},
+        {"label": "Limit groups", "value": "limit_groups"},
+        {"label": "Delay job (timecode dd:hh:mm:ss)", "value": "job_delay"},
+        {"label": "Group", "value": "group"},
+
+    ]
+
+
+class CollectJobInfoItem(BaseSettingsModel):
+    _layout = "expanded"
+    host_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Host names"
+    )
+    task_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Task types",
+        enum_resolver=task_types_enum
+    )
+    task_names: list[str] = SettingsField(
+        default_factory=list,
+        title="Task names"
+    )
+
+    chunk_size: int = SettingsField(999, title="Frames per Task")
+    priority: int = SettingsField(50, title="Priority")
+    group: str = SettingsField("", title="Group")
+    limit_groups: list[LimitGroupsSubmodel] = SettingsField(
+        default_factory=list,
+        title="Limit Groups",
+    )
+    concurrent_tasks: int = SettingsField(
+        1, title="Number of concurrent tasks")
+    department: str = SettingsField("", title="Department")
+    use_gpu: bool = SettingsField("", title="Use GPU")
+    job_delay: str = SettingsField(
+        "", title="Delay job",
+        placeholder="dd:hh:mm:ss"
+    )
+    use_published: bool = SettingsField(True, title="Use Published scene")
+    asset_dependencies: bool = SettingsField(True, title="Use Asset dependencies")
+    workfile_dependency: bool = SettingsField(True, title="Workfile Dependency")
+    multiprocess: bool = SettingsField(False, title="Multiprocess")
+
+    env_allowed_keys: list[str] = SettingsField(
+        default_factory=list,
+        title="Allowed environment keys",
+        description="Pass selected environment variables with current value"
+    )
+    env_search_replace_values: list[EnvSearchReplaceSubmodel] = SettingsField(
+        default_factory=list,
+        title="Search & replace in environment values",
+        description="Replace string values in 'Name' with value from 'Value'"
+    )
+    overrides: list[str] = SettingsField(
+        enum_resolver=extract_jobinfo_overrides_enum,
+        title="Exposed Overrides",
+        description=(
+            "Expose the attribute in this list to the user when publishing."
+        )
+    )
+
+
+class CollectJobInfoModel(BaseSettingsModel):
+    _isGroup = True
+    enabled: bool = SettingsField(False)
+    profiles: list[CollectJobInfoItem] = SettingsField(default_factory=list)
 
 
 class ValidateExpectedFilesModel(BaseSettingsModel):
@@ -56,18 +145,11 @@ class MayaSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    use_published: bool = SettingsField(title="Use Published scene")
     import_reference: bool = SettingsField(
         title="Use Scene with Imported Reference"
     )
-    asset_dependencies: bool = SettingsField(title="Use Asset dependencies")
-    priority: int = SettingsField(title="Priority")
     tile_priority: int = SettingsField(title="Tile Priority")
-    group: str = SettingsField(title="Group")
-    limit: list[str] = SettingsField(
-        default_factory=list,
-        title="Limit Groups"
-    )
+
     tile_assembler_plugin: str = SettingsField(
         title="Tile Assembler Plugin",
         enum_resolver=tile_assembler_enum,
@@ -99,25 +181,6 @@ class MaxSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(True)
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    use_published: bool = SettingsField(title="Use Published scene")
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Frame per Task")
-    group: str = SettingsField("", title="Group Name")
-
-
-class EnvSearchReplaceSubmodel(BaseSettingsModel):
-    _layout = "compact"
-    name: str = SettingsField(title="Name")
-    value: str = SettingsField(title="Value")
-
-
-class LimitGroupsSubmodel(BaseSettingsModel):
-    _layout = "expanded"
-    name: str = SettingsField(title="Name")
-    value: list[str] = SettingsField(
-        default_factory=list,
-        title="Limit Groups"
-    )
 
 
 def fusion_deadline_plugin_enum():
@@ -142,12 +205,9 @@ class FusionSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(True, title="Enabled")
     optional: bool = SettingsField(False, title="Optional")
     active: bool = SettingsField(True, title="Active")
-    priority: int = SettingsField(50, title="Priority")
-    chunk_size: int = SettingsField(10, title="Frame per Task")
     concurrent_tasks: int = SettingsField(
         1, title="Number of concurrent tasks"
     )
-    group: str = SettingsField("", title="Group Name")
     plugin: str = SettingsField("Fusion",
                                 enum_resolver=fusion_deadline_plugin_enum,
                                 title="Deadline Plugin")
@@ -159,38 +219,6 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Chunk Size")
-    concurrent_tasks: int = SettingsField(title="Number of concurrent tasks")
-    group: str = SettingsField(title="Group")
-    department: str = SettingsField(title="Department")
-    use_gpu: bool = SettingsField(title="Use GPU")
-    workfile_dependency: bool = SettingsField(title="Workfile Dependency")
-    use_published_workfile: bool = SettingsField(
-        title="Use Published Workfile"
-    )
-
-    env_allowed_keys: list[str] = SettingsField(
-        default_factory=list,
-        title="Allowed environment keys"
-    )
-
-    env_search_replace_values: list[EnvSearchReplaceSubmodel] = SettingsField(
-        default_factory=list,
-        title="Search & replace in environment values",
-    )
-
-    limit_groups: list[LimitGroupsSubmodel] = SettingsField(
-        default_factory=list,
-        title="Limit Groups",
-    )
-
-    @validator(
-        "limit_groups",
-        "env_search_replace_values")
-    def validate_unique_names(cls, value):
-        ensure_unique_names(value)
-        return value
 
 
 class HarmonySubmitDeadlineModel(BaseSettingsModel):
@@ -199,11 +227,6 @@ class HarmonySubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    use_published: bool = SettingsField(title="Use Published scene")
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Chunk Size")
-    group: str = SettingsField(title="Group")
-    department: str = SettingsField(title="Department")
 
 
 class HoudiniSubmitDeadlineModel(BaseSettingsModel):
@@ -211,25 +234,6 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Chunk Size")
-    group: str = SettingsField(title="Group")
-    limits: str = SettingsField(
-        title="Limit Groups",
-        description=(
-            "Enter a comma separated list of limits.\n"
-            "Specifies the limit groups that this job is a member of (default = blank)."
-        )
-    )
-    machine_limit: int = SettingsField(
-        title="Machine Limit",
-        description=(
-            "Specifies the maximum number of machines this job can be"
-            " rendered on at the same time (default = 0, which means"
-            " unlimited)."
-        )
-    )
 
     export_priority: int = SettingsField(title="Export Priority")
     export_chunk_size: int = SettingsField(title="Export Chunk Size")
@@ -257,25 +261,6 @@ class HoudiniCacheSubmitDeadlineModel(BaseSettingsModel):
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
 
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Chunk Size")
-    group: str = SettingsField(title="Group")
-    limits: str = SettingsField(
-        title="Limit Groups",
-        description=(
-            "Enter a comma separated list of limits.\n"
-            "Specifies the limit groups that this job is a member of (default = blank)."
-        )
-    )
-    machine_limit: int = SettingsField(
-        title="Machine Limit",
-        description=(
-            "Specifies the maximum number of machines this job can be"
-            " rendered on at the same time (default = 0, which means"
-            " unlimited)."
-        )
-    )
-
 
 class AfterEffectsSubmitDeadlineModel(BaseSettingsModel):
     """After Effects deadline submitter settings."""
@@ -283,12 +268,6 @@ class AfterEffectsSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    use_published: bool = SettingsField(title="Use Published scene")
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Chunk Size")
-    group: str = SettingsField(title="Group")
-    department: str = SettingsField(title="Department")
-    multiprocess: bool = SettingsField(title="Optional")
 
 
 class CelactionSubmitDeadlineModel(BaseSettingsModel):
@@ -310,14 +289,6 @@ class BlenderSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(True)
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
-    use_published: bool = SettingsField(title="Use Published scene")
-    asset_dependencies: bool = SettingsField(title="Use Asset dependencies")
-    priority: int = SettingsField(title="Priority")
-    chunk_size: int = SettingsField(title="Frame per Task")
-    group: str = SettingsField("", title="Group Name")
-    job_delay: str = SettingsField(
-        "", title="Delay job (timecode dd:hh:mm:ss)"
-    )
 
 
 class AOVFilterSubmodel(BaseSettingsModel):
@@ -373,6 +344,9 @@ class PublishPluginsModel(BaseSettingsModel):
     CollectDeadlinePools: CollectDeadlinePoolsModel = SettingsField(
         default_factory=CollectDeadlinePoolsModel,
         title="Default Pools")
+    CollectJobInfo: CollectJobInfoModel = SettingsField(
+        default_factory=CollectJobInfoModel,
+        title="Collect JobInfo")
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
         title="Validate Expected Files"
@@ -440,23 +414,11 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": True,
         "optional": False,
         "active": True,
-        "use_published": True,
-        "priority": 50,
-        "chunk_size": 10000,
-        "group": "",
-        "department": "",
-        "multiprocess": True
     },
     "BlenderSubmitDeadline": {
         "enabled": True,
         "optional": False,
         "active": True,
-        "use_published": True,
-        "asset_dependencies": True,
-        "priority": 50,
-        "chunk_size": 10,
-        "group": "none",
-        "job_delay": "00:00:00:00"
     },
     "CelactionSubmitDeadline": {
         "enabled": True,
@@ -472,40 +434,21 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": True,
         "optional": False,
         "active": True,
-        "priority": 50,
-        "chunk_size": 10,
-        "concurrent_tasks": 1,
-        "group": ""
     },
     "HarmonySubmitDeadline": {
         "enabled": True,
         "optional": False,
         "active": True,
-        "use_published": True,
-        "priority": 50,
-        "chunk_size": 10000,
-        "group": "",
-        "department": ""
     },
     "HoudiniCacheSubmitDeadline": {
         "enabled": True,
         "optional": False,
         "active": True,
-        "priority": 50,
-        "chunk_size": 999999,
-        "group": "",
-        "limits": "",
-        "machine_limit": 0
     },
     "HoudiniSubmitDeadline": {
         "enabled": True,
         "optional": False,
         "active": True,
-        "priority": 50,
-        "chunk_size": 1,
-        "group": "",
-        "limits": "",
-        "machine_limit": 0,
         "export_priority": 50,
         "export_chunk_size": 10,
         "export_group": "",
@@ -516,24 +459,15 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": True,
         "optional": False,
         "active": True,
-        "use_published": True,
-        "priority": 50,
-        "chunk_size": 10,
-        "group": "none"
     },
     "MayaSubmitDeadline": {
         "enabled": True,
         "optional": False,
         "active": True,
         "tile_assembler_plugin": "DraftTileAssembler",
-        "use_published": True,
         "import_reference": False,
-        "asset_dependencies": True,
         "strict_error_checking": True,
-        "priority": 50,
         "tile_priority": 50,
-        "group": "none",
-        "limit": [],
         # this used to be empty dict
         "jobInfo": "",
         # this used to be empty dict
@@ -544,17 +478,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": True,
         "optional": False,
         "active": True,
-        "priority": 50,
-        "chunk_size": 10,
-        "concurrent_tasks": 1,
-        "group": "",
-        "department": "",
-        "use_gpu": True,
-        "workfile_dependency": True,
-        "use_published_workfile": True,
-        "env_allowed_keys": [],
-        "env_search_replace_values": [],
-        "limit_groups": []
     },
     "ProcessSubmittedCacheJobOnFarm": {
         "enabled": True,
