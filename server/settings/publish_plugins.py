@@ -35,7 +35,7 @@ def extract_jobinfo_overrides_enum():
     return [
         {"label": "Frames per Task", "value": "chunk_size"},
         {"label": "Priority", "value": "priority"},
-        {"label": "Group", "value": "group"},
+        {"label": "Department", "value": "department"},
         {"label": "Limit groups", "value": "limit_groups"},
         {"label": "Delay job (timecode dd:hh:mm:ss)", "value": "job_delay"},
         {"label": "Group", "value": "group"},
