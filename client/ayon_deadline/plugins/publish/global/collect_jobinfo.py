@@ -15,7 +15,7 @@ from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.settings import get_project_settings
 from ayon_core.lib.profiles_filtering import filter_profiles
 
-from ayon_deadline.lib import FARM_FAMILIES
+from ayon_deadline.lib import FARM_FAMILIES, JobInfo
 
 
 class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
@@ -34,8 +34,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     families = FARM_FAMILIES
 
     def process(self, instance):
-        attr_values = self.get_attr_values_from_data(instance.data)
-        self.log.info(attr_values)
+        attr_values = self._get_jobinfo_defaults(instance)
+
+        attr_values.update(self.get_attr_values_from_data(instance.data))
+        job_info = JobInfo.from_dict(attr_values)
+        instance.data["deadline"]["job_info"] = job_info
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
@@ -45,6 +48,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if not instance["active"]:  # TODO origin_data seem not right
             return []
 
+        # will be reworked when CreateContext contains settings and task types
         project_name = create_context.project_name
         project_settings = get_project_settings(project_name)
 
@@ -145,6 +149,46 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 event["create_context"], instance
             )
             instance.set_publish_plugin_attr_defs(cls.__name__, new_attrs)
+
+    def _get_jobinfo_defaults(self, instance):
+        """Queries project setting for profile with default values
+
+        Args:
+            instance (pyblish.api.Instance): Source instance.
+
+        Returns:
+            (dict)
+        """
+        attr_values = {}
+
+        context_data = instance.context.data
+        host_name = context_data["hostName"]
+        project_settings = context_data["project_settings"]
+        task_entity = context_data["taskEntity"]
+
+        task_name = task_type = ""
+        if task_entity:
+            task_name = task_entity["name"]
+            task_type = task_entity["taskType"]
+        profiles = (
+            project_settings["deadline"]
+            ["publish"]
+            ["CollectJobInfo"]
+            ["profiles"]
+        )
+        if profiles:
+            profile = filter_profiles(
+                profiles,
+                {
+                    "host_names": host_name,
+                    "task_types": task_type,
+                    "task_names": task_name,
+                    # "product_type": product_type
+                }
+            )
+            if profile:
+                attr_values = profile
+        return attr_values
 
 
 class CollectMayaJobInfo(CollectJobInfo):

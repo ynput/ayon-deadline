@@ -1,4 +1,6 @@
 import os
+from dataclasses import dataclass
+from typing import List, Dict
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -43,3 +45,27 @@ def get_instance_job_envs(instance) -> "dict[str, str]":
         env = dict(sorted(env.items()))
 
     return env
+
+
+@dataclass
+class JobInfo:
+    priority: int
+    chunk_size: int
+    group: str
+    limit_groups: List[str]
+    concurrent_tasks: int
+    department: str
+    use_gpu: bool
+    job_delay: str
+    use_published: bool
+    asset_dependencies: bool
+    workfile_dependency: bool
+    multiprocess: bool
+    env_allowed_keys: List[str]
+    env_search_replace_values: Dict[str, str]
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'JobInfo':
+        # Filter the dictionary to only include keys that are fields in the dataclass
+        filtered_data = {k: v for k, v in data.items() if k in cls.__annotations__}
+        return cls(**filtered_data)
