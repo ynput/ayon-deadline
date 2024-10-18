@@ -398,7 +398,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 self.skip_integration_repre_list,
                 do_not_add_review,
                 instance.context,
-                self
+                self,
+                instance.data["deadline"]["job_info"].Frames
             )
 
             if "representations" not in instance_skeleton_data.keys():
