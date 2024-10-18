@@ -15,7 +15,7 @@ from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.settings import get_project_settings
 from ayon_core.lib.profiles_filtering import filter_profiles
 
-from ayon_deadline.lib import FARM_FAMILIES, JobInfo
+from ayon_deadline.lib import FARM_FAMILIES, DeadlineJobInfo
 
 
 class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
@@ -37,7 +37,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         attr_values = self._get_jobinfo_defaults(instance)
 
         attr_values.update(self.get_attr_values_from_data(instance.data))
-        job_info = JobInfo.from_dict(attr_values)
+        job_info = DeadlineJobInfo.from_dict(attr_values)
         instance.data["deadline"]["job_info"] = job_info
 
     @classmethod
