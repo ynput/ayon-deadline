@@ -36,46 +36,14 @@ class AfterEffectsSubmitDeadline(
     targets = ["local"]
     settings_category = "deadline"
 
-    priority = 50
-    chunk_size = 1000000
-    group = None
-    department = None
-    multiprocess = True
-
-    def get_job_info(self):
-        dln_job_info = DeadlineJobInfo(Plugin="AfterEffects")
-
-        context = self._instance.context
-
-        batch_name = os.path.basename(self._instance.data["source"])
-        if is_in_tests():
-            batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
-        dln_job_info.Name = self._instance.data["name"]
-        dln_job_info.BatchName = batch_name
+    def get_job_info(self, dln_job_info):
         dln_job_info.Plugin = "AfterEffects"
-        dln_job_info.UserName = context.data.get(
-            "deadlineUser", getpass.getuser())
+
         # Deadline requires integers in frame range
         frame_range = "{}-{}".format(
             int(round(self._instance.data["frameStart"])),
             int(round(self._instance.data["frameEnd"])))
         dln_job_info.Frames = frame_range
-
-        dln_job_info.Priority = self.priority
-        dln_job_info.Pool = self._instance.data.get("primaryPool")
-        dln_job_info.SecondaryPool = self._instance.data.get("secondaryPool")
-        dln_job_info.Group = self.group
-        dln_job_info.Department = self.department
-        dln_job_info.ChunkSize = self.chunk_size
-        dln_job_info.OutputFilename += \
-            os.path.basename(self._instance.data["expectedFiles"][0])
-        dln_job_info.OutputDirectory += \
-            os.path.dirname(self._instance.data["expectedFiles"][0])
-        dln_job_info.JobDelay = "00:00:00"
-
-        # Set job environment variables
-        dln_job_info.add_instance_job_env_vars(self._instance)
-        dln_job_info.add_render_job_env_var()
 
         return dln_job_info
 
