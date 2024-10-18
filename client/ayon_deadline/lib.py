@@ -85,10 +85,6 @@ class DeadlineKeyValueVar(dict):
             for index, (var_key, var_value) in enumerate(sorted(self.items()))
         }
 
-# def DeadlineKeyValueVar(key: str) -> Any:
-#     # Placeholder for the actual implementation
-#     return f"Value for {key}"
-
 
 class DeadlineIndexedVar(dict):
     """
