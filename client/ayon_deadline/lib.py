@@ -1,6 +1,8 @@
 import os
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List
+from dataclasses import dataclass, field, asdict
+from functools import partial
+from typing import Optional, Dict, Any
+import json
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -45,6 +47,100 @@ def get_instance_job_envs(instance) -> "dict[str, str]":
         env = dict(sorted(env.items()))
 
     return env
+
+
+class DeadlineKeyValueVar(dict):
+    """
+
+    Serializes dictionary key values as "{key}={value}" like Deadline uses
+    for EnvironmentKeyValue.
+
+    As an example:
+        EnvironmentKeyValue0="A_KEY=VALUE_A"
+        EnvironmentKeyValue1="OTHER_KEY=VALUE_B"
+
+    The keys are serialized in alphabetical order (sorted).
+
+    Example:
+        >>> var = DeadlineKeyValueVar("EnvironmentKeyValue")
+        >>> var["my_var"] = "hello"
+        >>> var["my_other_var"] = "hello2"
+        >>> var.serialize()
+
+
+    """
+    def __init__(self, key):
+        super(DeadlineKeyValueVar, self).__init__()
+        self.__key = key
+
+    def serialize(self):
+        key = self.__key
+
+        # Allow custom location for index in serialized string
+        if "{}" not in key:
+            key = key + "{}"
+
+        return {
+            key.format(index): "{}={}".format(var_key, var_value)
+            for index, (var_key, var_value) in enumerate(sorted(self.items()))
+        }
+
+# def DeadlineKeyValueVar(key: str) -> Any:
+#     # Placeholder for the actual implementation
+#     return f"Value for {key}"
+
+
+class DeadlineIndexedVar(dict):
+    """
+
+    Allows to set and query values by integer indices:
+        Query: var[1] or var.get(1)
+        Set: var[1] = "my_value"
+        Append: var += "value"
+
+    Note: Iterating the instance is not guarantueed to be the order of the
+          indices. To do so iterate with `sorted()`
+
+    """
+    def __init__(self, key):
+        super(DeadlineIndexedVar, self).__init__()
+        self.__key = key
+
+    def serialize(self):
+        key = self.__key
+
+        # Allow custom location for index in serialized string
+        if "{}" not in key:
+            key = key + "{}"
+
+        return {
+            key.format(index): value for index, value in sorted(self.items())
+        }
+
+    def next_available_index(self):
+        # Add as first unused entry
+        i = 0
+        while i in self.keys():
+            i += 1
+        return i
+
+    def update(self, data):
+        # Force the integer key check
+        for key, value in data.items():
+            self.__setitem__(key, value)
+
+    def __iadd__(self, other):
+        index = self.next_available_index()
+        self[index] = other
+        return self
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, int):
+            raise TypeError("Key must be an integer: {}".format(key))
+
+        if key < 0:
+            raise ValueError("Negative index can't be set: {}".format(key))
+        dict.__setitem__(self, key, value)
 
 
 @dataclass
@@ -189,25 +285,33 @@ class DeadlineJobInfo:
         default=None)  # Default blank (comma-separated list)
 
     # Environment
-    EnvironmentKeyValue: str = field(default_factory=lambda: "EnvironmentKeyValue")
+    EnvironmentKeyValue: Any = field(
+        default_factory=partial(DeadlineKeyValueVar, "EnvironmentKeyValue"))
     IncludeEnvironment: Optional[bool] = field(default=False)  # Default: false
-    UseJobEnvironmentOnly: Optional[bool] = field(
-        default=False)  # Default: false
+    UseJobEnvironmentOnly: Optional[bool] = field(default=False)  # Default: false
     CustomPluginDirectory: Optional[str] = field(default=None)  # Default blank
 
     # Job Extra Info
-    ExtraInfoKeyValue: str = field(default_factory=lambda: "ExtraInfoKeyValue")
+    ExtraInfo: Any = field(
+        default_factory=partial(DeadlineIndexedVar, "ExtraInfo"))
+    ExtraInfoKeyValue: Any = field(
+        default_factory=partial(DeadlineKeyValueVar, "ExtraInfoKeyValue"))
 
     OverrideTaskExtraInfoNames: Optional[bool] = field(
         default=False)  # Default false
 
-    TaskExtraInfoName: str = field(default_factory=lambda: "TaskExtraInfoName")
+    TaskExtraInfoName: Any = field(
+        default_factory=partial(DeadlineIndexedVar, "TaskExtraInfoName"))
 
-    OutputFilename: str = field(default_factory=lambda: "OutputFilename")
-    OutputFilenameTile: str = field(default_factory=lambda: "OutputFilename{}Tile")
-    OutputDirectory: str = field(default_factory=lambda: "OutputDirectory")
+    OutputFilename: Any = field(
+        default_factory=partial(DeadlineIndexedVar, "OutputFilename"))
+    OutputFilenameTile: str = field(
+        default_factory=partial(DeadlineIndexedVar, "OutputFilename{}Tile"))
+    OutputDirectory: str = field(
+        default_factory=partial(DeadlineIndexedVar, "OutputDirectory"))
 
-    AssetDependency: str = field(default_factory=lambda: "AssetDependency")
+    AssetDependency: str = field(
+        default_factory=partial(DeadlineIndexedVar, "AssetDependency"))
 
     TileJob: bool = field(default=False)
     TileJobFrame: int = field(default=0)
@@ -219,6 +323,38 @@ class DeadlineJobInfo:
     MaintenanceJobStartFrame: int = field(default=0)
     MaintenanceJobEndFrame: int = field(default=0)
 
+    def serialize(self):
+        """Return all data serialized as dictionary.
+
+        Returns:
+            OrderedDict: all serialized data.
+
+    """
+        def filter_data(a, v):
+            if isinstance(v, (DeadlineIndexedVar, DeadlineKeyValueVar)):
+                return False
+            if v is None:
+                return False
+            return True
+
+        serialized = asdict(self)
+        serialized = {k: v for k, v in serialized.items()
+                      if filter_data(k, v)}
+
+        # Custom serialize these attributes
+        for attribute in [
+            self.EnvironmentKeyValue,
+            self.ExtraInfo,
+            self.ExtraInfoKeyValue,
+            self.TaskExtraInfoName,
+            self.OutputFilename,
+            self.OutputFilenameTile,
+            self.OutputDirectory,
+            self.AssetDependency
+        ]:
+            serialized.update(attribute.serialize())
+
+        return serialized
 
     @classmethod
     def from_dict(cls, data: Dict) -> 'JobInfo':
@@ -234,8 +370,19 @@ class DeadlineJobInfo:
                          if k in cls.__annotations__}
         return cls(**filtered_data)
 
+    def add_render_job_env_var(self):
+        """Add required env vars for valid render job submission."""
+        for key, value in get_ayon_render_job_envs().items():
+            self.EnvironmentKeyValue[key] = value
 
+    def add_instance_job_env_vars(self, instance):
+        """Add all job environments as specified on the instance and context
 
-arr = {"priority": 40}
-job = DeadlineJobInfo.from_dict(arr)
-print(job.Priority)
+        Any instance `job_env` vars will override the context `job_env` vars.
+        """
+        for key, value in get_instance_job_envs(instance).items():
+            self.EnvironmentKeyValue[key] = value
+
+    def to_json(self) -> str:
+        """Serialize the dataclass instance to a JSON string."""
+        return json.dumps(asdict(self))
