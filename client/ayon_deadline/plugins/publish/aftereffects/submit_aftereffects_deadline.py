@@ -39,11 +39,13 @@ class AfterEffectsSubmitDeadline(
     def get_job_info(self, dln_job_info):
         dln_job_info.Plugin = "AfterEffects"
 
-        # Deadline requires integers in frame range
-        frame_range = "{}-{}".format(
-            int(round(self._instance.data["frameStart"])),
-            int(round(self._instance.data["frameEnd"])))
-        dln_job_info.Frames = frame_range
+        # already collected explicit values for rendered Frames
+        if not dln_job_info.Frames:
+            # Deadline requires integers in frame range
+            frame_range = "{}-{}".format(
+                int(round(self._instance.data["frameStart"])),
+                int(round(self._instance.data["frameEnd"])))
+            dln_job_info.Frames = frame_range
 
         return dln_job_info
 

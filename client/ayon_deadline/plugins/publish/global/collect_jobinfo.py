@@ -86,6 +86,31 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs = []
 
+
+        defs.extend([
+            UISeparatorDef("deadline_defs_starts"),
+        ])
+
+        defs.extend(cls._get_artist_overrides(overrides, profile))
+
+        defs.append(
+            TextDef(
+                "frames",
+                label="Frames",
+                default="",
+                tooltip="Explicit frames to be rendered. (1, 3-4)"
+            )
+        )
+
+        defs.append(
+            UISeparatorDef("deadline_defs_end")
+        )
+
+        return defs
+
+    @classmethod
+    def _get_artist_overrides(cls, overrides, profile):
+        """Provide list of Defs that could be filled by artist"""
         # should be matching to extract_jobinfo_overrides_enum
         override_defs = OrderedDict({
             "chunkSize": NumberDef(
@@ -118,11 +143,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 default=""
             ),
         })
-
-        defs.extend([
-            UISeparatorDef("options"),
-        ])
-
+        defs = []
         # The Arguments that can be modified by the Publisher
         for key, value in override_defs.items():
             if key not in overrides:
@@ -131,10 +152,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             default_value = profile[key]
             value.default = default_value
             defs.append(value)
-
-        defs.append(
-            UISeparatorDef("sep_alembic_options_end")
-        )
 
         return defs
 
@@ -202,8 +219,8 @@ class CollectMayaJobInfo(CollectJobInfo):
         "maya",
     ]
     @classmethod
-    def get_attribute_defs(cls):
-        defs = super().get_attribute_defs()
+    def get_attr_defs_for_instance(cls, create_context, instance):
+        defs = super().get_attr_defs_for_instance(create_context, instance)
 
         defs.extend([
             NumberDef(
