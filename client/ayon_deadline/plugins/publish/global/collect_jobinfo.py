@@ -32,6 +32,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     label = "Collect Deadline JobInfo"
 
     families = FARM_FAMILIES
+    targets = ["local"]
 
     def process(self, instance):
         attr_values = self._get_jobinfo_defaults(instance)
@@ -93,6 +94,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
+        # explicit
         defs.append(
             TextDef(
                 "frames",
