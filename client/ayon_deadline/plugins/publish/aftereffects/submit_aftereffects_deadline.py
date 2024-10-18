@@ -1,8 +1,6 @@
 import os
 import attr
-import getpass
 import pyblish.api
-from datetime import datetime
 
 from ayon_core.lib import (
     env_value_to_bool,
@@ -10,7 +8,6 @@ from ayon_core.lib import (
     is_in_tests,
 )
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
 @attr.s
