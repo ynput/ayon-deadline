@@ -12,7 +12,6 @@ from functools import partial
 from collections import OrderedDict
 
 
-import attr
 import requests
 
 import pyblish.api
@@ -24,8 +23,7 @@ from ayon_core.pipeline.publish import (
 from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
-
-from .lib import get_ayon_render_job_envs, get_instance_job_envs
+from ayon_core.lib import is_in_tests
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
@@ -120,7 +118,8 @@ class AbstractSubmitDeadline(
         self.scene_path = file_path
         self.log.info("Using {} for render/export.".format(file_path))
 
-        self.job_info = self.get_job_info()
+        job_info = self.get_generic_job_info(instance)
+        self.job_info = self.get_job_info(job_info)
         self.plugin_info = self.get_plugin_info()
         self.aux_files = self.get_aux_files()
 
@@ -156,6 +155,35 @@ class AbstractSubmitDeadline(
         auth = self._instance.data["deadline"]["auth"]
         verify = self._instance.data["deadline"]["verify"]
         return self.submit(payload, auth, verify)
+
+    def get_generic_job_info(self, instance):
+        context = instance.context
+
+        job_info = instance.data["deadline"]["job_info"]
+
+        # Always use the original work file name for the Job name even when
+        # rendering is done from the published Work File. The original work
+        # file name is clearer because it can also have subversion strings,
+        # etc. which are stripped for the published file.
+        src_filepath = context.data["currentFile"]
+        src_filename = os.path.basename(src_filepath)
+
+        if is_in_tests():
+            src_filename += datetime.now().strftime("%d%m%Y%H%M%S")
+
+        job_info.Name = "%s - %s" % (src_filename, instance.name)
+        job_info.BatchName = src_filename
+        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
+
+        first_expected_file = instance.data["expectedFiles"][0]
+        job_info.OutputFilename += os.path.basename(first_expected_file)
+        job_info.OutputDirectory += os.path.dirname(first_expected_file)
+
+        # Set job environment variables
+        job_info.add_instance_job_env_vars(instance)
+        job_info.add_render_job_env_var()
+
+        return job_info
 
     @abstractmethod
     def get_job_info(self):
