@@ -87,7 +87,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs = []
 
-
         defs.extend([
             UISeparatorDef("deadline_defs_starts"),
         ])
