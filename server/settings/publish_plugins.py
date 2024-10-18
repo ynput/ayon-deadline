@@ -39,7 +39,6 @@ def extract_jobinfo_overrides_enum():
         {"label": "Limit groups", "value": "limit_groups"},
         {"label": "Delay job (timecode dd:hh:mm:ss)", "value": "job_delay"},
         {"label": "Group", "value": "group"},
-
     ]
 
 
