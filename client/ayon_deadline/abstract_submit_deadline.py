@@ -164,14 +164,13 @@ class AbstractSubmitDeadline(
         # rendering is done from the published Work File. The original work
         # file name is clearer because it can also have subversion strings,
         # etc. which are stripped for the published file.
-        src_filepath = context.data["currentFile"]
-        src_filename = os.path.basename(src_filepath)
+        batch_name = os.path.basename(context.data["currentFile"])
 
         if is_in_tests():
-            src_filename += datetime.now().strftime("%d%m%Y%H%M%S")
+            batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
 
-        job_info.Name = "%s - %s" % (src_filename, instance.name)
-        job_info.BatchName = src_filename
+        job_info.Name = "%s - %s" % (batch_name, instance.name)
+        job_info.BatchName = batch_name
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
 
         first_expected_file = instance.data["expectedFiles"][0]
