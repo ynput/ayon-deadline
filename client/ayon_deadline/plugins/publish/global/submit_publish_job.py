@@ -479,9 +479,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "intent": instance.context.data.get("intent"),
             "comment": instance.context.data.get("comment"),
             "job": render_job or None,
-            "instances": instances
-        }
+            # do not carry over unnecessary DL info with large DeadlineJobInfo
+            "instances": [{k: v for k, v in inst.items() if k != "deadline"}
+                          for inst in instances]
 
+        }
         if deadline_publish_job_id:
             publish_job["deadline_publish_job_id"] = deadline_publish_job_id
 
