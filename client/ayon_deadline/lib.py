@@ -1,4 +1,8 @@
 import os
+from dataclasses import dataclass, field, asdict
+from functools import partial
+from typing import Optional, Dict, Any
+import json
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -43,3 +47,338 @@ def get_instance_job_envs(instance) -> "dict[str, str]":
         env = dict(sorted(env.items()))
 
     return env
+
+
+class DeadlineKeyValueVar(dict):
+    """
+
+    Serializes dictionary key values as "{key}={value}" like Deadline uses
+    for EnvironmentKeyValue.
+
+    As an example:
+        EnvironmentKeyValue0="A_KEY=VALUE_A"
+        EnvironmentKeyValue1="OTHER_KEY=VALUE_B"
+
+    The keys are serialized in alphabetical order (sorted).
+
+    Example:
+        >>> var = DeadlineKeyValueVar("EnvironmentKeyValue")
+        >>> var["my_var"] = "hello"
+        >>> var["my_other_var"] = "hello2"
+        >>> var.serialize()
+
+
+    """
+    def __init__(self, key):
+        super(DeadlineKeyValueVar, self).__init__()
+        self.__key = key
+
+    def serialize(self):
+        key = self.__key
+
+        # Allow custom location for index in serialized string
+        if "{}" not in key:
+            key = key + "{}"
+
+        return {
+            key.format(index): "{}={}".format(var_key, var_value)
+            for index, (var_key, var_value) in enumerate(sorted(self.items()))
+        }
+
+
+class DeadlineIndexedVar(dict):
+    """
+
+    Allows to set and query values by integer indices:
+        Query: var[1] or var.get(1)
+        Set: var[1] = "my_value"
+        Append: var += "value"
+
+    Note: Iterating the instance is not guarantueed to be the order of the
+          indices. To do so iterate with `sorted()`
+
+    """
+    def __init__(self, key):
+        super(DeadlineIndexedVar, self).__init__()
+        self.__key = key
+
+    def serialize(self):
+        key = self.__key
+
+        # Allow custom location for index in serialized string
+        if "{}" not in key:
+            key = key + "{}"
+
+        return {
+            key.format(index): value for index, value in sorted(self.items())
+        }
+
+    def next_available_index(self):
+        # Add as first unused entry
+        i = 0
+        while i in self.keys():
+            i += 1
+        return i
+
+    def update(self, data):
+        # Force the integer key check
+        for key, value in data.items():
+            self.__setitem__(key, value)
+
+    def __iadd__(self, other):
+        index = self.next_available_index()
+        self[index] = other
+        return self
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, int):
+            raise TypeError("Key must be an integer: {}".format(key))
+
+        if key < 0:
+            raise ValueError("Negative index can't be set: {}".format(key))
+        dict.__setitem__(self, key, value)
+
+
+@dataclass
+class DeadlineJobInfo:
+    """Mapping of all Deadline JobInfo attributes.
+
+    This contains all JobInfo attributes plus their default values.
+    Those attributes set to `None` shouldn't be posted to Deadline as
+    the only required one is `Plugin`.
+    """
+
+    # Required
+    Plugin: str = field(default="Untitled")
+
+    # General
+    Name: str = field(default="Untitled")
+    Frames: Optional[int] = field(default=None)  # default: 0
+    Comment: Optional[str] = field(default=None)  # default: empty
+    Department: Optional[str] = field(default=None)  # default: empty
+    BatchName: Optional[str] = field(default=None)  # default: empty
+    UserName: str = field(default=None)
+    MachineName: str = field(default=None)
+    Pool: Optional[str] = field(default=None)  # default: "none"
+    SecondaryPool: Optional[str] = field(default=None)
+    Group: Optional[str] = field(default=None)  # default: "none"
+    Priority: int = field(default=None)
+    ChunkSize: int = field(default=None)
+    ConcurrentTasks: int = field(default=None)
+    LimitConcurrentTasksToNumberOfCpus: Optional[bool] = field(
+        default=None)  # default: "true"
+    OnJobComplete: str = field(default=None)
+    SynchronizeAllAuxiliaryFiles: Optional[bool] = field(
+        default=None)  # default: false
+    ForceReloadPlugin: Optional[bool] = field(default=None)  # default: false
+    Sequential: Optional[bool] = field(default=None)  # default: false
+    SuppressEvents: Optional[bool] = field(default=None)  # default: false
+    Protected: Optional[bool] = field(default=None)  # default: false
+    InitialStatus: str = field(default="Active")
+    NetworkRoot: Optional[str] = field(default=None)
+
+    # Timeouts
+    MinRenderTimeSeconds: Optional[int] = field(default=None)  # Default: 0
+    MinRenderTimeMinutes: Optional[int] = field(default=None)  # Default: 0
+    TaskTimeoutSeconds: Optional[int] = field(default=None)  # Default: 0
+    TaskTimeoutMinutes: Optional[int] = field(default=None)  # Default: 0
+    StartJobTimeoutSeconds: Optional[int] = field(default=None)  # Default: 0
+    StartJobTimeoutMinutes: Optional[int] = field(default=None)  # Default: 0
+    InitializePluginTimeoutSeconds: Optional[int] = field(
+        default=None)  # Default: 0
+    OnTaskTimeout: Optional[str] = field(default=None)  # Default: Error
+    EnableTimeoutsForScriptTasks: Optional[bool] = field(
+        default=None)  # Default: false
+    EnableFrameTimeouts: Optional[bool] = field(default=None)  # Default: false
+    EnableAutoTimeout: Optional[bool] = field(default=None)  # Default: false
+
+    # Interruptible
+    Interruptible: Optional[bool] = field(default=None)  # Default: false
+    InterruptiblePercentage: Optional[int] = field(default=None)
+    RemTimeThreshold: Optional[int] = field(default=None)
+
+    # Notifications
+    NotificationTargets: Optional[str] = field(
+        default=None)  # Default: blank (comma-separated list of users)
+    ClearNotificationTargets: Optional[bool] = field(
+        default=None)  # Default: false
+    NotificationEmails: Optional[str] = field(
+        default=None)  # Default: blank (comma-separated list of email addresses)
+    OverrideNotificationMethod: Optional[bool] = field(
+        default=None)  # Default: false
+    EmailNotification: Optional[bool] = field(default=None)  # Default: false
+    PopupNotification: Optional[bool] = field(default=None)  # Default: false
+    NotificationNote: Optional[str] = field(default=None)  # Default: blank
+
+    # Machine Limit
+    MachineLimit: Optional[int] = field(default=None)  # Default: 0
+    MachineLimitProgress: Optional[float] = field(default=None)  # Default -1.0
+    Whitelist: Optional[str] = field(
+        default=None)  # Default blank (comma-separated list)
+    Blacklist: Optional[str] = field(
+        default=None)  # Default blank (comma-separated list)
+
+    # Limits
+    LimitGroups: Optional[str] = field(default=None)  # Default: blank
+
+    # Dependencies
+    JobDependencies: Optional[str] = field(default=None)  # Default: blank
+    JobDependencyPercentage: Optional[int] = field(default=None)  # Default: -1
+    IsFrameDependent: Optional[bool] = field(default=None)  # Default: false
+    FrameDependencyOffsetStart: Optional[int] = field(default=None)  # Default: 0
+    FrameDependencyOffsetEnd: Optional[int] = field(default=None)  # Default: 0
+    ResumeOnCompleteDependencies: Optional[bool] = field(
+        default=True)  # Default: true
+    ResumeOnDeletedDependencies: Optional[bool] = field(
+        default=False)  # Default: false
+    ResumeOnFailedDependencies: Optional[bool] = field(
+        default=False)  # Default: false
+    RequiredAssets: Optional[str] = field(
+        default=None)  # Default: blank (comma-separated list)
+    ScriptDependencies: Optional[str] = field(
+        default=None)  # Default: blank (comma-separated list)
+
+    # Failure Detection
+    OverrideJobFailureDetection: Optional[bool] = field(
+        default=False)  # Default: false
+    FailureDetectionJobErrors: Optional[int] = field(default=None)  # 0..x
+    OverrideTaskFailureDetection: Optional[bool] = field(
+        default=False)  # Default: false
+    FailureDetectionTaskErrors: Optional[int] = field(default=None)  # 0..x
+    IgnoreBadJobDetection: Optional[bool] = field(
+        default=False)  # Default: false
+    SendJobErrorWarning: Optional[bool] = field(
+        default=False)  # Default: false
+
+    # Cleanup
+    DeleteOnComplete: Optional[bool] = field(default=False)  # Default: false
+    ArchiveOnComplete: Optional[bool] = field(default=False)  # Default: false
+    OverrideAutoJobCleanup: Optional[bool] = field(
+        default=False)  # Default: false
+    OverrideJobCleanup: Optional[bool] = field(default=None)
+    JobCleanupDays: Optional[int] = field(
+        default=None)  # Default: false (not clear)
+    OverrideJobCleanupType: Optional[str] = field(default=None)
+
+    # Scheduling
+    ScheduledType: Optional[str] = field(
+        default=None)  # Default: None (<None/Once/Daily/Custom>)
+    ScheduledStartDateTime: Optional[str] = field(
+        default=None)  # <dd/MM/yyyy HH:mm>
+    ScheduledDays: Optional[int] = field(default=1)  # Default: 1
+    JobDelay: Optional[str] = field(default=None)  # <dd:hh:mm:ss>
+    Scheduled: Optional[str] = field(
+        default=None)  # <Day of the Week><Start/Stop>Time=<HH:mm:ss>
+
+    # Scripts
+    PreJobScript: Optional[str] = field(default=None)  # Default: blank
+    PostJobScript: Optional[str] = field(default=None)  # Default: blank
+    PreTaskScript: Optional[str] = field(default=None)  # Default: blank
+    PostTaskScript: Optional[str] = field(default=None)  # Default: blank
+
+    # Event Opt-Ins
+    EventOptIns: Optional[str] = field(
+        default=None)  # Default blank (comma-separated list)
+
+    # Environment
+    EnvironmentKeyValue: Any = field(
+        default_factory=partial(DeadlineKeyValueVar, "EnvironmentKeyValue"))
+    IncludeEnvironment: Optional[bool] = field(default=False)  # Default: false
+    UseJobEnvironmentOnly: Optional[bool] = field(default=False)  # Default: false
+    CustomPluginDirectory: Optional[str] = field(default=None)  # Default blank
+
+    # Job Extra Info
+    ExtraInfo: Any = field(
+        default_factory=partial(DeadlineIndexedVar, "ExtraInfo"))
+    ExtraInfoKeyValue: Any = field(
+        default_factory=partial(DeadlineKeyValueVar, "ExtraInfoKeyValue"))
+
+    OverrideTaskExtraInfoNames: Optional[bool] = field(
+        default=False)  # Default false
+
+    TaskExtraInfoName: Any = field(
+        default_factory=partial(DeadlineIndexedVar, "TaskExtraInfoName"))
+
+    OutputFilename: Any = field(
+        default_factory=partial(DeadlineIndexedVar, "OutputFilename"))
+    OutputFilenameTile: str = field(
+        default_factory=partial(DeadlineIndexedVar, "OutputFilename{}Tile"))
+    OutputDirectory: str = field(
+        default_factory=partial(DeadlineIndexedVar, "OutputDirectory"))
+
+    AssetDependency: str = field(
+        default_factory=partial(DeadlineIndexedVar, "AssetDependency"))
+
+    TileJob: bool = field(default=False)
+    TileJobFrame: int = field(default=0)
+    TileJobTilesInX: int = field(default=0)
+    TileJobTilesInY: int = field(default=0)
+    TileJobTileCount: int = field(default=0)
+
+    MaintenanceJob: bool = field(default=False)
+    MaintenanceJobStartFrame: int = field(default=0)
+    MaintenanceJobEndFrame: int = field(default=0)
+
+    def serialize(self):
+        """Return all data serialized as dictionary.
+
+        Returns:
+            OrderedDict: all serialized data.
+
+    """
+        def filter_data(a, v):
+            if isinstance(v, (DeadlineIndexedVar, DeadlineKeyValueVar)):
+                return False
+            if v is None:
+                return False
+            return True
+
+        serialized = asdict(self)
+        serialized = {k: v for k, v in serialized.items()
+                      if filter_data(k, v)}
+
+        # Custom serialize these attributes
+        for attribute in [
+            self.EnvironmentKeyValue,
+            self.ExtraInfo,
+            self.ExtraInfoKeyValue,
+            self.TaskExtraInfoName,
+            self.OutputFilename,
+            self.OutputFilenameTile,
+            self.OutputDirectory,
+            self.AssetDependency
+        ]:
+            serialized.update(attribute.serialize())
+
+        return serialized
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'JobInfo':
+
+        def capitalize(key):
+            words = key.split("_")
+            return "".join(word.capitalize() for word in words)
+
+        # Filter the dictionary to only include keys that are fields in the dataclass
+        capitalized = {capitalize(k): v for k, v in data.items()}
+        filtered_data = {k: v for k, v
+                         in capitalized.items()
+                         if k in cls.__annotations__}
+        return cls(**filtered_data)
+
+    def add_render_job_env_var(self):
+        """Add required env vars for valid render job submission."""
+        for key, value in get_ayon_render_job_envs().items():
+            self.EnvironmentKeyValue[key] = value
+
+    def add_instance_job_env_vars(self, instance):
+        """Add all job environments as specified on the instance and context
+
+        Any instance `job_env` vars will override the context `job_env` vars.
+        """
+        for key, value in get_instance_job_envs(instance).items():
+            self.EnvironmentKeyValue[key] = value
+
+    def to_json(self) -> str:
+        """Serialize the dataclass instance to a JSON string."""
+        return json.dumps(asdict(self))

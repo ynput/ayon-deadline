@@ -398,7 +398,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 self.skip_integration_repre_list,
                 do_not_add_review,
                 instance.context,
-                self
+                self,
+                instance.data["deadline"]["job_info"].Frames
             )
 
             if "representations" not in instance_skeleton_data.keys():
@@ -465,6 +466,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         # Inject deadline url to instances to query DL for job id for overrides
         for inst in instances:
+            instance.data["deadline"].pop("job_info")
             inst["deadline"] = instance.data["deadline"]
 
         # publish job file
@@ -479,9 +481,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "intent": instance.context.data.get("intent"),
             "comment": instance.context.data.get("comment"),
             "job": render_job or None,
+            # do not carry over unnecessary DL info with large DeadlineJobInfo
             "instances": instances
-        }
 
+        }
         if deadline_publish_job_id:
             publish_job["deadline_publish_job_id"] = deadline_publish_job_id
 
