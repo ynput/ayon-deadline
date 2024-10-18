@@ -6,10 +6,9 @@ It provides Deadline JobInfo data class.
 """
 import json.decoder
 from abc import abstractmethod
-import platform
 import getpass
-from functools import partial
-from collections import OrderedDict
+import os
+import datetime
 
 
 import requests
