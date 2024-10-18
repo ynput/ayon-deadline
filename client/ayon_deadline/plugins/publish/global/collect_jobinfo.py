@@ -37,6 +37,12 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         attr_values = self._get_jobinfo_defaults(instance)
 
         attr_values.update(self.get_attr_values_from_data(instance.data))
+        # do not set empty strings
+        attr_values = {
+            key: value
+            for key,value in attr_values.items()
+            if value != ""
+        }
         job_info = DeadlineJobInfo.from_dict(attr_values)
         instance.data["deadline"]["job_info"] = job_info
 
