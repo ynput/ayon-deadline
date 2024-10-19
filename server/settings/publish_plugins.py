@@ -9,17 +9,6 @@ from ayon_server.settings import (
 
 class CollectAYONServerToFarmJobModel(BaseSettingsModel):
     enabled: bool = SettingsField(False, title="Enabled")
-    ayon_api_key: str = SettingsField(
-        "",
-        title="AYON API Key",
-        description=(
-            "The AYON API key to submit with Deadline submissions. When empty"
-            " and the plug-in is enabled it will submit the user's API key."
-            " However, it is strongly recommended to provide a service user"
-            " API Key to avoid issues if a user were to be removed."
-        ),
-        placeholder="Provide an AYON Server User API key..."
-    )
 
 
 class CollectDeadlinePoolsModel(BaseSettingsModel):
@@ -392,11 +381,9 @@ class PublishPluginsModel(BaseSettingsModel):
         default_factory=CollectAYONServerToFarmJobModel,
         title="Add AYON server to farm job",
         description=(
-            "When enabled submit along your `AYON_SERVER_URL` and a"
-            " `AYON_API_KEY` to the job so you can enforce your current"
-            " server even if the Deadline Repository is configured for another"
-            " AYON server. This can be useful for example for submissions from"
-            " a separate dev server."
+            "When enabled submit along your `AYON_SERVER_URL` to the farm job."
+            " On the Deadline AYON Plug-in on the Deadline Repository settings"
+            " you can specify a custom API key for those server URLs."
         )
     )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(

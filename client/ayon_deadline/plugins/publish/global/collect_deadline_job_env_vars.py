@@ -3,11 +3,9 @@ import os
 import pyblish.api
 
 from ayon_deadline.lib import FARM_FAMILIES, JOB_ENV_DATA_KEY
-from ayon_core.pipeline import OptionalPyblishPluginMixin
 
 
-class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin,
-                                OptionalPyblishPluginMixin):
+class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     """Collect set of environment variables to submit with deadline jobs"""
     order = pyblish.api.CollectorOrder
     label = "Deadline Farm Environment Variables"
@@ -39,8 +37,6 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin,
     ]
 
     def process(self, context):
-        if not self.is_active(context.data):
-            return
 
         env = {}
         for key in self.ENV_KEYS:
@@ -51,3 +47,15 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin,
 
         # Transfer some environment variables from current context
         context.data.setdefault(JOB_ENV_DATA_KEY, {}).update(env)
+
+
+class CollectAYONServerToFarmJob(CollectDeadlineJobEnvVars):
+    label = "Add AYON Server URL to farm job"
+    settings_category = "deadline"
+
+    # Defined via settings
+    enabled = False
+
+    ENV_KEYS = [
+        "AYON_SERVER_URL"
+    ]
