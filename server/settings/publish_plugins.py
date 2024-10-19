@@ -439,8 +439,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "secondary_pool": ""
     },
     "CollectAYONServerToFarmJob": {
-        "enabled": False,
-        "ayon_api_key": ""
+        "enabled": False
     },
     "ValidateExpectedFiles": {
         "enabled": True,
