@@ -230,10 +230,40 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     priority: int = SettingsField(title="Priority")
     chunk_size: int = SettingsField(title="Chunk Size")
     group: str = SettingsField(title="Group")
+    limits: str = SettingsField(
+        title="Limit Groups",
+        description=(
+            "Enter a comma separated list of limits.\n"
+            "Specifies the limit groups that this job is a member of (default = blank)."
+        )
+    )
+    machine_limit: int = SettingsField(
+        title="Machine Limit",
+        description=(
+            "Specifies the maximum number of machines this job can be"
+            " rendered on at the same time (default = 0, which means"
+            " unlimited)."
+        )
+    )
 
     export_priority: int = SettingsField(title="Export Priority")
     export_chunk_size: int = SettingsField(title="Export Chunk Size")
     export_group: str = SettingsField(title="Export Group")
+    export_limits: str = SettingsField(
+        title="Export Limit Groups",
+        description=(
+            "Enter a comma separated list of limits.\n"
+            "Specifies the limit groups that this job is a member of (default = blank)."
+        )
+    )
+    export_machine_limit: int = SettingsField(
+        title="Export Machine Limit",
+        description=(
+            "Specifies the maximum number of machines this job can be"
+            " rendered on at the same time (default = 0, which means"
+            " unlimited)."
+        )
+    )
 
 
 class HoudiniCacheSubmitDeadlineModel(BaseSettingsModel):
@@ -245,6 +275,21 @@ class HoudiniCacheSubmitDeadlineModel(BaseSettingsModel):
     priority: int = SettingsField(title="Priority")
     chunk_size: int = SettingsField(title="Chunk Size")
     group: str = SettingsField(title="Group")
+    limits: str = SettingsField(
+        title="Limit Groups",
+        description=(
+            "Enter a comma separated list of limits.\n"
+            "Specifies the limit groups that this job is a member of (default = blank)."
+        )
+    )
+    machine_limit: int = SettingsField(
+        title="Machine Limit",
+        description=(
+            "Specifies the maximum number of machines this job can be"
+            " rendered on at the same time (default = 0, which means"
+            " unlimited)."
+        )
+    )
 
 
 class AfterEffectsSubmitDeadlineModel(BaseSettingsModel):
@@ -478,7 +523,9 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "active": True,
         "priority": 50,
         "chunk_size": 999999,
-        "group": ""
+        "group": "",
+        "limits": "",
+        "machine_limit": 0
     },
     "HoudiniSubmitDeadline": {
         "enabled": True,
@@ -487,9 +534,13 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "priority": 50,
         "chunk_size": 1,
         "group": "",
+        "limits": "",
+        "machine_limit": 0,
         "export_priority": 50,
         "export_chunk_size": 10,
-        "export_group": ""
+        "export_group": "",
+        "export_limits": "",
+        "export_machine_limit": 0
     },
     "MaxSubmitDeadline": {
         "enabled": True,
