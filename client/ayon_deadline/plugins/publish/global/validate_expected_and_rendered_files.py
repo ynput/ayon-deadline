@@ -172,6 +172,8 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         Returns:
             clique.Collection | str: Sequence collection or single file path
         """
+        # todo: we may need this pattern to stay in sync with the
+        #  implementation in `ayon_core.lib.collect_frames`
         # clique.PATTERNS["frames"] supports only `.1001.exr` not `_1001.exr`
         # so we use a customized pattern.
         pattern = "[_.](?P<index>(?P<padding>0*)\\d+)\\.\\D+\\d?$"
