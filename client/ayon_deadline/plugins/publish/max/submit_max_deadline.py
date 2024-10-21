@@ -309,7 +309,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             scene_filename = os.path.basename(scene_filepath)
             scene_directory = os.path.dirname(scene_filepath)
             current_filename, ext = os.path.splitext(scene_filename)
-            camera_scene_name = f"{current_filename}_{camera}{ext}"
+            camera_name = camera.replace(":", "_")
+            camera_scene_name = f"{current_filename}_{camera_name}{ext}"
             camera_scene_filepath = os.path.join(
                 scene_directory, f"_{current_filename}", camera_scene_name)
             plugin_data["SceneFile"] = camera_scene_filepath
