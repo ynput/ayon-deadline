@@ -1,5 +1,6 @@
 import os
 import requests
+from collections.abc import Iterable
 
 import pyblish.api
 import clique
@@ -47,18 +48,9 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
                 # originally submitted frame range
                 # todo: We should first check if Job frame range was overridden
                 #       at all so we don't unnecessarily override anything
-                file_name_template, frame_placeholder = \
-                    self._get_file_name_template_and_placeholder(
-                        expected_files)
-
-                if not file_name_template:
-                    raise RuntimeError("Unable to retrieve file_name template"
-                                       "from files: {}".format(expected_files))
-
+                collection_or_filename = self._get_collection(expected_files)
                 job_expected_files = self._get_job_expected_files(
-                    file_name_template,
-                    frame_placeholder,
-                    frame_list)
+                    collection_or_filename, frame_list)
 
                 job_files_diff = job_expected_files.difference(expected_files)
                 if job_files_diff:
@@ -139,93 +131,58 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         return all_frame_lists
 
     def _get_job_expected_files(self,
-                                file_name_template,
-                                frame_placeholder,
+                                collection_or_filename,
                                 frame_list):
         """Calculates list of names of expected rendered files.
 
         Might be different from expected files from submission if user
         explicitly and manually changed the frame list on the Deadline job.
 
+        Returns:
+            set: Set of expected file names in the staging directory.
+
         """
         # no frames in file name at all, eg 'renderCompositingMain.withLut.mov'
-        if not frame_placeholder:
-            return {file_name_template}
+        # so it is a single file
+        if isinstance(collection_or_filename, str):
+            return {collection_or_filename}
 
-        real_expected_rendered = set()
-        src_padding_exp = "%0{}d".format(len(frame_placeholder))
+        # Define all frames from the frame list
+        all_frames = set()
         for frames in frame_list:
             if '-' not in frames:  # single frame
                 frames = "{}-{}".format(frames, frames)
 
             start, end = frames.split('-')
-            for frame in range(int(start), int(end) + 1):
-                ren_name = file_name_template.replace(
-                    frame_placeholder, src_padding_exp % frame)
-                real_expected_rendered.add(ren_name)
+            all_frames.update(iter(range(int(start), int(end) + 1)))
 
-        return real_expected_rendered
+        # Return all filename for the collection with the new frames
+        collection: clique.Collection = collection_or_filename
+        collection.indexes.clear()
+        collection.indexes.update(all_frames)
+        return set(collection)  # return list of filenames
 
-    def _get_file_name_template_and_placeholder(self, files):
-        """Returns file name with frame replaced with # and this placeholder"""
-        sources_and_frameparts = self._collect_frames(files)
+    def _get_collection(self, files):
+        """Returns sequence collection or a single filepath.
 
-        file_name_template = frame_placeholder = None
-        for file_name, file_parts in sources_and_frameparts.items():
-            frame, head, tail = file_parts
-            # There might be cases where clique was unable to collect
-            # collections in `collect_frames` - thus we capture that case
-            if frame is not None:
-                frame_placeholder = "#" * len(frame)
-
-                file_name_template = os.path.basename(
-                    "{}{}{}".format(head, frame_placeholder, tail))
-            else:
-                file_name_template = file_name
-            break
-
-        return file_name_template, frame_placeholder
-
-
-    def _collect_frames(self, files):
-        """Returns dict of source path and as a tuple its frame, common head of basename 
-        and common tail if from sequence
-
-        Uses clique as most precise solution, used when anatomy template that
-        created files is not known.
-
-        Assumption is that frames are separated by '.' or '_', negative frames are not
-        allowed.
-
-        Args:
-            files(list) or (set with single value): list of source paths
+        Arguments:
+            files (Iterable[str]): Filenames to retrieve the collection from.
+                If not a sequence detected it will return the single file path.
 
         Returns:
-            dict: {'/folder/product_v001.0001.png': ('0001', ....}
+            clique.Collection | str: Sequence collection or single file path
         """
-
-        # clique.PATTERNS["frames"] supports only `.1001.exr` not `_1001.exr` so
-        # we use a customized pattern.
+        # clique.PATTERNS["frames"] supports only `.1001.exr` not `_1001.exr`
+        # so we use a customized pattern.
         pattern = "[_.](?P<index>(?P<padding>0*)\\d+)\\.\\D+\\d?$"
         patterns = [pattern]
         collections, remainder = clique.assemble(
             files, minimum_items=1, patterns=patterns)
-
-        sources_and_frameparts = {}
         if collections:
-            for collection in collections:
-                src_head = collection.head
-                src_tail = collection.tail
-
-                for index in collection.indexes:
-                    src_frame = collection.format("{padding}") % index
-                    src_file_name = "{}{}{}".format(
-                        src_head, src_frame, src_tail)
-                    sources_and_frameparts[src_file_name] = (src_frame, src_head, src_tail)
+            return collections[0]
         else:
-            sources_and_frameparts[remainder.pop()] = (None, None, None)
-
-        return sources_and_frameparts
+            # No sequence detected, we assume single frame
+            return remainder[0]
 
     def _get_job_info(self, instance, job_id):
         """Calls DL for actual job info for 'job_id'
