@@ -2,8 +2,8 @@ import os
 import requests
 
 import pyblish.api
+import clique
 
-from ayon_core.lib import collect_frames
 from ayon_deadline.abstract_submit_deadline import requests_get
 
 
@@ -168,23 +168,64 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
 
     def _get_file_name_template_and_placeholder(self, files):
         """Returns file name with frame replaced with # and this placeholder"""
-        sources_and_frames = collect_frames(files)
+        sources_and_frameparts = self._collect_frames(files)
 
         file_name_template = frame_placeholder = None
-        for file_name, frame in sources_and_frames.items():
-
+        for file_name, file_parts in sources_and_frameparts.items():
+            frame, head, tail = file_parts
             # There might be cases where clique was unable to collect
             # collections in `collect_frames` - thus we capture that case
             if frame is not None:
                 frame_placeholder = "#" * len(frame)
 
                 file_name_template = os.path.basename(
-                    file_name.replace(frame, frame_placeholder))
+                    "{}{}{}".format(head, frame_placeholder, tail))
             else:
                 file_name_template = file_name
             break
 
         return file_name_template, frame_placeholder
+
+
+    def _collect_frames(self, files):
+        """Returns dict of source path and as a tuple its frame, common head of basename 
+        and common tail if from sequence
+
+        Uses clique as most precise solution, used when anatomy template that
+        created files is not known.
+
+        Assumption is that frames are separated by '.' or '_', negative frames are not
+        allowed.
+
+        Args:
+            files(list) or (set with single value): list of source paths
+
+        Returns:
+            dict: {'/folder/product_v001.0001.png': ('0001', ....}
+        """
+
+        # clique.PATTERNS["frames"] supports only `.1001.exr` not `_1001.exr` so
+        # we use a customized pattern.
+        pattern = "[_.](?P<index>(?P<padding>0*)\\d+)\\.\\D+\\d?$"
+        patterns = [pattern]
+        collections, remainder = clique.assemble(
+            files, minimum_items=1, patterns=patterns)
+
+        sources_and_frameparts = {}
+        if collections:
+            for collection in collections:
+                src_head = collection.head
+                src_tail = collection.tail
+
+                for index in collection.indexes:
+                    src_frame = collection.format("{padding}") % index
+                    src_file_name = "{}{}{}".format(
+                        src_head, src_frame, src_tail)
+                    sources_and_frameparts[src_file_name] = (src_frame, src_head, src_tail)
+        else:
+            sources_and_frameparts[remainder.pop()] = (None, None, None)
+
+        return sources_and_frameparts
 
     def _get_job_info(self, instance, job_id):
         """Calls DL for actual job info for 'job_id'
