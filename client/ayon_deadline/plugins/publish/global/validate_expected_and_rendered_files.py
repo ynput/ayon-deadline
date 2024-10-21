@@ -162,7 +162,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         collection.indexes.update(all_frames)
         return set(collection)  # return list of filenames
 
-    def _get_collection(self, files):
+    def _get_collection(self, files) -> "Iterable[str]":
         """Returns sequence collection or a single filepath.
 
         Arguments:
