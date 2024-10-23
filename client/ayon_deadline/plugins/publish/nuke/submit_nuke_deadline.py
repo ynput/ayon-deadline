@@ -350,9 +350,16 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin,
 
         # TODO: rewrite for baking with sequences
         if baking_submission:
+            baking_chunk = 99999999
+            if '#' in render_path:
+                # baking with sequences
+                baking_chunk = instance.data["attributeValues"].get(
+                    "chunk", 99999999)
+                self.log.debug(
+                    f"Baking to image sequence, chunk size: {baking_chunk}")
             payload["JobInfo"].update({
                 "JobType": "Normal",
-                "ChunkSize": 99999999
+                "ChunkSize": baking_chunk
             })
 
         if response_data.get("_id"):
