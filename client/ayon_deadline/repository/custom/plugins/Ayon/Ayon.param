@@ -33,3 +33,12 @@ CategoryOrder=2
 Index=0
 Default=
 Description=API key for service account on Ayon Server
+
+[AyonAdditionalServerUrls]
+Type=multilinestring
+Label=Additional AYON Servers
+Category=Additional AYON Servers
+CategoryOrder=3
+Index=0
+Default=
+Description=An AYON server URL per line suffixed with `@APIKEY` from a service user on that AYON server, e.g. `http://server:5000@veryinsecureapikey`.
