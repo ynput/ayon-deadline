@@ -156,7 +156,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     }
 
     # list of family names to transfer to new family if present
-    families_transfer = ["render3d", "render2d", "ftrack", "slate"]
+    families_transfer = ["render3d", "render2d", "slate"]
     plugin_pype_version = "3.0"
 
     # poor man exclusion
