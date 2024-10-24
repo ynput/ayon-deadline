@@ -570,7 +570,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "deadline_group": "",
         "deadline_priority": 50,
         "skip_integration_repre_list": [],
-        "families_transfer": ["render3d", "render2d", "ftrack", "slate"],
+        "families_transfer": ["render3d", "render2d", "slate"],
         "aov_filter": [
             {
                 "name": "maya",
