@@ -147,31 +147,74 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         return rop_node
 
     @classmethod
-    def get_attribute_defs(cls):
+    def get_attr_defs_for_instance(cls, create_context, instance):
+        # Filtering of instance, if needed, can be customized
+        if not cls.instance_matches_plugin_families(instance):
+            return []
+
+        # Attributes logic
+        creator_attributes = instance["creator_attributes"]
+
+        visible = creator_attributes.get("farm", False)
         defs = super(HoudiniCacheSubmitDeadline, cls).get_attribute_defs()
+
         defs.extend([
             NumberDef("priority",
                       minimum=1,
                       maximum=250,
                       decimals=0,
                       default=cls.priority,
-                      label="Priority"),
+                      label="Priority",
+                      visible=visible),
             TextDef("group",
                     default=cls.group,
-                    label="Group Name"),
+                    label="Group Name",
+                    visible=visible),
             TextDef(
                 "limits",
                 default=cls.limits,
                 label="Limit Groups",
                 placeholder="value1,value2",
-                tooltip="Enter a comma separated list of limit groups."
+                tooltip="Enter a comma separated list of limit groups.",
+                visible=visible
             ),
             NumberDef(
                 "machine_limit",
                 default=cls.machine_limit,
                 label="Machine Limit",
-                tooltip="maximum number of machines for this job."
+                tooltip="maximum number of machines for this job.",
+                visible=visible
             ),
         ])
 
         return defs
+
+    @classmethod
+    def register_create_context_callbacks(cls, create_context):
+        create_context.add_value_changed_callback(cls.on_values_changed)
+
+    @classmethod
+    def on_values_changed(cls, event):
+        """Update instance attribute definitions on attribute changes."""
+
+        # Update attributes if any of the following plug-in attributes
+        # change:
+        keys = ["farm"]
+
+        for instance_change in event["changes"]:
+            instance = instance_change["instance"]
+            if not cls.instance_matches_plugin_families(instance):
+                continue
+            value_changes = instance_change["changes"]
+            plugin_attribute_changes = (
+                value_changes.get("creator_attributes", {})
+                .get(cls.__name__, {}))
+
+            if not any(key in plugin_attribute_changes for key in keys):
+                continue
+
+            # Update the attribute definitions
+            new_attrs = cls.get_attr_defs_for_instance(
+                event["create_context"], instance
+            )
+            instance.set_publish_plugin_attr_defs(cls.__name__, new_attrs)
