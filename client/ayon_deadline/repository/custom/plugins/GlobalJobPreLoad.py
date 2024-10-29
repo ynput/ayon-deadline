@@ -429,6 +429,9 @@ def get_ayon_api_key_from_additional_servers(config, server):
     if not additional_servers:
         return
 
+    if not isinstance(additional_servers, list):
+        additional_servers = additional_servers.split(";")
+
     for line in additional_servers:
         line = line.strip()
         # Ignore empty lines
