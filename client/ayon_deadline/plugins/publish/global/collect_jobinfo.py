@@ -203,18 +203,18 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             ["CollectJobInfo"]
             ["profiles"]
         )
-        if profiles:
-            profile = filter_profiles(
-                profiles,
-                {
-                    "host_names": host_name,
-                    "task_types": task_type,
-                    "task_names": task_name,
-                    # "product_type": product_type
-                }
-            )
-            if profile:
-                attr_values = profile
+
+        profile = filter_profiles(
+            profiles,
+            {
+                "host_names": host_name,
+                "task_types": task_type,
+                "task_names": task_name,
+                # "product_type": product_type
+            }
+        )
+        if profile:
+            attr_values = profile
         return attr_values
 
 
