@@ -58,18 +58,17 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             create_context.get_current_project_settings()
         )
 
-        host_name = create_context.host_name
-
-        task_name = instance["task"]
-        folder_path = instance["folderPath"]
-        folder_entity = ayon_api.get_folder_by_path(project_name,folder_path)
-        task_entity = ayon_api.get_task_by_name(
-            project_name, folder_entity["id"], task_name)
         profiles = (
             project_settings["deadline"]["publish"][cls.__name__]["profiles"])
 
         if not profiles:
             return []
+
+        host_name = create_context.host_name
+
+        task_name = instance["task"]
+        folder_path = instance["folderPath"]
+        task_entity = create_context.get_task_entity(folder_path, task_name)
 
         profile = filter_profiles(
             profiles,
