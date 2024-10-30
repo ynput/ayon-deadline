@@ -110,8 +110,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     def _get_artist_overrides(cls, overrides, profile):
         """Provide list of Defs that could be filled by artist"""
         # should be matching to extract_jobinfo_overrides_enum
-        override_defs = OrderedDict({
-            "chunkSize": NumberDef(
+        override_defs = [
+            NumberDef(
                 "chunkSize",
                 label="Frames Per Task",
                 default=1,
@@ -119,41 +119,41 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 minimum=1,
                 maximum=1000
             ),
-            "priority": NumberDef(
+            NumberDef(
                 "priority",
                 label="Priority",
                 decimals=0
             ),
-            "department": TextDef(
+            TextDef(
                 "department",
                 label="Department",
                 default="",
             ),
-            "limit_groups": TextDef(
+            TextDef(
                 "limit_groups",
                 label="Limit Groups",
                 # multiline=True,  TODO - some DCC might have issues with storing multi lines
                 default="",
                 placeholder="machine1,machine2"
             ),
-            "job_delay": TextDef(
+            TextDef(
                 "job_delay",
                 label="Delay job (timecode dd:hh:mm:ss)",
                 default=""
-            ),
-        })
+            )
+        ]
         defs = []
         # The Arguments that can be modified by the Publisher
-        for key, definition in override_defs.items():
-            if key not in overrides:
+        for attr_def in override_defs:
+            if attr_def.key not in overrides:
                 continue
 
-            default_value = profile[key]
-            if (isinstance(definition, TextDef) and
+            default_value = profile[attr_def.key]
+            if (isinstance(attr_def, TextDef) and
                     isinstance(default_value, list)):
                 default_value = ",".join(default_value)
-            definition.default = default_value
-            defs.append(definition)
+            attr_def.default = default_value
+            defs.append(attr_def)
 
         return defs
 
