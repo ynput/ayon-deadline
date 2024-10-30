@@ -197,7 +197,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             task_name = task_entity["name"]
             task_type = task_entity["taskType"]
         profiles = (
-            project_settings["deadline"]
+            project_settings
+            ["deadline"]
             ["publish"]
             ["CollectJobInfo"]
             ["profiles"]
