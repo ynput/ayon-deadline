@@ -133,6 +133,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             "limit_groups": TextDef(
                 "limit_groups",
                 label="Limit Groups",
+                # multiline=True,  TODO - some DCC might have issues with storing multi lines
                 default="",
                 placeholder="machine1,machine2"
             ),
@@ -144,13 +145,16 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         })
         defs = []
         # The Arguments that can be modified by the Publisher
-        for key, value in override_defs.items():
+        for key, definition in override_defs.items():
             if key not in overrides:
                 continue
 
             default_value = profile[key]
-            value.default = default_value
-            defs.append(value)
+            if (isinstance(definition, TextDef) and
+                    isinstance(default_value, list)):
+                default_value = ",".join(default_value)
+            definition.default = default_value
+            defs.append(definition)
 
         return defs
 
