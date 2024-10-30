@@ -1,9 +1,10 @@
 import os
 import requests
+from collections.abc import Iterable
 
 import pyblish.api
+import clique
 
-from ayon_core.lib import collect_frames
 from ayon_deadline.abstract_submit_deadline import requests_get
 
 
@@ -47,18 +48,9 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
                 # originally submitted frame range
                 # todo: We should first check if Job frame range was overridden
                 #       at all so we don't unnecessarily override anything
-                file_name_template, frame_placeholder = \
-                    self._get_file_name_template_and_placeholder(
-                        expected_files)
-
-                if not file_name_template:
-                    raise RuntimeError("Unable to retrieve file_name template"
-                                       "from files: {}".format(expected_files))
-
+                collection_or_filename = self._get_collection(expected_files)
                 job_expected_files = self._get_job_expected_files(
-                    file_name_template,
-                    frame_placeholder,
-                    frame_list)
+                    collection_or_filename, frame_list)
 
                 job_files_diff = job_expected_files.difference(expected_files)
                 if job_files_diff:
@@ -139,52 +131,60 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         return all_frame_lists
 
     def _get_job_expected_files(self,
-                                file_name_template,
-                                frame_placeholder,
+                                collection_or_filename,
                                 frame_list):
         """Calculates list of names of expected rendered files.
 
         Might be different from expected files from submission if user
         explicitly and manually changed the frame list on the Deadline job.
 
+        Returns:
+            set: Set of expected file names in the staging directory.
+
         """
         # no frames in file name at all, eg 'renderCompositingMain.withLut.mov'
-        if not frame_placeholder:
-            return {file_name_template}
+        # so it is a single file
+        if isinstance(collection_or_filename, str):
+            return {collection_or_filename}
 
-        real_expected_rendered = set()
-        src_padding_exp = "%0{}d".format(len(frame_placeholder))
+        # Define all frames from the frame list
+        all_frames = set()
         for frames in frame_list:
             if '-' not in frames:  # single frame
                 frames = "{}-{}".format(frames, frames)
 
             start, end = frames.split('-')
-            for frame in range(int(start), int(end) + 1):
-                ren_name = file_name_template.replace(
-                    frame_placeholder, src_padding_exp % frame)
-                real_expected_rendered.add(ren_name)
+            all_frames.update(iter(range(int(start), int(end) + 1)))
 
-        return real_expected_rendered
+        # Return all filename for the collection with the new frames
+        collection: clique.Collection = collection_or_filename
+        collection.indexes.clear()
+        collection.indexes.update(all_frames)
+        return set(collection)  # return list of filenames
 
-    def _get_file_name_template_and_placeholder(self, files):
-        """Returns file name with frame replaced with # and this placeholder"""
-        sources_and_frames = collect_frames(files)
+    def _get_collection(self, files) -> "Iterable[str]":
+        """Returns sequence collection or a single filepath.
 
-        file_name_template = frame_placeholder = None
-        for file_name, frame in sources_and_frames.items():
+        Arguments:
+            files (Iterable[str]): Filenames to retrieve the collection from.
+                If not a sequence detected it will return the single file path.
 
-            # There might be cases where clique was unable to collect
-            # collections in `collect_frames` - thus we capture that case
-            if frame is not None:
-                frame_placeholder = "#" * len(frame)
-
-                file_name_template = os.path.basename(
-                    file_name.replace(frame, frame_placeholder))
-            else:
-                file_name_template = file_name
-            break
-
-        return file_name_template, frame_placeholder
+        Returns:
+            clique.Collection | str: Sequence collection or single file path
+        """
+        # todo: we may need this pattern to stay in sync with the
+        #  implementation in `ayon_core.lib.collect_frames`
+        # clique.PATTERNS["frames"] supports only `.1001.exr` not `_1001.exr`
+        # so we use a customized pattern.
+        pattern = "[_.](?P<index>(?P<padding>0*)\\d+)\\.\\D+\\d?$"
+        patterns = [pattern]
+        collections, remainder = clique.assemble(
+            files, minimum_items=1, patterns=patterns)
+        if collections:
+            return collections[0]
+        else:
+            # No sequence detected, we assume single frame
+            return remainder[0]
 
     def _get_job_info(self, instance, job_id):
         """Calls DL for actual job info for 'job_id'
