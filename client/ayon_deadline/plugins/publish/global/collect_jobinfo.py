@@ -164,12 +164,13 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     @classmethod
     def on_values_changed(cls, event):
         for instance_change in event["changes"]:
+            instance = instance_change["instance"]
             if not cls.instance_matches_plugin_families(instance):
                 continue
             value_changes = instance_change["changes"]
             if "enabled" not in value_changes:
                 continue
-            instance = instance_change["instance"]
+
             new_attrs = cls.get_attr_defs_for_instance(
                 event["create_context"], instance
             )
