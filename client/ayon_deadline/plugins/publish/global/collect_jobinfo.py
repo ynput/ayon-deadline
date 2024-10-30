@@ -192,7 +192,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         project_settings = context_data["project_settings"]
         task_entity = context_data["taskEntity"]
 
-        task_name = task_type = ""
+        task_name = task_type = None
         if task_entity:
             task_name = task_entity["name"]
             task_type = task_entity["taskType"]
