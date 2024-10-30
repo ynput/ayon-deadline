@@ -49,6 +49,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
+        cls.log.info(create_context.get_current_task_entity())
         if not cls.instance_matches_plugin_families(instance):
             return []
 
@@ -83,11 +84,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if not profile or not overrides:
             return []
 
-        defs = []
-
-        defs.extend([
+        defs = [
             UISeparatorDef("deadline_defs_starts"),
-        ])
+        ]
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
@@ -163,7 +162,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         create_context.add_value_changed_callback(cls.on_values_changed)
 
     @classmethod
-    def on_value_change(cls, event):
+    def on_values_changed(cls, event):
         for instance_change in event["changes"]:
             if not cls.instance_matches_plugin_families(instance):
                 continue
