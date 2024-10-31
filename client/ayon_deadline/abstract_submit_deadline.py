@@ -22,6 +22,7 @@ from ayon_core.pipeline.publish import (
 from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
+from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_core.lib import is_in_tests
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
@@ -172,6 +173,11 @@ class AbstractSubmitDeadline(
         job_info.Name = "%s - %s" % (batch_name, instance.name)
         job_info.BatchName = batch_name
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
+
+        exp = instance.data.get("expectedFiles")
+        for filepath in iter_expected_files(exp):
+            job_info.OutputDirectory += os.path.dirname(filepath)
+            job_info.OutputFilename += os.path.basename(filepath)
 
         # Adding file dependencies.
         if not is_in_tests() and job_info.UseAssetDependencies:
