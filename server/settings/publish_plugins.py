@@ -37,12 +37,14 @@ class CollectDeadlinePoolsModel(BaseSettingsModel):
 
 def extract_jobinfo_overrides_enum():
     return [
-        {"label": "Frames per Task", "value": "chunk_size"},
-        {"label": "Priority", "value": "priority"},
         {"label": "Department", "value": "department"},
-        {"label": "Limit groups", "value": "limit_groups"},
         {"label": "Delay job (timecode dd:hh:mm:ss)", "value": "job_delay"},
+        {"label": "Frames per Task", "value": "chunk_size"},
         {"label": "Group", "value": "group"},
+        {"label": "Priority", "value": "priority"},
+        {"label": "Limit groups", "value": "limit_groups"},
+        {"label": "Machine List", "value": "machine_list"},
+        {"label": "Machine List is a Deny", "value": "machine_list_deny"},
     ]
 
 
@@ -65,9 +67,33 @@ class CollectJobInfoItem(BaseSettingsModel):
     chunk_size: int = SettingsField(999, title="Frames per Task")
     priority: int = SettingsField(50, title="Priority")
     group: str = SettingsField("", title="Group")
-    limit_groups: list[LimitGroupsSubmodel] = SettingsField(
+    limit_groups: list[str] = SettingsField(
         default_factory=list,
-        title="Limit Groups",
+        title="Limit Groups"
+    )
+    machine_limit: int = SettingsField(
+        0,
+        title="Machine Limit",
+        description=(
+            "Specifies the maximum number of machines this job can be"
+            " rendered on at the same time (default = 0, which means"
+            " unlimited)."
+        )
+    )
+    machine_list: list[str] = SettingsField(
+        default_factory=list,
+        title="Machine List",
+        description=(
+            "List of workers where submission can/cannot run "
+            "based on Machine Allow/Deny toggle."
+        )
+    )
+    machine_list_deny: bool = SettingsField(
+        False, title="Machine List is a Deny",
+        description=(
+            "Explicitly DENY list of machines to render. Without it "
+            "it will ONLY ALLOW machines from list."
+        )
     )
     concurrent_tasks: int = SettingsField(
         1, title="Number of concurrent tasks")
@@ -224,6 +250,11 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(title="Enabled")
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
+
+    node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
+        default_factory=list,
+        title="Node based Limit Groups",
+    )
 
 
 class HarmonySubmitDeadlineModel(BaseSettingsModel):
