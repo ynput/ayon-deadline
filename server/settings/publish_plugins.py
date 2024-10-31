@@ -78,8 +78,10 @@ class CollectJobInfoItem(BaseSettingsModel):
         placeholder="dd:hh:mm:ss"
     )
     use_published: bool = SettingsField(True, title="Use Published scene")
-    asset_dependencies: bool = SettingsField(True, title="Use Asset dependencies")
-    workfile_dependency: bool = SettingsField(True, title="Workfile Dependency")
+    use_asset_dependencies: bool = SettingsField(
+        True, title="Use Asset dependencies")
+    use_workfile_dependency: bool = SettingsField(
+        True, title="Workfile Dependency")
     multiprocess: bool = SettingsField(False, title="Multiprocess")
 
     env_allowed_keys: list[str] = SettingsField(

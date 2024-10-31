@@ -1,3 +1,4 @@
+import inspect
 import os
 from dataclasses import dataclass, field, asdict
 from functools import partial
@@ -319,6 +320,16 @@ class DeadlineJobInfo:
     MaintenanceJobStartFrame: int = field(default=0)
     MaintenanceJobEndFrame: int = field(default=0)
 
+
+@dataclass
+class AYONDeadlineJobInfo(DeadlineJobInfo):
+    """Contains additional AYON variables from Settings for internal logic."""
+
+    # AYON custom fields used for Settings
+    UsePublished: Optional[bool] = field(default=None)
+    UseAssetDependencies: Optional[bool] = field(default=None)
+    UseWorkfileDependency: Optional[bool] = field(default=None)
+
     def serialize(self):
         """Return all data serialized as dictionary.
 
@@ -334,8 +345,10 @@ class DeadlineJobInfo:
             return True
 
         serialized = asdict(self)
-        serialized = {k: v for k, v in serialized.items()
-                      if filter_data(k, v)}
+        serialized = {
+            k: v for k, v in serialized.items()
+            if filter_data(k, v)
+        }
 
         # Custom serialize these attributes
         for attribute in [
@@ -356,14 +369,25 @@ class DeadlineJobInfo:
     def from_dict(cls, data: Dict) -> 'JobInfo':
 
         def capitalize(key):
+            """Transform AYON looking variables from Settings to DL looking.
+
+            AYON uses python like variable names, eg use_published, DL JobInfo
+            uses capitalized, eg. UsePublished.
+            This method does the conversion based on this assumption.
+            """
             words = key.split("_")
             return "".join(word.capitalize() for word in words)
 
         # Filter the dictionary to only include keys that are fields in the dataclass
         capitalized = {capitalize(k): v for k, v in data.items()}
-        filtered_data = {k: v for k, v
-                         in capitalized.items()
-                         if k in cls.__annotations__}
+        all_fields = set(
+            DeadlineJobInfo.__annotations__).union(set(cls.__annotations__)
+        )
+        filtered_data = {
+            k: v for k, v
+            in capitalized.items()
+            if k in all_fields
+        }
         return cls(**filtered_data)
 
     def add_render_job_env_var(self):

@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
-
-import ayon_api
 import pyblish.api
 from ayon_core.lib import (
     BoolDef,
@@ -12,10 +9,9 @@ from ayon_core.lib import (
     UISeparatorDef
 )
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
-from ayon_core.settings import get_project_settings
 from ayon_core.lib.profiles_filtering import filter_profiles
 
-from ayon_deadline.lib import FARM_FAMILIES, DeadlineJobInfo
+from ayon_deadline.lib import FARM_FAMILIES, AYONDeadlineJobInfo
 
 
 class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
@@ -44,7 +40,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             for key,value in attr_values.items()
             if value != ""
         }
-        job_info = DeadlineJobInfo.from_dict(attr_values)
+        job_info = AYONDeadlineJobInfo.from_dict(attr_values)
         instance.data["deadline"]["job_info"] = job_info
 
     @classmethod
@@ -231,12 +227,10 @@ class CollectMayaJobInfo(CollectJobInfo):
                 "tile_priority",
                 label="Tile Assembler Priority",
                 decimals=0,
-                default=cls.tile_priorit
             ),
             BoolDef(
                 "strict_error_checking",
                 label="Strict Error Checking",
-                default=cls.strict_error_checking
             ),
         ])
 
