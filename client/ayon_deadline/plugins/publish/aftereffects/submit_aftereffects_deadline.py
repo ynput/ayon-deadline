@@ -36,7 +36,7 @@ class AfterEffectsSubmitDeadline(
     targets = ["local"]
     settings_category = "deadline"
 
-    def get_job_info(self, dln_job_info):
+    def get_job_info(self, dln_job_info=None):
         dln_job_info.Plugin = "AfterEffects"
 
         # already collected explicit values for rendered Frames

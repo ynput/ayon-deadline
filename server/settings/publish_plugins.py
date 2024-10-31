@@ -120,7 +120,23 @@ class CollectJobInfoItem(BaseSettingsModel):
         title="Search & replace in environment values",
         description="Replace string values in 'Name' with value from 'Value'"
     )
+    additional_job_info: str = SettingsField(
+        "",
+        title="Additional JobInfo data",
+        widget="textarea",
+        description=
+            "Dictionary (JSON parsable) to paste unto JobInfo of submission"
+    )
+    additional_plugin_info: str = SettingsField(
+        "",
+        title="Additional PluginInfo data",
+        widget="textarea",
+        description=
+            "Dictionary (JSON parsable) to paste unto PluginInfo "
+            "of submission"
+    )
     overrides: list[str] = SettingsField(
+        "",
         enum_resolver=extract_jobinfo_overrides_enum,
         title="Exposed Overrides",
         description=(
@@ -184,14 +200,6 @@ class MayaSubmitDeadlineModel(BaseSettingsModel):
     tile_assembler_plugin: str = SettingsField(
         title="Tile Assembler Plugin",
         enum_resolver=tile_assembler_enum,
-    )
-    jobInfo: str = SettingsField(
-        title="Additional JobInfo data",
-        widget="textarea",
-    )
-    pluginInfo: str = SettingsField(
-        title="Additional PluginInfo data",
-        widget="textarea",
     )
 
     scene_patches: list[ScenePatchesSubmodel] = SettingsField(
@@ -516,10 +524,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "import_reference": False,
         "strict_error_checking": True,
         "tile_priority": 50,
-        # this used to be empty dict
-        "jobInfo": "",
-        # this used to be empty dict
-        "pluginInfo": "",
         "scene_patches": []
     },
     "NukeSubmitDeadline": {

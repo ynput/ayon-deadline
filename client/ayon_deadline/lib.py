@@ -334,6 +334,9 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         default=None)  # Default blank (comma-separated list)
     MachineListDeny: Optional[bool] = field(default=None)
 
+    AdditionalJobInfo: Optional[str] = field(default=None)  # Default: blank
+    AdditionalPluginInfo: Optional[str] = field(default=None)  # Default: blank
+
     def serialize(self):
         """Return all data serialized as dictionary.
 

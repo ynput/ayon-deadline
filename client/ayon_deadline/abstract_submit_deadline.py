@@ -123,6 +123,8 @@ class AbstractSubmitDeadline(
         self.plugin_info = self.get_plugin_info()
         self.aux_files = self.get_aux_files()
 
+        self.apply_additional_info(job_info)
+
         job_id = self.process_submission()
         self.log.info("Submitted job to Deadline: {}.".format(job_id))
 
@@ -130,8 +132,9 @@ class AbstractSubmitDeadline(
         if instance.data.get("splitRender"):
             self.log.info("Splitting export and render in two jobs")
             self.log.info("Export job id: %s", job_id)
-            render_job_info = self.get_job_info(dependency_job_ids=[job_id])
-            render_plugin_info = self.get_plugin_info(job_type="render")
+            render_job_info = self.get_job_info(
+                job_info=job_info, dependency_job_ids=[job_id])
+            render_plugin_info = self.get_plugin_info(ob_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,
                 plugin_info=render_plugin_info
@@ -198,14 +201,30 @@ class AbstractSubmitDeadline(
 
         return job_info
 
+    def apply_additional_info(self, job_info):
+        """Adds additional fields and values which aren't explicitly impl."""
+        if job_info.AdditionalJobInfo:
+            for key, value in json.loads(job_info.AdditionalJobInfo).items():
+                setattr(self.job_info, key, value)
+
+        if job_info.AdditionalPluginInfo:
+            plugin_info = json.loads(job_info.AdditionalPluginInfo)
+            for key, value in plugin_info.items():
+                # self.plugin_info is dict, should it be?
+                self.plugin_info[key] = value
+
     @abstractmethod
-    def get_job_info(self):
+    def get_job_info(self, job_info=None, **kwargs):
         """Return filled Deadline JobInfo.
 
         This is host/plugin specific implementation of how to fill data in.
 
+        Args:
+            job_info (AYONDeadlineJobInfo): dataclass object with collected
+                values from Settings and Publisher UI
+
         See:
-            :class:`DeadlineJobInfo`
+            :class:`AYONDeadlineJobInfo`
 
         Returns:
             :class:`DeadlineJobInfo`: Filled Deadline JobInfo.
@@ -214,7 +233,7 @@ class AbstractSubmitDeadline(
         pass
 
     @abstractmethod
-    def get_plugin_info(self):
+    def get_plugin_info(self, **kwargs):
         """Return filled Deadline PluginInfo.
 
         This is host/plugin specific implementation of how to fill data in.
