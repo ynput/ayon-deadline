@@ -173,9 +173,18 @@ class AbstractSubmitDeadline(
         job_info.BatchName = batch_name
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
 
-        first_expected_file = instance.data["expectedFiles"][0]
-        job_info.OutputFilename += os.path.basename(first_expected_file)
-        job_info.OutputDirectory += os.path.dirname(first_expected_file)
+        # Adding file dependencies.
+        if not is_in_tests() and job_info.UseAssetDependencies:
+            dependencies = instance.context.data.get("fileDependencies", [])
+            for dependency in dependencies:
+                job_info.AssetDependency += dependency
+
+        machine_list = job_info.MachineList
+        if machine_list:
+            if job_info.MachineListDeny:
+                job_info.Blacklist = machine_list
+            else:
+                job_info.Whitelist = machine_list
 
         # Set job environment variables
         job_info.add_instance_job_env_vars(instance)

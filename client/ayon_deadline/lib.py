@@ -330,6 +330,10 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
     UseAssetDependencies: Optional[bool] = field(default=None)
     UseWorkfileDependency: Optional[bool] = field(default=None)
 
+    MachineList: Optional[str] = field(
+        default=None)  # Default blank (comma-separated list)
+    MachineListDeny: Optional[bool] = field(default=None)
+
     def serialize(self):
         """Return all data serialized as dictionary.
 
