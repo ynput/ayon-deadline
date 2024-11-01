@@ -1,6 +1,5 @@
 import os
 import attr
-import getpass
 import pyblish.api
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +7,6 @@ from pathlib import Path
 from ayon_core.lib import is_in_tests
 
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
 @attr.s
@@ -42,53 +40,22 @@ class UnrealSubmitDeadline(
     order = pyblish.api.IntegratorOrder + 0.1
     hosts = ["unreal"]
     families = ["render.farm"]  # cannot be "render' as that is integrated
-    use_published = True
     targets = ["local"]
 
-    priority = 50
-    chunk_size = 1000000
-    group = None
-    department = None
-    multiprocess = True
+    def get_job_info(self, job_info=None):
+        instance = self._instance
 
-    def get_job_info(self):
-        dln_job_info = DeadlineJobInfo(Plugin="UnrealEngine5")
+        job_info.BatchName = self._get_batch_name()
+        job_info.Plugin = "UnrealEngine5"
 
-        context = self._instance.context
-
-        batch_name = self._get_batch_name()
-        dln_job_info.Name = self._instance.data["name"]
-        dln_job_info.BatchName = batch_name
-        dln_job_info.Plugin = "UnrealEngine5"
-        dln_job_info.UserName = context.data.get(
-            "deadlineUser", getpass.getuser())
-        if self._instance.data["frameEnd"] > self._instance.data["frameStart"]:
+        if instance.data["frameEnd"] > instance.data["frameStart"]:
             # Deadline requires integers in frame range
             frame_range = "{}-{}".format(
-                int(round(self._instance.data["frameStart"])),
-                int(round(self._instance.data["frameEnd"])))
-            dln_job_info.Frames = frame_range
+                int(round(instance.data["frameStart"])),
+                int(round(instance.data["frameEnd"])))
+            job_info.Frames = frame_range
 
-        dln_job_info.Priority = self.priority
-        dln_job_info.Pool = self._instance.data.get("primaryPool")
-        dln_job_info.SecondaryPool = self._instance.data.get("secondaryPool")
-        dln_job_info.Group = self.group
-        dln_job_info.Department = self.department
-        dln_job_info.ChunkSize = self.chunk_size
-        dln_job_info.OutputFilename += \
-            os.path.basename(self._instance.data["file_names"][0])
-        dln_job_info.OutputDirectory += \
-            os.path.dirname(self._instance.data["expectedFiles"][0])
-        dln_job_info.JobDelay = "00:00:00"
-
-        dln_job_info.add_instance_job_env_vars(self._instance)
-        dln_job_info.EnvironmentKeyValue["AYON_UNREAL_VERSION"] = (
-            self._instance.data)["app_version"]
-
-        # to recognize render jobs
-        dln_job_info.add_render_job_env_var()
-
-        return dln_job_info
+        return job_info
 
     def get_plugin_info(self):
         deadline_plugin_info = DeadlinePluginInfo()
