@@ -1,13 +1,7 @@
 import os
-import getpass
 import copy
 import attr
 
-from ayon_core.lib import (
-    TextDef,
-    BoolDef,
-    NumberDef,
-)
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
@@ -21,7 +15,6 @@ from ayon_max.api.lib import (
 )
 from ayon_max.api.lib_rendersettings import RenderSettings
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
 @attr.s
@@ -41,45 +34,11 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     targets = ["local"]
     settings_category = "deadline"
 
-    use_published = True
-    priority = 50
-    chunk_size = 1
-    jobInfo = {}
-    pluginInfo = {}
-    group = None
-
-    @classmethod
-    def apply_settings(cls, project_settings):
-        settings = project_settings["deadline"]["publish"]["MaxSubmitDeadline"]  # noqa
-
-        # Take some defaults from settings
-        cls.use_published = settings.get("use_published",
-                                         cls.use_published)
-        cls.priority = settings.get("priority",
-                                    cls.priority)
-        cls.chuck_size = settings.get("chunk_size", cls.chunk_size)
-        cls.group = settings.get("group", cls.group)
-    # TODO: multiple camera instance, separate job infos
-    def get_job_info(self):
-        job_info = DeadlineJobInfo(Plugin="3dsmax")
-
-        # todo: test whether this works for existing production cases
-        #       where custom jobInfo was stored in the project settings
-        job_info.update(self.jobInfo)
+    def get_job_info(self, job_info=None):
 
         instance = self._instance
-        context = instance.context
-        # Always use the original work file name for the Job name even when
-        # rendering is done from the published Work File. The original work
-        # file name is clearer because it can also have subversion strings,
-        # etc. which are stripped for the published file.
+        job_info.Plugin = instance.data.get("plugin") or "3dsmax"
 
-        src_filepath = context.data["currentFile"]
-        src_filename = os.path.basename(src_filepath)
-        job_info.Name = "%s - %s" % (src_filename, instance.name)
-        job_info.BatchName = src_filename
-        job_info.Plugin = instance.data["plugin"]
-        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
         job_info.EnableAutoTimeout = True
         # Deadline requires integers in frame range
         frames = "{start}-{end}".format(
@@ -88,57 +47,10 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         )
         job_info.Frames = frames
 
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-
-        attr_values = self.get_attr_values_from_data(instance.data)
-
-        job_info.ChunkSize = attr_values.get("chunkSize", 1)
-        job_info.Comment = context.data.get("comment")
-        job_info.Priority = attr_values.get("priority", self.priority)
-        job_info.Group = attr_values.get("group", self.group)
-
-        # Add options from RenderGlobals
-        render_globals = instance.data.get("renderGlobals", {})
-        job_info.update(render_globals)
-
-        keys = [
-            "FTRACK_API_KEY",
-            "FTRACK_API_USER",
-            "FTRACK_SERVER",
-            "OPENPYPE_SG_USER",
-            "AYON_BUNDLE_NAME",
-            "AYON_DEFAULT_SETTINGS_VARIANT",
-            "AYON_PROJECT_NAME",
-            "AYON_FOLDER_PATH",
-            "AYON_TASK_NAME",
-            "AYON_WORKDIR",
-            "AYON_APP_NAME",
-            "AYON_IN_TESTS",
-        ]
-
-        environment = {
-            key: os.environ[key]
-            for key in keys
-            if key in os.environ
-        }
-
-        for key in keys:
-            value = environment.get(key)
-            if not value:
-                continue
-            job_info.EnvironmentKeyValue[key] = value
-
-        job_info.add_instance_job_env_vars(self._instance)
-        job_info.add_render_job_env_var()
-
-        # Add list of expected files to job
-        # ---------------------------------
-        if not instance.data.get("multiCamera"):
-            exp = instance.data.get("expectedFiles")
-            for filepath in self._iter_expected_files(exp):
-                job_info.OutputDirectory += os.path.dirname(filepath)
-                job_info.OutputFilename += os.path.basename(filepath)
+        # do not add expected files for multiCamera
+        if instance.data.get("multiCamera"):
+            job_info.OutputDirectory = None
+            job_info.OutputFilename = None
 
         return job_info
 
@@ -153,10 +65,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         )
 
         plugin_payload = attr.asdict(plugin_info)
-
-        # Patching with pluginInfo from settings
-        for key, value in self.pluginInfo.items():
-            plugin_payload[key] = value
 
         return plugin_payload
 
@@ -400,32 +308,3 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         else:
             for file in exp:
                 yield file
-
-    @classmethod
-    def get_attribute_defs(cls):
-        defs = super(MaxSubmitDeadline, cls).get_attribute_defs()
-        defs.extend([
-            BoolDef("use_published",
-                    default=cls.use_published,
-                    label="Use Published Scene"),
-
-            NumberDef("priority",
-                      minimum=1,
-                      maximum=250,
-                      decimals=0,
-                      default=cls.priority,
-                      label="Priority"),
-
-            NumberDef("chunkSize",
-                      minimum=1,
-                      maximum=50,
-                      decimals=0,
-                      default=cls.chunk_size,
-                      label="Frame Per Task"),
-
-            TextDef("group",
-                    default=cls.group,
-                    label="Group Name"),
-        ])
-
-        return defs
