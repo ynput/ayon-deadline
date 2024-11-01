@@ -82,7 +82,6 @@ class AbstractSubmitDeadline(
 
     import_reference = False
     asset_dependencies = False
-    default_priority = 50
 
     def __init__(self, *args, **kwargs):
         super(AbstractSubmitDeadline, self).__init__(*args, **kwargs)
