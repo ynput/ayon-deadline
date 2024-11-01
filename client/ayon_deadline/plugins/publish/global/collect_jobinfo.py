@@ -60,11 +60,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         folder_path = instance["folderPath"]
         task_entity = create_context.get_task_entity(folder_path, task_name)
 
+        task_name = task_type = None
+        if task_entity:
+            task_name = task_entity["name"]
+            task_type = task_entity["taskType"]
         profile = filter_profiles(
             cls.profiles,
             {
                 "host_names": host_name,
-                "task_types": task_entity["taskType"],
+                "task_types": task_type,
                 "task_names": task_name,
                 # "product_type": product_type
             }
