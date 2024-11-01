@@ -4,7 +4,7 @@
 This module is taking care of submitting job from Maya to Deadline. It
 creates job and set correct environments. Its behavior is controlled by
 ``DEADLINE_REST_URL`` environment variable - pointing to Deadline Web Service
-and :data:`MayaSubmitDeadline.use_published` property telling Deadline to
+and :data:`AYONDeadlineJobInfo.UsePublished` property telling Deadline to
 use published scene workfile or not.
 
 If ``vrscene`` or ``assscene`` are detected in families, it will first
@@ -179,8 +179,8 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         output_dir = os.path.dirname(first_file)
         instance.data["outputDir"] = output_dir
 
-        # Patch workfile (only when use_published is enabled)
-        if self.use_published:
+        # Patch workfile (only when UsePublished is enabled)
+        if self.job_info.UsePublished:
             self._patch_workfile()
 
         # Gather needed data ------------------------------------------------
