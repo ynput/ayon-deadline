@@ -461,7 +461,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         job_info = copy.deepcopy(self.job_info)
 
-        if not is_in_tests() and self.asset_dependencies:
+        if not is_in_tests() and self.job_info.UseAssetDependencies:
             # Asset dependency to wait for at least the scene file to sync.
             job_info.AssetDependency += self.scene_path
 

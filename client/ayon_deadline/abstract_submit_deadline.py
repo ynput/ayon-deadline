@@ -81,7 +81,6 @@ class AbstractSubmitDeadline(
     order = pyblish.api.IntegratorOrder + 0.1
 
     import_reference = False
-    asset_dependencies = False
 
     def __init__(self, *args, **kwargs):
         super(AbstractSubmitDeadline, self).__init__(*args, **kwargs)
