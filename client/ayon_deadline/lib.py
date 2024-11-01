@@ -330,13 +330,6 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
     UseAssetDependencies: Optional[bool] = field(default=None)
     UseWorkfileDependency: Optional[bool] = field(default=None)
 
-    MachineList: Optional[str] = field(
-        default=None)  # Default blank (comma-separated list)
-    MachineListDeny: Optional[bool] = field(default=None)
-
-    AdditionalJobInfo: Optional[str] = field(default=None)  # Default: blank
-    AdditionalPluginInfo: Optional[str] = field(default=None)  # Default: blank
-
     def serialize(self):
         """Return all data serialized as dictionary.
 
@@ -375,27 +368,15 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
     @classmethod
     def from_dict(cls, data: Dict) -> 'JobInfo':
 
-        def capitalize(key):
-            """Transform AYON looking variables from Settings to DL looking.
-
-            AYON uses python like variable names, eg use_published, DL JobInfo
-            uses capitalized, eg. UsePublished.
-            This method does the conversion based on this assumption.
-            """
-            words = key.split("_")
-            return "".join(word.capitalize() for word in words)
-
-        # Filter the dictionary to only include keys that are fields in the dataclass
-        capitalized = {capitalize(k): v for k, v in data.items()}
-        all_fields = set(
-            DeadlineJobInfo.__annotations__).union(set(cls.__annotations__)
-        )
-        filtered_data = {
-            k: v for k, v
-            in capitalized.items()
-            if k in all_fields
+        implemented_field_values = {
+            "ChunkSize": data["chunk_size"],
+            "Priority": data["priority"],
+            "MachineLimit": data["machine_limit"],
+            "ConcurrentTasks": data["concurrent_tasks"],
+            "Frames": data["frames"]
         }
-        return cls(**filtered_data)
+
+        return cls(**implemented_field_values)
 
     def add_render_job_env_var(self):
         """Add required env vars for valid render job submission."""

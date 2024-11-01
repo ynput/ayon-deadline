@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 import pyblish.api
 from ayon_core.lib import (
     BoolDef,
@@ -11,7 +13,10 @@ from ayon_core.lib import (
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.lib.profiles_filtering import filter_profiles
 
-from ayon_deadline.lib import FARM_FAMILIES, AYONDeadlineJobInfo
+from ayon_deadline.lib import (
+    FARM_FAMILIES,
+    AYONDeadlineJobInfo,
+)
 
 
 class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
@@ -43,7 +48,30 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             if value != ""
         }
         job_info = AYONDeadlineJobInfo.from_dict(attr_values)
+
+        self._handle_machine_list(attr_values, job_info)
+
+        self._handle_additional_jobinfo(attr_values, job_info)
+
         instance.data["deadline"]["job_info"] = job_info
+
+        # pass through explicitly key and values for PluginInfo
+        plugin_info_data = json.loads(attr_values["additional_plugin_info"])
+        instance.data["deadline"]["plugin_info_data"] = plugin_info_data
+
+    def _handle_additional_jobinfo(self,attr_values, job_info):
+        """Adds not explicitly implemented fields by values from Settings."""
+        additional_job_info = attr_values["additional_job_info"]
+        for key, value in json.loads(additional_job_info).items():
+            setattr(job_info, key, value)
+
+    def _handle_machine_list(self, attr_values, job_info):
+        machine_list = attr_values["machine_list"]
+        if machine_list:
+            if job_info.MachineListDeny:
+                job_info.Blacklist = machine_list
+            else:
+                job_info.Whitelist = machine_list
 
     @classmethod
     def apply_settings(cls, project_settings):

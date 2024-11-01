@@ -123,7 +123,8 @@ class AbstractSubmitDeadline(
         self.plugin_info = self.get_plugin_info()
         self.aux_files = self.get_aux_files()
 
-        self.apply_additional_info(job_info)
+        plugin_info_data = instance.data["deadline"]["plugin_info_data"]
+        self.apply_additional_plugin_info(plugin_info_data)
 
         job_id = self.process_submission()
         self.log.info("Submitted job to Deadline: {}.".format(job_id))
@@ -188,30 +189,17 @@ class AbstractSubmitDeadline(
             for dependency in dependencies:
                 job_info.AssetDependency += dependency
 
-        machine_list = job_info.MachineList
-        if machine_list:
-            if job_info.MachineListDeny:
-                job_info.Blacklist = machine_list
-            else:
-                job_info.Whitelist = machine_list
-
         # Set job environment variables
         job_info.add_instance_job_env_vars(instance)
         job_info.add_render_job_env_var()
 
         return job_info
 
-    def apply_additional_info(self, job_info):
+    def apply_additional_plugin_info(self, plugin_info_data):
         """Adds additional fields and values which aren't explicitly impl."""
-        if job_info.AdditionalJobInfo:
-            for key, value in json.loads(job_info.AdditionalJobInfo).items():
-                setattr(self.job_info, key, value)
-
-        if job_info.AdditionalPluginInfo:
-            plugin_info = json.loads(job_info.AdditionalPluginInfo)
-            for key, value in plugin_info.items():
-                # self.plugin_info is dict, should it be?
-                self.plugin_info[key] = value
+        for key, value in plugin_info_data.items():
+            # self.plugin_info is dict, should it be?
+            self.plugin_info[key] = value
 
     @abstractmethod
     def get_job_info(self, job_info=None, **kwargs):

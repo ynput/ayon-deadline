@@ -18,8 +18,6 @@ Attributes:
 
 from __future__ import print_function
 import os
-import json
-import getpass
 import copy
 import re
 import hashlib
@@ -45,7 +43,7 @@ from ayon_maya.api.lib import get_attr_in_layer
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
+from ayon_deadline.lib import FARM_FAMILIES
 
 
 def _validate_deadline_bool_value(instance, attribute, value):
@@ -109,64 +107,14 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     settings_category = "deadline"
 
     tile_assembler_plugin = "DraftTileAssembler"
-    priority = 50
-    tile_priority = 50
-    limit = []  # limit groups
-    jobInfo = {}
     pluginInfo = {}
-    group = "none"
-    strict_error_checking = True
 
-    @classmethod
-    def apply_settings(cls, project_settings):
-        settings = project_settings["deadline"]["publish"]["MayaSubmitDeadline"]  # noqa
-
-        # Take some defaults from settings
-        cls.asset_dependencies = settings.get("asset_dependencies",
-                                              cls.asset_dependencies)
-        cls.import_reference = settings.get("import_reference",
-                                            cls.import_reference)
-        cls.use_published = settings.get("use_published", cls.use_published)
-        cls.priority = settings.get("priority", cls.priority)
-        cls.tile_priority = settings.get("tile_priority", cls.tile_priority)
-        cls.limit = settings.get("limit", cls.limit)
-        cls.group = settings.get("group", cls.group)
-        cls.strict_error_checking = settings.get("strict_error_checking",
-                                                 cls.strict_error_checking)
-        job_info = settings.get("jobInfo")
-        if job_info:
-            job_info = json.loads(job_info)
-        plugin_info = settings.get("pluginInfo")
-        if plugin_info:
-            plugin_info = json.loads(plugin_info)
-
-        cls.jobInfo = job_info or cls.jobInfo
-        cls.pluginInfo = plugin_info or cls.pluginInfo
-
-    def get_job_info(self):
-        job_info = DeadlineJobInfo(Plugin="MayaBatch")
-
-        # todo: test whether this works for existing production cases
-        #       where custom jobInfo was stored in the project settings
-        job_info.update(self.jobInfo)
+    def get_job_info(self, job_info=None):
+        job_info.Plugin = "MayaBatch"
 
         instance = self._instance
-        context = instance.context
 
-        # Always use the original work file name for the Job name even when
-        # rendering is done from the published Work File. The original work
-        # file name is clearer because it can also have subversion strings,
-        # etc. which are stripped for the published file.
-        src_filepath = context.data["currentFile"]
-        src_filename = os.path.basename(src_filepath)
-
-        if is_in_tests():
-            src_filename += datetime.now().strftime("%d%m%Y%H%M%S")
-
-        job_info.Name = "%s - %s" % (src_filename, instance.name)
-        job_info.BatchName = src_filename
         job_info.Plugin = instance.data.get("mayaRenderPlugin", "MayaBatch")
-        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
 
         # Deadline requires integers in frame range
         frames = "{start}-{end}x{step}".format(
@@ -175,55 +123,6 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             step=int(instance.data["byFrameStep"]),
         )
         job_info.Frames = frames
-
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-        job_info.Comment = context.data.get("comment")
-        job_info.Priority = instance.data.get("priority", self.priority)
-
-        if self.group != "none" and self.group:
-            job_info.Group = self.group
-
-        if self.limit:
-            job_info.LimitGroups = ",".join(self.limit)
-
-        attr_values = self.get_attr_values_from_data(instance.data)
-        render_globals = instance.data.setdefault("renderGlobals", dict())
-        machine_list = attr_values.get("machineList", "")
-        if machine_list:
-            if attr_values.get("whitelist", True):
-                machine_list_key = "Whitelist"
-            else:
-                machine_list_key = "Blacklist"
-            render_globals[machine_list_key] = machine_list
-
-        job_info.Priority = attr_values.get("priority")
-        job_info.ChunkSize = attr_values.get("chunkSize")
-
-        # Add options from RenderGlobals
-        render_globals = instance.data.get("renderGlobals", {})
-        job_info.update(render_globals)
-
-        # Set job environment variables
-        job_info.add_render_job_env_var()
-        job_info.add_instance_job_env_vars(self._instance)
-
-        # to recognize render jobs
-        job_info.add_render_job_env_var()
-        job_info.EnvironmentKeyValue["AYON_LOG_NO_COLORS"] = "1"
-
-        # Adding file dependencies.
-        if not is_in_tests() and self.asset_dependencies:
-            dependencies = instance.context.data["fileDependencies"]
-            for dependency in dependencies:
-                job_info.AssetDependency += dependency
-
-        # Add list of expected files to job
-        # ---------------------------------
-        exp = instance.data.get("expectedFiles")
-        for filepath in iter_expected_files(exp):
-            job_info.OutputDirectory += os.path.dirname(filepath)
-            job_info.OutputFilename += os.path.basename(filepath)
 
         return job_info
 
@@ -264,10 +163,6 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         )
 
         plugin_payload = attr.asdict(plugin_info)
-
-        # Patching with pluginInfo from settings
-        for key, value in self.pluginInfo.items():
-            plugin_payload[key] = value
 
         return plugin_payload
 
@@ -755,45 +650,6 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             start=int(self._instance.data["frameStartHandle"]),
             end=int(self._instance.data["frameEndHandle"]),
         )
-
-    @classmethod
-    def get_attribute_defs(cls):
-        defs = super(MayaSubmitDeadline, cls).get_attribute_defs()
-
-        defs.extend([
-            NumberDef("priority",
-                      label="Priority",
-                      default=cls.default_priority,
-                      decimals=0),
-            NumberDef("chunkSize",
-                      label="Frames Per Task",
-                      default=1,
-                      decimals=0,
-                      minimum=1,
-                      maximum=1000),
-            TextDef("machineList",
-                    label="Machine List",
-                    default="",
-                    placeholder="machine1,machine2"),
-            EnumDef("whitelist",
-                    label="Machine List (Allow/Deny)",
-                    items={
-                        True: "Allow List",
-                        False: "Deny List",
-                    },
-                    default=False),
-            NumberDef("tile_priority",
-                      label="Tile Assembler Priority",
-                      decimals=0,
-                      default=cls.tile_priority),
-            BoolDef("strict_error_checking",
-                    label="Strict Error Checking",
-                    default=cls.strict_error_checking),
-
-        ])
-
-        return defs
-
 
 def _format_tiles(
         filename,
