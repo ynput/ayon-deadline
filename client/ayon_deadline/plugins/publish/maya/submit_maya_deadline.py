@@ -107,7 +107,6 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     settings_category = "deadline"
 
     tile_assembler_plugin = "DraftTileAssembler"
-    pluginInfo = {}
 
     def get_job_info(self, job_info=None):
         job_info.Plugin = "MayaBatch"
