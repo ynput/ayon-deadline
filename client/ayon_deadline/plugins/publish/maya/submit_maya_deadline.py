@@ -109,8 +109,6 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     tile_assembler_plugin = "DraftTileAssembler"
 
     def get_job_info(self, job_info=None):
-        job_info.Plugin = "MayaBatch"
-
         instance = self._instance
 
         job_info.Plugin = instance.data.get("mayaRenderPlugin", "MayaBatch")
