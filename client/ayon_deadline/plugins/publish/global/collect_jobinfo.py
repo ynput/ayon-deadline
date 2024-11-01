@@ -209,9 +209,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 # "product_type": product_type
             }
         )
-        if profile:
-            attr_values = profile
-        return attr_values
+        return profile or {}
 
 
 class CollectMayaJobInfo(CollectJobInfo):
