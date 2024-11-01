@@ -81,7 +81,6 @@ class AbstractSubmitDeadline(
     order = pyblish.api.IntegratorOrder + 0.1
 
     import_reference = False
-    use_published = True
     asset_dependencies = False
     default_priority = 50
 
@@ -102,26 +101,13 @@ class AbstractSubmitDeadline(
 
         assert self._deadline_url, "Requires Deadline Webservice URL"
 
-        file_path = None
-        if self.use_published:
-            if not self.import_reference:
-                file_path = self.from_published_scene()
-            else:
-                self.log.info("use the scene with imported reference for rendering") # noqa
-                file_path = context.data["currentFile"]
-
-        # fallback if nothing was set
-        if not file_path:
-            self.log.warning("Falling back to workfile")
-            file_path = context.data["currentFile"]
-
-        self.scene_path = file_path
-        self.log.info("Using {} for render/export.".format(file_path))
-
         job_info = self.get_generic_job_info(instance)
         self.job_info = self.get_job_info(job_info)
         self.plugin_info = self.get_plugin_info()
         self.aux_files = self.get_aux_files()
+
+        self._set_scene_path(
+            context.data["currentFile"], job_info.UsePublished)
 
         plugin_info_data = instance.data["deadline"]["plugin_info_data"]
         self.apply_additional_plugin_info(plugin_info_data)
@@ -144,6 +130,24 @@ class AbstractSubmitDeadline(
             verify = instance.data["deadline"]["verify"]
             render_job_id = self.submit(payload, auth, verify)
             self.log.info("Render job id: %s", render_job_id)
+
+    def _set_scene_path(self, current_file, use_published):
+        """Points which workfile should be rendered"""
+        file_path = None
+        if use_published:
+            if not self.import_reference:  # TODO remove or implement
+                file_path = self.from_published_scene()
+            else:
+                self.log.info(
+                    "use the scene with imported reference for rendering")
+                file_path = current_file
+
+        # fallback if nothing was set
+        if not file_path:
+            self.log.warning("Falling back to workfile")
+            file_path = current_file
+        self.scene_path = file_path
+        self.log.info("Using {} for render/export.".format(file_path))
 
     def process_submission(self):
         """Process data for submission.

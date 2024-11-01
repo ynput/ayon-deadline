@@ -373,7 +373,12 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             "Priority": data["priority"],
             "MachineLimit": data["machine_limit"],
             "ConcurrentTasks": data["concurrent_tasks"],
-            "Frames": data["frames"]
+            "Frames": data["frames"],
+
+            # fields needed for logic, values unavailable during collection
+            "UsePublished": data["use_published"],
+            "UseAssetDependencies": data["use_asset_dependencies"],
+            "UseWorkfileDependency": data["use_workfile_dependency"]
         }
 
         return cls(**implemented_field_values)
