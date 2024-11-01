@@ -180,6 +180,11 @@ class AbstractSubmitDeadline(
         job_info.Name = "%s - %s" % (batch_name, instance.name)
         job_info.BatchName = batch_name
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
+        job_info.Comment = context.data.get("comment")
+
+        # TODO switch to job_info collector
+        job_info.Pool = instance.data.get("primaryPool")
+        job_info.SecondaryPool = instance.data.get("secondaryPool")
 
         exp = instance.data.get("expectedFiles")
         for filepath in iter_expected_files(exp):
