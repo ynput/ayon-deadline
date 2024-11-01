@@ -73,8 +73,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 # "product_type": product_type
             }
         )
+        if not profile:
+            return []
         overrides = set(profile["overrides"])
-        if not profile or not overrides:
+        if not overrides:
             return []
 
         defs = [
