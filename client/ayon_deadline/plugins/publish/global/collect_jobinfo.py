@@ -30,6 +30,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     families = FARM_FAMILIES
     targets = ["local"]
 
+    profiles = []
+
     def process(self, instance):
         attr_values = self._get_jobinfo_defaults(instance)
 
@@ -44,21 +46,14 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         instance.data["deadline"]["job_info"] = job_info
 
     @classmethod
+    def apply_settings(cls, project_settings):
+        settings = project_settings["deadline"]
+        profiles = settings["publish"][cls.__name__]["profiles"]
+
+        cls.profiles = profiles or []
+
+    @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
-        cls.log.info(create_context.get_current_task_entity())
-        if not cls.instance_matches_plugin_families(instance):
-            return []
-
-        project_settings = (
-            create_context.get_current_project_settings()
-        )
-
-        profiles = (
-            project_settings["deadline"]["publish"][cls.__name__]["profiles"])
-
-        if not profiles:
-            return []
-
         host_name = create_context.host_name
 
         task_name = instance["task"]
@@ -66,7 +61,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         task_entity = create_context.get_task_entity(folder_path, task_name)
 
         profile = filter_profiles(
-            profiles,
+            cls.profiles,
             {
                 "host_names": host_name,
                 "task_types": task_entity["taskType"],
