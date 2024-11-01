@@ -64,6 +64,8 @@ class CollectJobInfoItem(BaseSettingsModel):
         title="Task names"
     )
 
+    #########################################
+
     chunk_size: int = SettingsField(999, title="Frames per Task")
     priority: int = SettingsField(50, title="Priority")
     group: str = SettingsField("", title="Group")
