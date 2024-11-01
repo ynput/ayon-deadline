@@ -101,11 +101,12 @@ class AbstractSubmitDeadline(
 
         job_info = self.get_generic_job_info(instance)
         self.job_info = self.get_job_info(job_info)
-        self.plugin_info = self.get_plugin_info()
-        self.aux_files = self.get_aux_files()
 
         self._set_scene_path(
             context.data["currentFile"], job_info.UsePublished)
+        self.plugin_info = self.get_plugin_info()
+
+        self.aux_files = self.get_aux_files()
 
         plugin_info_data = instance.data["deadline"]["plugin_info_data"]
         self.apply_additional_plugin_info(plugin_info_data)
