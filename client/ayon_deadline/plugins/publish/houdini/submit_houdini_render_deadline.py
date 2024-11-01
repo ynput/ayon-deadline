@@ -1,6 +1,5 @@
 import os
 import attr
-import getpass
 from datetime import datetime
 
 import pyblish.api
@@ -12,7 +11,6 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
 @attr.s
@@ -100,7 +98,6 @@ class HoudiniSubmitDeadline(
                 "vray_rop"]
     targets = ["local"]
     settings_category = "deadline"
-    use_published = True
 
     # presets
     export_priority = 50
@@ -108,47 +105,10 @@ class HoudiniSubmitDeadline(
     export_group = ""
     export_limits = ""
     export_machine_limit = 0
-    priority = 50
-    chunk_size = 1
-    group = ""
-    limits = ""
-    machine_limit = 0
 
     @classmethod
     def get_attribute_defs(cls):
         return [
-            NumberDef(
-                "priority",
-                label="Priority",
-                default=cls.priority,
-                decimals=0
-            ),
-            NumberDef(
-                "chunk",
-                label="Frames Per Task",
-                default=cls.chunk_size,
-                decimals=0,
-                minimum=1,
-                maximum=1000
-            ),
-            TextDef(
-                "group",
-                default=cls.group,
-                label="Group Name"
-            ),
-            TextDef(
-                "limits",
-                default=cls.limits,
-                label="Limit Groups",
-                placeholder="value1,value2",
-                tooltip="Enter a comma separated list of limit groups."
-            ),
-            NumberDef(
-                "machine_limit",
-                default=cls.machine_limit,
-                label="Machine Limit",
-                tooltip="maximum number of machines for this job."
-            ),
             NumberDef(
                 "export_priority",
                 label="Export Priority",
@@ -183,12 +143,10 @@ class HoudiniSubmitDeadline(
             ),
         ]
 
-    def get_job_info(self, dependency_job_ids=None):
+    def get_job_info(self, dependency_job_ids=None, job_info=None):
 
         instance = self._instance
         context = instance.context
-
-        attribute_values = self.get_attr_values_from_data(instance.data)
 
         # Whether Deadline render submission is being split in two
         # (extract + render)
@@ -214,16 +172,12 @@ class HoudiniSubmitDeadline(
             plugin = "Houdini"
             if split_render_job:
                 job_type = "[EXPORT IFD]"
-
-        job_info = DeadlineJobInfo(Plugin=plugin)
+        job_info.Plugin = plugin
 
         filepath = context.data["currentFile"]
         filename = os.path.basename(filepath)
         job_info.Name = "{} - {} {}".format(filename, instance.name, job_type)
         job_info.BatchName = filename
-
-        job_info.UserName = context.data.get(
-            "deadlineUser", getpass.getuser())
 
         if is_in_tests():
             job_info.BatchName += datetime.now().strftime("%d%m%Y%H%M%S")
@@ -244,9 +198,7 @@ class HoudiniSubmitDeadline(
             job_info.IsFrameDependent = bool(instance.data.get(
                 "splitRenderFrameDependent", True))
 
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-
+        attribute_values = self.get_attr_values_from_data(instance.data)
         if split_render_job and is_export_job:
             job_info.Priority = attribute_values.get(
                 "export_priority", self.export_priority
@@ -263,36 +215,8 @@ class HoudiniSubmitDeadline(
             job_info.MachineLimit = attribute_values.get(
                 "export_machine_limit", self.export_machine_limit
             )
-        else:
-            job_info.Priority = attribute_values.get(
-                "priority", self.priority
-            )
-            job_info.ChunkSize = attribute_values.get(
-                "chunk", self.chunk_size
-            )
-            job_info.Group = attribute_values.get(
-                "group", self.group
-            )
-            job_info.LimitGroups = attribute_values.get(
-                "limits", self.limits
-            )
-            job_info.MachineLimit = attribute_values.get(
-                "machine_limit", self.machine_limit
-            )
 
-        # Apply render globals, like e.g. data from collect machine list
-        render_globals = instance.data.get("renderGlobals", {})
-        if render_globals:
-            self.log.debug("Applying 'renderGlobals' to job info: %s",
-                           render_globals)
-            job_info.update(render_globals)
-
-        job_info.Comment = context.data.get("comment")
-
-        # Set job environment variables
-        job_info.add_instance_job_env_vars(self._instance)
-        job_info.add_render_job_env_var()
-
+        # TODO change to expectedFiles??
         for i, filepath in enumerate(instance.data["files"]):
             dirname = os.path.dirname(filepath)
             fname = os.path.basename(filepath)
