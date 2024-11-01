@@ -49,8 +49,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if not cls.instance_matches_plugin_families(instance):
             return []
 
-        # will be reworked when CreateContext contains settings and task types
-        project_name = create_context.project_name
         project_settings = (
             create_context.get_current_project_settings()
         )
