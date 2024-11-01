@@ -41,12 +41,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         attr_values = self._get_jobinfo_defaults(instance)
 
         attr_values.update(self.get_attr_values_from_data(instance.data))
-        # do not set empty strings
-        attr_values = {
-            key: value
-            for key,value in attr_values.items()
-            if value != ""
-        }
         job_info = AYONDeadlineJobInfo.from_dict(attr_values)
 
         self._handle_machine_list(attr_values, job_info)
@@ -122,6 +116,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 tooltip="Explicit frames to be rendered. (1, 3-4)"
             )
         )
+
+        defs = cls._host_specific_attr_defs(create_context, instance, defs)
 
         defs.append(
             UISeparatorDef("deadline_defs_end")
@@ -238,25 +234,21 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         )
         return profile or {}
 
-
-class CollectMayaJobInfo(CollectJobInfo):
-    hosts = [
-        "maya",
-    ]
     @classmethod
-    def get_attr_defs_for_instance(cls, create_context, instance):
-        defs = super().get_attr_defs_for_instance(create_context, instance)
+    def _host_specific_attr_defs(cls, create_context, instance, defs):
 
-        defs.extend([
-            NumberDef(
-                "tile_priority",
-                label="Tile Assembler Priority",
-                decimals=0,
-            ),
-            BoolDef(
-                "strict_error_checking",
-                label="Strict Error Checking",
-            ),
-        ])
+        host_name = create_context.host_name
+        if host_name == "maya":
+            defs.extend([
+                NumberDef(
+                    "tile_priority",
+                    label="Tile Assembler Priority",
+                    decimals=0,
+                ),
+                BoolDef(
+                    "strict_error_checking",
+                    label="Strict Error Checking",
+                ),
+            ])
 
         return defs
