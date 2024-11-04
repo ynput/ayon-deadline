@@ -110,7 +110,8 @@ class AbstractSubmitDeadline(
         self.aux_files = self.get_aux_files()
 
         plugin_info_data = instance.data["deadline"]["plugin_info_data"]
-        self.apply_additional_plugin_info(plugin_info_data)
+        if plugin_info_data:
+            self.apply_additional_plugin_info(plugin_info_data)
 
         job_id = self.process_submission()
         self.log.info("Submitted job to Deadline: {}.".format(job_id))
