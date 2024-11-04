@@ -129,11 +129,18 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     def _get_artist_overrides(cls, overrides, profile):
         """Provide list of Defs that could be filled by artist"""
         # should be matching to extract_jobinfo_overrides_enum
+        default_values = {}
+        for key in overrides:
+            default_value = profile[key]
+            if isinstance(default_value, list):
+                default_value = ",".join(default_value)
+            default_values[key] = default_value
+
         override_defs = [
             NumberDef(
-                "chunkSize",
+                "chunk_size",
                 label="Frames Per Task",
-                default=1,
+                default=default_values["chunk_size"],
                 decimals=0,
                 minimum=1,
                 maximum=1000
@@ -141,40 +148,29 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             NumberDef(
                 "priority",
                 label="Priority",
+                default=default_values["priority"],
                 decimals=0
             ),
             TextDef(
                 "department",
                 label="Department",
-                default="",
+                default=default_values["department"]
             ),
             TextDef(
                 "limit_groups",
                 label="Limit Groups",
                 # multiline=True,  TODO - some DCC might have issues with storing multi lines
-                default="",
+                default=default_values["limit_groups"],
                 placeholder="machine1,machine2"
             ),
             TextDef(
                 "job_delay",
                 label="Delay job (timecode dd:hh:mm:ss)",
-                default=""
+                default=default_values["job_delay"],
             )
         ]
-        defs = []
-        # The Arguments that can be modified by the Publisher
-        for attr_def in override_defs:
-            if attr_def.key not in overrides:
-                continue
 
-            default_value = profile[attr_def.key]
-            if (isinstance(attr_def, TextDef) and
-                    isinstance(default_value, list)):
-                default_value = ",".join(default_value)
-            attr_def.default = default_value
-            defs.append(attr_def)
-
-        return defs
+        return override_defs
 
     @classmethod
     def register_create_context_callbacks(cls, create_context):
