@@ -163,8 +163,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             ),
             TextDef(
                 "job_delay",
-                label="Delay job (timecode dd:hh:mm:ss)",
+                label="Delay job",
                 default=default_values["job_delay"],
+                tooltip="Delay job by specified timecode. Format: dd:hh:mm:ss",
+                placeholder="00:00:00:00"
             )
         ]
 
