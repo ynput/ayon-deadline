@@ -187,7 +187,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 label="Limit Groups",
                 # multiline=True,  TODO - some DCC might have issues with storing multi lines
                 default=default_values.get("limit_groups"),
-                placeholder="machine1,machine2"
+                placeholder="limit1,limit2"
             ),
             EnumDef(
                 "primary_pool",
