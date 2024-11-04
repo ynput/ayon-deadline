@@ -48,12 +48,17 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         instance.data["deadline"]["job_info"] = job_info
 
         # pass through explicitly key and values for PluginInfo
-        plugin_info_data = json.loads(attr_values["additional_plugin_info"])
+        plugin_info_data = None
+        if attr_values["additional_plugin_info"]:
+            plugin_info_data = (
+                json.loads(attr_values["additional_plugin_info"]))
         instance.data["deadline"]["plugin_info_data"] = plugin_info_data
 
     def _handle_additional_jobinfo(self,attr_values, job_info):
         """Adds not explicitly implemented fields by values from Settings."""
         additional_job_info = attr_values["additional_job_info"]
+        if not additional_job_info:
+            return
         for key, value in json.loads(additional_job_info).items():
             setattr(job_info, key, value)
 
