@@ -182,9 +182,10 @@ class AbstractSubmitDeadline(
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
         job_info.Comment = context.data.get("comment")
 
-        # TODO switch to job_info collector
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
+        if job_info.Pool != "none":
+            job_info.Pool = job_info.Pool
+        if job_info.SecondaryPool != "none":
+            job_info.SecondaryPool = job_info.SecondaryPool
 
         exp = instance.data.get("expectedFiles")
         for filepath in iter_expected_files(exp):

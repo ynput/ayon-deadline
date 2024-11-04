@@ -5,11 +5,13 @@ import pyblish.api
 from ayon_core.lib import (
     BoolDef,
     NumberDef,
+    EnumDef,
     TextDef,
     UISeparatorDef
 )
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.lib.profiles_filtering import filter_profiles
+from ayon_core.addon import AddonsManager
 
 from ayon_deadline.lib import (
     FARM_FAMILIES,
@@ -34,6 +36,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     targets = ["local"]
 
     profiles = []
+    pool_enum_values = []
 
     def process(self, instance):
         attr_values = self._get_jobinfo_defaults(instance)
@@ -76,6 +79,21 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         profiles = settings["publish"][cls.__name__]["profiles"]
 
         cls.profiles = profiles or []
+
+        addons_manager = AddonsManager()
+        deadline_addon = addons_manager["deadline"]
+        deadline_server_name = settings["deadline_server"]
+        dl_server_info = deadline_addon.deadline_servers_info.get(
+                deadline_server_name)
+
+        auth = (dl_server_info["default_username"],
+                dl_server_info["default_password"])
+        pools = deadline_addon.get_deadline_pools(
+            dl_server_info["value"],
+            auth
+        )
+        for pool in pools:
+            cls.pool_enum_values.append({"value": pool, "label": pool})
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
@@ -139,11 +157,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 default_value = ",".join(default_value)
             default_values[key] = default_value
 
-        override_defs = [
+        attr_defs = [
             NumberDef(
                 "chunk_size",
                 label="Frames Per Task",
-                default=default_values["chunk_size"],
+                default=default_values.get("chunk_size"),
                 decimals=0,
                 minimum=1,
                 maximum=1000
@@ -151,27 +169,55 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             NumberDef(
                 "priority",
                 label="Priority",
-                default=default_values["priority"],
+                default=default_values.get("priority"),
                 decimals=0
             ),
             TextDef(
                 "department",
                 label="Department",
-                default=default_values["department"]
+                default=default_values.get("department")
             ),
             TextDef(
                 "limit_groups",
                 label="Limit Groups",
                 # multiline=True,  TODO - some DCC might have issues with storing multi lines
-                default=default_values["limit_groups"],
+                default=default_values.get("limit_groups"),
                 placeholder="machine1,machine2"
+            ),
+            EnumDef(
+                "primary_pool",
+                label="Primary pool",
+                default="none",
+                items=cls.pool_enum_values,
+            ),
+            EnumDef(
+                "secondary_pool",
+                label="Secondary pool",
+                default="none",
+                items=cls.pool_enum_values,
+            ),
+            TextDef(
+                "machine_list",
+                label="Machine list",
+                default=default_values.get("machine_list")
+            ),
+            BoolDef(
+                "machine_list_deny",
+                label="Machine List is a Deny",
+                default=default_values.get("machine_list_deny")
             ),
             TextDef(
                 "job_delay",
                 label="Delay job (timecode dd:hh:mm:ss)",
-                default=default_values["job_delay"],
+                default=default_values.get("job_delay"),
             )
         ]
+
+        override_defs = []
+        for attr_def in attr_defs:
+            if attr_def.key not in overrides:
+                continue
+            override_defs.append(attr_def)
 
         return override_defs
 
@@ -184,9 +230,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         for instance_change in event["changes"]:
             instance = instance_change["instance"]
             if not cls.instance_matches_plugin_families(instance):
-                continue
-            value_changes = instance_change["changes"]
-            if "enabled" not in value_changes:
                 continue
 
             new_attrs = cls.get_attr_defs_for_instance(
