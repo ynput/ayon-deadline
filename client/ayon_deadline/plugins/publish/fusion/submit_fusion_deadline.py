@@ -1,28 +1,36 @@
 import os
-import json
-import getpass
 
 import pyblish.api
 
-from ayon_deadline.abstract_submit_deadline import requests_post
-from ayon_deadline.lib import get_ayon_render_job_envs, get_instance_job_envs
-from ayon_core.pipeline.publish import (
-    AYONPyblishPluginMixin
-)
-from ayon_core.lib import NumberDef
+import attr
+from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.pipeline.farm.tools import iter_expected_files
+from ayon_deadline import abstract_submit_deadline
 
 
-class FusionSubmitDeadline(
-    pyblish.api.InstancePlugin,
-    AYONPyblishPluginMixin
-):
+@attr.s
+class FusionPluginInfo:
+    FlowFile: str = attr.ib(default=None)   # Input
+    Version: str = attr.ib(default=None)    # Mandatory for Deadline
+
+    # Render in high quality
+    HighQuality: bool = attr.ib(default=True)
+    # Whether saver output should be checked after rendering
+    # is complete
+    CheckOutput: bool = attr.ib(default=True)
+    # Proxy: higher numbers smaller images for faster test renders
+    # 1 = no proxy quality
+    Proxy: int = attr.ib(default=1)
+
+
+class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
+                           AYONPyblishPluginMixin):
     """Submit current Comp to Deadline
 
     Renders are submitted to a Deadline Web Service as
     supplied via settings key "DEADLINE_REST_URL".
 
     """
-
     label = "Submit Fusion to Deadline"
     order = pyblish.api.IntegratorOrder
     hosts = ["fusion"]
@@ -38,56 +46,32 @@ class FusionSubmitDeadline(
     concurrent_tasks = 1
     group = ""
 
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            NumberDef(
-                "priority",
-                label="Priority",
-                default=cls.priority,
-                decimals=0
-            ),
-            NumberDef(
-                "chunk",
-                label="Frames Per Task",
-                default=cls.chunk_size,
-                decimals=0,
-                minimum=1,
-                maximum=1000
-            ),
-            NumberDef(
-                "concurrency",
-                label="Concurrency",
-                default=cls.concurrent_tasks,
-                decimals=0,
-                minimum=1,
-                maximum=10
-            )
-        ]
-
     def process(self, instance):
-        if not instance.data.get("farm"):
-            self.log.debug("Skipping local instance.")
+        if not instance.data["farm"]:
+            self.log.debug("Render on farm is disabled. "
+                           "Skipping deadline submission.")
             return
 
-        attribute_values = self.get_attr_values_from_data(
-            instance.data)
-
+        # TODO: Avoid this hack and instead use a proper way to submit
+        #  each render per instance individually
+        # TODO: Also, we should support submitting a job per group of instances
+        #  that are set to a different frame range. Currently we're always
+        #  expecting to render the full frame range for each. Which may mean
+        #  we need multiple render jobs but a single publish job dependent on
+        #  the multiple separate instance jobs?
+        # We are submitting a farm job not per instance - but once per Fusion
+        # comp. This is a hack to avoid submitting multiple jobs for each
+        # saver separately which would be much slower.
         context = instance.context
-
         key = "__hasRun{}".format(self.__class__.__name__)
         if context.data.get(key, False):
             return
         else:
             context.data[key] = True
 
-        from ayon_fusion.api.lib import get_frame_path
-
-        deadline_url = instance.data["deadline"]["url"]
-        assert deadline_url, "Requires Deadline Webservice URL"
-
         # Collect all saver instances in context that are to be rendered
         saver_instances = []
+        context = instance.context
         for inst in context:
             if inst.data["productType"] != "render":
                 # Allow only saver family instances
@@ -103,130 +87,47 @@ class FusionSubmitDeadline(
         if not saver_instances:
             raise RuntimeError("No instances found for Deadline submission")
 
-        comment = instance.data.get("comment", "")
-        deadline_user = context.data.get("deadlineUser", getpass.getuser())
+        instance.data["_farmSaverInstances"] = saver_instances
 
-        script_path = context.data["currentFile"]
+        super().process(instance)
 
-        anatomy = instance.context.data["anatomy"]
-        publish_template = anatomy.get_template_item(
-            "publish", "default", "path"
-        )
-        for item in context:
-            if "workfile" in item.data["families"]:
-                msg = "Workfile (scene) must be published along"
-                assert item.data["publish"] is True, msg
-
-                template_data = item.data.get("anatomyData")
-                rep = item.data.get("representations")[0].get("name")
-                template_data["representation"] = rep
-                template_data["ext"] = rep
-                template_data["comment"] = None
-                template_filled = publish_template.format_strict(
-                    template_data
-                )
-                script_path = os.path.normpath(template_filled)
-
-                self.log.info(
-                    "Using published scene for render {}".format(script_path)
-                )
-
-        filename = os.path.basename(script_path)
-
-        # Documentation for keys available at:
-        # https://docs.thinkboxsoftware.com
-        #    /products/deadline/8.0/1_User%20Manual/manual
-        #    /manual-submission.html#job-info-file-options
-        payload = {
-            "JobInfo": {
-                # Top-level group name
-                "BatchName": filename,
-
-                # Asset dependency to wait for at least the scene file to sync.
-                "AssetDependency0": script_path,
-
-                # Job name, as seen in Monitor
-                "Name": filename,
-
-                "Priority": attribute_values.get(
-                    "priority", self.priority),
-                "ChunkSize": attribute_values.get(
-                    "chunk", self.chunk_size),
-                "ConcurrentTasks": attribute_values.get(
-                    "concurrency",
-                    self.concurrent_tasks
-                ),
-
-                # User, as seen in Monitor
-                "UserName": deadline_user,
-
-                "Pool": instance.data.get("primaryPool"),
-                "SecondaryPool": instance.data.get("secondaryPool"),
-                "Group": self.group,
-
-                "Plugin": self.plugin,
-                "Frames": "{start}-{end}".format(
-                    start=int(instance.data["frameStartHandle"]),
-                    end=int(instance.data["frameEndHandle"])
-                ),
-
-                "Comment": comment,
-            },
-            "PluginInfo": {
-                # Input
-                "FlowFile": script_path,
-
-                # Mandatory for Deadline
-                "Version": str(instance.data["app_version"]),
-
-                # Render in high quality
-                "HighQuality": True,
-
-                # Whether saver output should be checked after rendering
-                # is complete
-                "CheckOutput": True,
-
-                # Proxy: higher numbers smaller images for faster test renders
-                # 1 = no proxy quality
-                "Proxy": 1
-            },
-
-            # Mandatory for Deadline, may be empty
-            "AuxFiles": []
-        }
-
-        # Enable going to rendered frames from Deadline Monitor
-        for index, instance in enumerate(saver_instances):
-            head, padding, tail = get_frame_path(
-                instance.data["expectedFiles"][0]
+        # Store the response for dependent job submission plug-ins for all
+        # the instances
+        for saver_instance in saver_instances:
+            saver_instance.data["deadlineSubmissionJob"] = (
+                instance.data["deadlineSubmissionJob"]
             )
-            path = "{}{}{}".format(head, "#" * padding, tail)
-            folder, filename = os.path.split(path)
-            payload["JobInfo"]["OutputDirectory%d" % index] = folder
-            payload["JobInfo"]["OutputFilename%d" % index] = filename
 
-        # Set job environment variables
-        environment = get_instance_job_envs(instance)
-        environment.update(get_ayon_render_job_envs())
+    def get_job_info(self, job_info=None, **kwargs):
+        instance = self._instance
 
-        payload["JobInfo"].update({
-            "EnvironmentKeyValue%d" % index: "{key}={value}".format(
-                key=key,
-                value=environment[key]
-            ) for index, key in enumerate(environment)
-        })
+        # Deadline requires integers in frame range
+        job_info.Plugin = self.plugin or "Fusion"
+        job_info.Frames = "{start}-{end}".format(
+            start=int(instance.data["frameStartHandle"]),
+            end=int(instance.data["frameEndHandle"])
+        )
 
-        self.log.debug("Submitting..")
-        self.log.debug(json.dumps(payload, indent=4, sort_keys=True))
+        # We override the default behavior of AbstractSubmitDeadline here to
+        # include the output directory and output filename for each individual
+        # saver instance, instead of only the current instance, because we're
+        # submitting one job for multiple savers
+        for saver_instance in instance.data["_farmSaverInstances"]:
+            if saver_instance is instance:
+                continue
 
-        # E.g. http://192.168.0.1:8082/api/jobs
-        url = "{}/api/jobs".format(deadline_url)
-        auth = instance.data["deadline"]["auth"]
-        verify = instance.data["deadline"]["verify"]
-        response = requests_post(url, json=payload, auth=auth, verify=verify)
-        if not response.ok:
-            raise Exception(response.text)
+            exp = instance.data.get("expectedFiles")
+            for filepath in iter_expected_files(exp):
+                job_info.OutputDirectory += os.path.dirname(filepath)
+                job_info.OutputFilename += os.path.basename(filepath)
 
-        # Store the response for dependent job submission plug-ins
-        for instance in saver_instances:
-            instance.data["deadlineSubmissionJob"] = response.json()
+        return job_info
+
+    def get_plugin_info(self):
+        instance = self._instance
+        plugin_info = FusionPluginInfo(
+            FlowFile=self.scene_path,
+            Version=str(instance.data["app_version"]),
+        )
+        plugin_payload: dict = attr.asdict(plugin_info)
+        return plugin_payload
