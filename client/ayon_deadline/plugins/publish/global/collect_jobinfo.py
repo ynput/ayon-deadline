@@ -6,8 +6,6 @@ from ayon_core.lib import (
     BoolDef,
     NumberDef,
     TextDef,
-    EnumDef,
-    is_in_tests,
     UISeparatorDef
 )
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
@@ -200,8 +198,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         Returns:
             (dict)
         """
-        attr_values = {}
-
         context_data = instance.context.data
         host_name = context_data["hostName"]
         project_settings = context_data["project_settings"]

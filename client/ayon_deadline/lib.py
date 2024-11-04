@@ -365,7 +365,7 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         return serialized
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'JobInfo':
+    def from_dict(cls, data: Dict) -> 'AYONDeadlineJobInfo':
 
         implemented_field_values = {
             "ChunkSize": data["chunk_size"],

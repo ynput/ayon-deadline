@@ -30,20 +30,13 @@ import attr
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
-from ayon_core.lib import (
-    BoolDef,
-    NumberDef,
-    TextDef,
-    EnumDef,
-    is_in_tests,
-)
+
 from ayon_maya.api.lib_rendersettings import RenderSettings
 from ayon_maya.api.lib import get_attr_in_layer
 
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.lib import FARM_FAMILIES
 
 
 def _validate_deadline_bool_value(instance, attribute, value):

@@ -4,8 +4,6 @@ from datetime import datetime
 import attr
 import pyblish.api
 from ayon_core.lib import (
-    TextDef,
-    NumberDef,
     is_in_tests,
 )
 from ayon_core.pipeline import (

@@ -5,7 +5,6 @@ import pyblish.api
 from ayon_core.lib import (
     env_value_to_bool,
     collect_frames,
-    is_in_tests,
 )
 from ayon_deadline import abstract_submit_deadline
 
