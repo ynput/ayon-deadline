@@ -24,6 +24,7 @@ from ayon_core.pipeline.publish.lib import (
 )
 from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_core.lib import is_in_tests
+from ayon_deadline.lib import AYONDeadlineJobInfo
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
@@ -163,10 +164,9 @@ class AbstractSubmitDeadline(
         verify = self._instance.data["deadline"]["verify"]
         return self.submit(payload, auth, verify)
 
-    def get_generic_job_info(self, instance):
-        context = instance.context
-
-        job_info = instance.data["deadline"]["job_info"]
+    def get_generic_job_info(self, instance: pyblish.api.Instance):
+        context: pyblish.api.Context = instance.context
+        job_info: AYONDeadlineJobInfo = instance.data["deadline"]["job_info"]
 
         # Always use the original work file name for the Job name even when
         # rendering is done from the published Work File. The original work
