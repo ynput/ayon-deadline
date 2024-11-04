@@ -4,6 +4,7 @@ from ayon_core.pipeline import (
     PublishXmlValidationError,
     OptionalPyblishPluginMixin
 )
+from ayon_deadline.lib import FARM_FAMILIES
 
 
 class ValidateDeadlinePools(OptionalPyblishPluginMixin,
@@ -16,14 +17,9 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
 
     label = "Validate Deadline Pools"
     order = pyblish.api.ValidatorOrder
-    families = ["rendering",
-                "render.farm",
-                "render.frames_farm",
-                "renderFarm",
-                "renderlayer",
-                "maxrender",
-                "publish.hou"]
+    families = FARM_FAMILIES
     optional = True
+    targets = ["local"]
 
     # cache
     pools_per_url = {}
@@ -46,11 +42,12 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
         )
 
         invalid_pools = {}
-        primary_pool = instance.data.get("primaryPool")
+        job_info = instance.data["deadline"]["job_info"]
+        primary_pool = job_info.Pool
         if primary_pool and primary_pool not in pools:
             invalid_pools["primary"] = primary_pool
 
-        secondary_pool = instance.data.get("secondaryPool")
+        secondary_pool = job_info.SecondaryPool
         if secondary_pool and secondary_pool not in pools:
             invalid_pools["secondary"] = secondary_pool
 

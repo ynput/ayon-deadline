@@ -27,15 +27,8 @@ class CollectAYONServerToFarmJobModel(BaseSettingsModel):
     enabled: bool = SettingsField(False, title="Enabled")
 
 
-class CollectDeadlinePoolsModel(BaseSettingsModel):
-    """Settings Deadline default pools."""
-
-    primary_pool: str = SettingsField(title="Primary Pool")
-
-    secondary_pool: str = SettingsField(title="Secondary Pool")
-
-
 def extract_jobinfo_overrides_enum():
+    """Enum of fields that could be overridden by artist in Publisher UI"""
     return [
         {"label": "Department", "value": "department"},
         {"label": "Delay job (timecode dd:hh:mm:ss)", "value": "job_delay"},
@@ -43,6 +36,8 @@ def extract_jobinfo_overrides_enum():
         {"label": "Group", "value": "group"},
         {"label": "Priority", "value": "priority"},
         {"label": "Limit groups", "value": "limit_groups"},
+        {"label": "Primary pool", "value": "primary_pool"},
+        {"label": "Secondary pool", "value": "secondary_pool"},
         {"label": "Machine List", "value": "machine_list"},
         {"label": "Machine List is a Deny", "value": "machine_list_deny"},
     ]
@@ -73,6 +68,8 @@ class CollectJobInfoItem(BaseSettingsModel):
         default_factory=list,
         title="Limit Groups"
     )
+    primary_pool: str = SettingsField("", title="Primary Pool")
+    secondary_pool: str = SettingsField("", title="Secondary Pool")
     machine_limit: int = SettingsField(
         0,
         title="Machine Limit",
@@ -387,9 +384,6 @@ class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
 
 
 class PublishPluginsModel(BaseSettingsModel):
-    CollectDeadlinePools: CollectDeadlinePoolsModel = SettingsField(
-        default_factory=CollectDeadlinePoolsModel,
-        title="Default Pools")
     CollectJobInfo: CollectJobInfoModel = SettingsField(
         default_factory=CollectJobInfoModel,
         title="Collect JobInfo")

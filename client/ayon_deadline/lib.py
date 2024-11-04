@@ -373,6 +373,8 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             "MachineLimit": data["machine_limit"],
             "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data["frames"],
+            "Pool": data["primary_pool"],
+            "SecondaryPool": data["secondary_pool"],
 
             # fields needed for logic, values unavailable during collection
             "UsePublished": data["use_published"],
