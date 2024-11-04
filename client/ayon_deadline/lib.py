@@ -373,8 +373,9 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             "MachineLimit": data["machine_limit"],
             "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data["frames"],
-            "Pool": data["primary_pool"],
-            "SecondaryPool": data["secondary_pool"],
+            "Group": cls._sanitize(data["group"]),
+            "Pool": cls._sanitize(data["primary_pool"]),
+            "SecondaryPool": cls._sanitize(data["secondary_pool"]),
 
             # fields needed for logic, values unavailable during collection
             "UsePublished": data["use_published"],
@@ -400,3 +401,15 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
     def to_json(self) -> str:
         """Serialize the dataclass instance to a JSON string."""
         return json.dumps(asdict(self))
+
+    @classmethod
+    def _sanitize(cls, value) -> str:
+        if isinstance(value, str):
+            if value == "none":
+                return None
+        if isinstance(value, list):
+            filtered = []
+            for val in value:
+                if val and val != "none":
+                    filtered.append(val)
+            return filtered

@@ -37,6 +37,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     profiles = []
     pool_enum_values = []
+    group_enum_values = []
+    limit_group_enum_values = []
+    machines_enum_values = []
 
     def process(self, instance):
         attr_values = self._get_jobinfo_defaults(instance)
@@ -68,7 +71,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     def _handle_machine_list(self, attr_values, job_info):
         machine_list = attr_values["machine_list"]
         if machine_list:
-            if job_info.MachineListDeny:
+            if attr_values["machine_list_deny"]:
                 job_info.Blacklist = machine_list
             else:
                 job_info.Whitelist = machine_list
@@ -83,17 +86,27 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         addons_manager = AddonsManager()
         deadline_addon = addons_manager["deadline"]
         deadline_server_name = settings["deadline_server"]
-        dl_server_info = deadline_addon.deadline_servers_info.get(
-                deadline_server_name)
-
-        auth = (dl_server_info["default_username"],
-                dl_server_info["default_password"])
-        pools = deadline_addon.get_deadline_pools(
-            dl_server_info["value"],
-            auth
-        )
+        pools = deadline_addon.pools_per_server(deadline_server_name)
         for pool in pools:
             cls.pool_enum_values.append({"value": pool, "label": pool})
+
+        groups = deadline_addon.groups_per_server(deadline_server_name)
+        for group in groups:
+            cls.group_enum_values.append({"value": group, "label": group})
+
+        limit_groups = (
+            deadline_addon.limit_groups_per_server(deadline_server_name))
+        if not limit_groups:
+            limit_groups.append("none")  # enum cannot be empty
+        for limit_group in limit_groups:
+            cls.limit_group_enum_values.append(
+                {"value": limit_group, "label": limit_group})
+
+        machines = (
+            deadline_addon.machines_per_server(deadline_server_name))
+        for machine in machines:
+            cls.machines_enum_values.append(
+                {"value": machine, "label": machine})
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
@@ -153,8 +166,22 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         default_values = {}
         for key in overrides:
             default_value = profile[key]
+            if key == "machine_limit":
+                filtered = []
+                for value in default_value:
+                    if value in cls.machines_enum_values:
+                        filtered.append(value)
+                default_value = filtered
+            if key == "limit_groups":
+                filtered = []
+                for value in default_value:
+                    if value in cls.limit_group_enum_values:
+                        filtered.append(value)
+                default_value = filtered
             if isinstance(default_value, list):
                 default_value = ",".join(default_value)
+            if key == "group" and default_value not in cls.group_enum_values:
+                default_value = ""
             default_values[key] = default_value
 
         attr_defs = [
@@ -177,17 +204,18 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 label="Department",
                 default=default_values.get("department")
             ),
-            TextDef(
+            EnumDef(
                 "group",
                 label="Group",
-                default=default_values.get("group")
+                default=default_values.get("group"),
+                items=cls.group_enum_values,
             ),
-            TextDef(
+            EnumDef(
                 "limit_groups",
                 label="Limit Groups",
-                # multiline=True,  TODO - some DCC might have issues with storing multi lines
+                multiselection=True,
                 default=default_values.get("limit_groups"),
-                placeholder="limit1,limit2"
+                items=cls.limit_group_enum_values,
             ),
             EnumDef(
                 "primary_pool",
@@ -201,10 +229,12 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 default="none",
                 items=cls.pool_enum_values,
             ),
-            TextDef(
+            EnumDef(
                 "machine_list",
                 label="Machine list",
-                default=default_values.get("machine_list")
+                multiselection=True,
+                default=default_values.get("machine_list"),
+                items=cls.machines_enum_values,
             ),
             BoolDef(
                 "machine_list_deny",
