@@ -178,6 +178,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 default=default_values.get("department")
             ),
             TextDef(
+                "group",
+                label="Group",
+                default=default_values.get("group")
+            ),
+            TextDef(
                 "limit_groups",
                 label="Limit Groups",
                 # multiline=True,  TODO - some DCC might have issues with storing multi lines
