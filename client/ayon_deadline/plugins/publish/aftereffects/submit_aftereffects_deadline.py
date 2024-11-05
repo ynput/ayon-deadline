@@ -35,18 +35,18 @@ class AfterEffectsSubmitDeadline(
     targets = ["local"]
     settings_category = "deadline"
 
-    def get_job_info(self, dln_job_info=None):
-        dln_job_info.Plugin = "AfterEffects"
+    def get_job_info(self, job_info=None):
+        job_info.Plugin = "AfterEffects"
 
         # already collected explicit values for rendered Frames
-        if not dln_job_info.Frames:
+        if not job_info.Frames:
             # Deadline requires integers in frame range
             frame_range = "{}-{}".format(
                 int(round(self._instance.data["frameStart"])),
                 int(round(self._instance.data["frameEnd"])))
-            dln_job_info.Frames = frame_range
+            job_info.Frames = frame_range
 
-        return dln_job_info
+        return job_info
 
     def get_plugin_info(self):
         deadline_plugin_info = DeadlinePluginInfo()
