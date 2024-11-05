@@ -72,9 +72,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         machine_list = attr_values["machine_list"]
         if machine_list:
             if attr_values["machine_list_deny"]:
-                job_info.Blacklist = machine_list
+                job_info.Blacklist = ",".join(machine_list)
             else:
-                job_info.Whitelist = machine_list
+                job_info.Whitelist = ",".join(machine_list)
 
     @classmethod
     def apply_settings(cls, project_settings):
