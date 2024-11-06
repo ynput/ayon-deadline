@@ -41,11 +41,6 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     # presets
     plugin = None
 
-    priority = 50
-    chunk_size = 1
-    concurrent_tasks = 1
-    group = ""
-
     def process(self, instance):
         if not instance.data["farm"]:
             self.log.debug("Render on farm is disabled. "
