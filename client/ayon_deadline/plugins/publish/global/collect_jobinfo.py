@@ -114,6 +114,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
+        if instance.product_type not in cls.families:
+            return []
+
         host_name = create_context.host_name
 
         task_name = instance["task"]
