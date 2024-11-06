@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-import attr
+from dataclasses import dataclass, field, asdict
 import pyblish.api
 from ayon_core.lib import (
     is_in_tests,
@@ -12,17 +12,17 @@ from ayon_core.pipeline import (
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
-class HoudiniPluginInfo(object):
-    Build = attr.ib(default=None)
-    IgnoreInputs = attr.ib(default=True)
-    ScriptJob = attr.ib(default=True)
-    SceneFile = attr.ib(default=None)   # Input
-    SaveFile = attr.ib(default=True)
-    ScriptFilename = attr.ib(default=None)
-    OutputDriver = attr.ib(default=None)
-    Version = attr.ib(default=None)  # Mandatory for Deadline
-    ProjectPath = attr.ib(default=None)
+@dataclass
+class HoudiniPluginInfo:
+    Build: str = field(default=None)
+    IgnoreInputs: bool = field(default=True)
+    ScriptJob: bool = field(default=True)
+    SceneFile: bool = field(default=None)   # Input
+    SaveFile: bool = field(default=True)
+    ScriptFilename: str = field(default=None)
+    OutputDriver: str = field(default=None)
+    Version: str = field(default=None)  # Mandatory for Deadline
+    ProjectPath: str = field(default=None)
 
 
 class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,   # noqa
@@ -93,7 +93,7 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             ProjectPath=os.path.dirname(self.scene_path)
         )
 
-        plugin_payload = attr.asdict(plugin_info)
+        plugin_payload = asdict(plugin_info)
 
         return plugin_payload
 

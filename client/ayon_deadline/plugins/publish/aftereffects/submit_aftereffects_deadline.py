@@ -1,6 +1,6 @@
 import os
-import attr
 import pyblish.api
+from dataclasses import dataclass, field, asdict
 
 from ayon_core.lib import (
     env_value_to_bool,
@@ -9,18 +9,18 @@ from ayon_core.lib import (
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
+@dataclass
 class DeadlinePluginInfo():
-    Comp = attr.ib(default=None)
-    SceneFile = attr.ib(default=None)
-    OutputFilePath = attr.ib(default=None)
-    Output = attr.ib(default=None)
-    StartupDirectory = attr.ib(default=None)
-    Arguments = attr.ib(default=None)
-    ProjectPath = attr.ib(default=None)
-    AWSAssetFile0 = attr.ib(default=None)
-    Version = attr.ib(default=None)
-    MultiProcess = attr.ib(default=None)
+    Comp: str = field(default=None)
+    SceneFile: str = field(default=None)
+    OutputFilePath: str = field(default=None)
+    Output: str = field(default=None)
+    StartupDirectory: str = field(default=None)
+    Arguments: str = field(default=None)
+    ProjectPath: str = field(default=None)
+    AWSAssetFile0: str = field(default=None)
+    Version: str = field(default=None)
+    MultiProcess: str = field(default=None)
 
 
 class AfterEffectsSubmitDeadline(
@@ -73,7 +73,7 @@ class AfterEffectsSubmitDeadline(
         deadline_plugin_info.SceneFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
 
-        return attr.asdict(deadline_plugin_info)
+        return asdict(deadline_plugin_info)
 
     def from_published_scene(self):
         """ Do not overwrite expected files.

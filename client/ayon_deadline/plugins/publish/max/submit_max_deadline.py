@@ -1,6 +1,6 @@
 import os
 import copy
-import attr
+from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin
@@ -17,12 +17,12 @@ from ayon_max.api.lib_rendersettings import RenderSettings
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
+@dataclass
 class MaxPluginInfo(object):
-    SceneFile = attr.ib(default=None)   # Input
-    Version = attr.ib(default=None)  # Mandatory for Deadline
-    SaveFile = attr.ib(default=True)
-    IgnoreInputs = attr.ib(default=True)
+    SceneFile: str = field(default=None)   # Input
+    Version: str = field(default=None)  # Mandatory for Deadline
+    SaveFile: bool = field(default=True)
+    IgnoreInputs: bool = field(default=True)
 
 
 class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
@@ -64,7 +64,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             IgnoreInputs=True
         )
 
-        plugin_payload = attr.asdict(plugin_info)
+        plugin_payload = asdict(plugin_info)
 
         return plugin_payload
 

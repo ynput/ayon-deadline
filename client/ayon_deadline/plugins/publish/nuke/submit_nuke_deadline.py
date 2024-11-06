@@ -1,6 +1,6 @@
 import os
 import re
-import attr
+from dataclasses import dataclass, field, asdict
 
 import pyblish.api
 
@@ -10,17 +10,14 @@ from ayon_core.pipeline.publish import (
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
+@dataclass
 class NukePluginInfo:
-    SceneFile: str = attr.ib(default=None)   # Input
-    Version: str = attr.ib(default=None)    # Mandatory for Deadline
-        # Mandatory for Deadline
-
-    ProjectPath: str = attr.ib(default=None)
-    OutputFilePath: str = attr.ib(default=None)
-    # Use GPU
-    UseGpu: bool = attr.ib(default=True)
-    WriteNode: str = attr.ib(default=None)
+    SceneFile: str = field(default=None)   # Input
+    Version: str = field(default=None)    # Mandatory for Deadline
+    ProjectPath: str = field(default=None)
+    OutputFilePath: str = field(default=None)
+    UseGpu: bool = field(default=True)
+    WriteNode: str = field(default=None)
 
 
 class NukeSubmitDeadline(
@@ -150,7 +147,7 @@ class NukeSubmitDeadline(
             WriteNode=write_node_name
         )
 
-        plugin_payload: dict = attr.asdict(plugin_info)
+        plugin_payload: dict = asdict(plugin_info)
         return plugin_payload
 
     def _get_limit_groups(self, limit_groups):

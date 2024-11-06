@@ -1,20 +1,20 @@
 import os
 import re
 import pyblish.api
-import attr
+from dataclasses import dataclass, field, asdict
 
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
-class CelactionPluginInfo():
-    SceneFile = attr.ib(default=None)
-    OutputFilePath = attr.ib(default=None)
-    Output = attr.ib(default=None)
-    StartupDirectory = attr.ib(default=None)
-    Arguments = attr.ib(default=None)
-    ProjectPath = attr.ib(default=None)
-    AWSAssetFile0 = attr.ib(default=None)
+@dataclass
+class CelactionPluginInfo:
+    SceneFile: str = field(default=None)
+    OutputFilePath: str = field(default=None)
+    Output: str = field(default=None)
+    StartupDirectory: str = field(default=None)
+    Arguments: str = field(default=None)
+    ProjectPath: str = field(default=None)
+    AWSAssetFile0: str = field(default=None)
 
 
 class CelactionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline):
@@ -81,7 +81,7 @@ class CelactionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline):
         # adding 2d render specific family for version identification in Loader
         instance.data["families"] = ["render2d"]
 
-        return attr.asdict(plugin_info)
+        return asdict(plugin_info)
 
     def _expected_files(self, instance, filepath):
         """ Create expected files in instance data

@@ -1,26 +1,25 @@
 import os
-
+from dataclasses import dataclass, field, asdict
 import pyblish.api
 
-import attr
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
+@dataclass
 class FusionPluginInfo:
-    FlowFile: str = attr.ib(default=None)   # Input
-    Version: str = attr.ib(default=None)    # Mandatory for Deadline
+    FlowFile: str = field(default=None)   # Input
+    Version: str = field(default=None)    # Mandatory for Deadline
 
     # Render in high quality
-    HighQuality: bool = attr.ib(default=True)
+    HighQuality: bool = field(default=True)
     # Whether saver output should be checked after rendering
     # is complete
-    CheckOutput: bool = attr.ib(default=True)
+    CheckOutput: bool = field(default=True)
     # Proxy: higher numbers smaller images for faster test renders
     # 1 = no proxy quality
-    Proxy: int = attr.ib(default=1)
+    Proxy: int = field(default=1)
 
 
 class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
@@ -124,5 +123,5 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             FlowFile=self.scene_path,
             Version=str(instance.data["app_version"]),
         )
-        plugin_payload: dict = attr.asdict(plugin_info)
+        plugin_payload: dict = asdict(plugin_info)
         return plugin_payload

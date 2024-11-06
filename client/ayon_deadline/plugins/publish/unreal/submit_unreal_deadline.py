@@ -1,5 +1,5 @@
 import os
-import attr
+from dataclasses import dataclass, field, asdict
 import pyblish.api
 from datetime import datetime
 from pathlib import Path
@@ -9,20 +9,20 @@ from ayon_core.lib import is_in_tests
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
-class DeadlinePluginInfo():
-    ProjectFile = attr.ib(default=None)
-    EditorExecutableName = attr.ib(default=None)
-    EngineVersion = attr.ib(default=None)
-    CommandLineMode = attr.ib(default=True)
-    OutputFilePath = attr.ib(default=None)
-    Output = attr.ib(default=None)
-    StartupDirectory = attr.ib(default=None)
-    CommandLineArguments = attr.ib(default=None)
-    MultiProcess = attr.ib(default=None)
-    PerforceStream = attr.ib(default=None)
-    PerforceChangelist = attr.ib(default=None)
-    PerforceGamePath = attr.ib(default=None)
+@dataclass
+class DeadlinePluginInfo:
+    ProjectFile: str = field(default=None)
+    EditorExecutableName: str = field(default=None)
+    EngineVersion: str = field(default=None)
+    CommandLineMode: str = field(default=True)
+    OutputFilePath: str = field(default=None)
+    Output: str = field(default=None)
+    StartupDirectory: str = field(default=None)
+    CommandLineArguments: str = field(default=None)
+    MultiProcess: bool = field(default=None)
+    PerforceStream: str = field(default=None)
+    PerforceChangelist: str = field(default=None)
+    PerforceGamePath: str = field(default=None)
 
 
 class UnrealSubmitDeadline(
@@ -102,7 +102,7 @@ class UnrealSubmitDeadline(
                 deadline_plugin_info,
             )
 
-        return attr.asdict(deadline_plugin_info)
+        return asdict(deadline_plugin_info)
 
     def from_published_scene(self):
         """ Do not overwrite expected files.

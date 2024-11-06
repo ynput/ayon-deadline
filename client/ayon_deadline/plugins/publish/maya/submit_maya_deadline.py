@@ -24,8 +24,7 @@ import hashlib
 from datetime import datetime
 import itertools
 from collections import OrderedDict
-
-import attr
+from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin
@@ -51,44 +50,44 @@ def _validate_deadline_bool_value(instance, attribute, value):
         )
 
 
-@attr.s
+@dataclass
 class MayaPluginInfo(object):
-    SceneFile = attr.ib(default=None)   # Input
-    OutputFilePath = attr.ib(default=None)  # Output directory and filename
-    OutputFilePrefix = attr.ib(default=None)
-    Version = attr.ib(default=None)  # Mandatory for Deadline
-    UsingRenderLayers = attr.ib(default=True)
-    RenderLayer = attr.ib(default=None)  # Render only this layer
-    Renderer = attr.ib(default=None)
-    ProjectPath = attr.ib(default=None)  # Resolve relative references
+    SceneFile: str = field(default=None)   # Input
+    OutputFilePath: str = field(default=None)  # Output directory and filename
+    OutputFilePrefix: str = field(default=None)
+    Version: str = field(default=None)  # Mandatory for Deadline
+    UsingRenderLayers: bool = field(default=True)
+    RenderLayer: str = field(default=None)  # Render only this layer
+    Renderer: str = field(default=None)
+    ProjectPath: str = field(default=None)  # Resolve relative references
     # Include all lights flag
-    RenderSetupIncludeLights = attr.ib(
+    RenderSetupIncludeLights: str = field(
         default="1", validator=_validate_deadline_bool_value)
-    StrictErrorChecking = attr.ib(default=True)
+    StrictErrorChecking: bool = field(default=True)
 
 
-@attr.s
+@dataclass
 class PythonPluginInfo(object):
-    ScriptFile = attr.ib()
-    Version = attr.ib(default="3.6")
-    Arguments = attr.ib(default=None)
-    SingleFrameOnly = attr.ib(default=None)
+    ScriptFile: str = field()
+    Version: str = field(default="3.6")
+    Arguments: str = field(default=None)
+    SingleFrameOnly: str = field(default=None)
 
 
-@attr.s
+@dataclass
 class VRayPluginInfo(object):
-    InputFilename = attr.ib(default=None)   # Input
-    SeparateFilesPerFrame = attr.ib(default=None)
-    VRayEngine = attr.ib(default="V-Ray")
-    Width = attr.ib(default=None)
-    Height = attr.ib(default=None)  # Mandatory for Deadline
-    OutputFilePath = attr.ib(default=True)
-    OutputFileName = attr.ib(default=None)  # Render only this layer
+    InputFilename: str = field(default=None)   # Input
+    SeparateFilesPerFrame: str = field(default=None)
+    VRayEngine: str = field(default="V-Ray")
+    Width: str = field(default=None)
+    Height: str = field(default=None)  # Mandatory for Deadline
+    OutputFilePath: str = field(default=None)
+    OutputFileName: str = field(default=None)  # Render only this layer
 
 
-@attr.s
+@dataclass
 class ArnoldPluginInfo(object):
-    ArnoldFile = attr.ib(default=None)
+    ArnoldFile: str = field(default=None)
 
 
 class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
@@ -153,7 +152,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             StrictErrorChecking=strict_error_checking
         )
 
-        plugin_payload = attr.asdict(plugin_info)
+        plugin_payload = asdict(plugin_info)
 
         return plugin_payload
 
@@ -508,7 +507,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             "OutputFilePath": os.path.dirname(vray_scene)
         }
 
-        return job_info, attr.asdict(plugin_info)
+        return job_info, asdict(plugin_info)
 
     def _get_vray_render_payload(self, data):
 
@@ -529,7 +528,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             OutputFileName=job_info.OutputFilename[0]
         )
 
-        return job_info, attr.asdict(plugin_info)
+        return job_info, asdict(plugin_info)
 
     def _get_arnold_render_payload(self, data):
         # Job Info
@@ -546,7 +545,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             ArnoldFile=ass_filepath
         )
 
-        return job_info, attr.asdict(plugin_info)
+        return job_info, asdict(plugin_info)
 
     def format_vray_output_filename(self):
         """Format the expected output file of the Export job.

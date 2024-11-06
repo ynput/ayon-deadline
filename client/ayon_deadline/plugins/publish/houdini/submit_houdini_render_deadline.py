@@ -1,5 +1,5 @@
 import os
-import attr
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
 import pyblish.api
@@ -13,63 +13,63 @@ from ayon_core.lib import (
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
-class DeadlinePluginInfo():
-    SceneFile = attr.ib(default=None)
-    OutputDriver = attr.ib(default=None)
-    Version = attr.ib(default=None)
-    IgnoreInputs = attr.ib(default=True)
+@dataclass
+class DeadlinePluginInfo:
+    SceneFile: str = field(default=None)
+    OutputDriver: str = field(default=None)
+    Version: str = field(default=None)
+    IgnoreInputs: bool = field(default=True)
 
 
-@attr.s
-class ArnoldRenderDeadlinePluginInfo():
-    InputFile = attr.ib(default=None)
-    Verbose = attr.ib(default=4)
+@dataclass
+class ArnoldRenderDeadlinePluginInfo:
+    InputFile: str = field(default=None)
+    Verbose: int = field(default=4)
 
 
-@attr.s
-class MantraRenderDeadlinePluginInfo():
-    SceneFile = attr.ib(default=None)
-    Version = attr.ib(default=None)
+@dataclass
+class MantraRenderDeadlinePluginInfo:
+    SceneFile: str = field(default=None)
+    Version: str = field(default=None)
 
 
-@attr.s
-class VrayRenderPluginInfo():
-    InputFilename = attr.ib(default=None)
-    SeparateFilesPerFrame = attr.ib(default=True)
+@dataclass
+class VrayRenderPluginInfo:
+    InputFilename: str = field(default=None)
+    SeparateFilesPerFrame: bool = field(default=True)
 
 
-@attr.s
-class RedshiftRenderPluginInfo():
-    SceneFile = attr.ib(default=None)
+@dataclass
+class RedshiftRenderPluginInfo:
+    SceneFile: str = field(default=None)
     # Use "1" as the default Redshift version just because it
     # default fallback version in Deadline's Redshift plugin
     # if no version was specified
-    Version = attr.ib(default="1")
+    Version: str = field(default="1")
 
 
-@attr.s
-class HuskStandalonePluginInfo():
+@dataclass
+class HuskStandalonePluginInfo:
     """Requires Deadline Husk Standalone Plugin.
     See Deadline Plug-in:
         https://github.com/BigRoy/HuskStandaloneSubmitter
     Also see Husk options here:
         https://www.sidefx.com/docs/houdini/ref/utils/husk.html
     """
-    SceneFile = attr.ib()
+    SceneFile: str = field()
     # TODO: Below parameters are only supported by custom version of the plugin
-    Renderer = attr.ib(default=None)
-    RenderSettings = attr.ib(default="/Render/rendersettings")
-    Purpose = attr.ib(default="geometry,render")
-    Complexity = attr.ib(default="veryhigh")
-    Snapshot = attr.ib(default=-1)
-    LogLevel = attr.ib(default="2")
-    PreRender = attr.ib(default="")
-    PreFrame = attr.ib(default="")
-    PostFrame = attr.ib(default="")
-    PostRender = attr.ib(default="")
-    RestartDelegate = attr.ib(default="")
-    Version = attr.ib(default="")
+    Renderer: str = field(default=None)
+    RenderSettings: str = field(default="/Render/rendersettings")
+    Purpose: str = field(default="geometry,render")
+    Complexity: str = field(default="veryhigh")
+    Snapshot: int = field(default=-1)
+    LogLevel: str = field(default="2")
+    PreRender: str = field(default="")
+    PreFrame: str = field(default="")
+    PostFrame: str = field(default="")
+    PostRender: str = field(default="")
+    RestartDelegate: str = field(default="")
+    Version: str = field(default="")
 
 
 class HoudiniSubmitDeadline(
@@ -292,7 +292,7 @@ class HoudiniSubmitDeadline(
                 IgnoreInputs=True
             )
 
-        return attr.asdict(plugin_info)
+        return asdict(plugin_info)
 
     def process(self, instance):
         if not instance.data["farm"]:

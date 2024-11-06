@@ -2,7 +2,7 @@
 """Submitting render job to Deadline."""
 
 import os
-import attr
+from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.pipeline.farm.tools import iter_expected_files
@@ -10,11 +10,11 @@ from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_deadline import abstract_submit_deadline
 
 
-@attr.s
-class BlenderPluginInfo():
-    SceneFile = attr.ib(default=None)   # Input
-    Version = attr.ib(default=None)  # Mandatory for Deadline
-    SaveFile = attr.ib(default=True)
+@dataclass
+class BlenderPluginInfo:
+    SceneFile: str = field(default=None)   # Input
+    Version: str = field(default=None)  # Mandatory for Deadline
+    SaveFile: bool = field(default=True)
 
 
 class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
@@ -48,7 +48,7 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             SaveFile=True,
         )
 
-        plugin_payload = attr.asdict(plugin_info)
+        plugin_payload = asdict(plugin_info)
 
         return plugin_payload
 
