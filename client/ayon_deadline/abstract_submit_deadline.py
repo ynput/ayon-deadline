@@ -122,7 +122,7 @@ class AbstractSubmitDeadline(
             self.log.info("Export job id: %s", job_id)
             render_job_info = self.get_job_info(
                 job_info=job_info, dependency_job_ids=[job_id])
-            render_plugin_info = self.get_plugin_info(ob_type="render")
+            render_plugin_info = self.get_plugin_info(job_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,
                 plugin_info=render_plugin_info
