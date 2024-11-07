@@ -3,7 +3,7 @@ import sys
 
 import requests
 import six
-from typing import Optional, Iterable, Pattern, Union, List, Tuple
+from typing import Optional, List, Tuple
 
 from ayon_core.lib import Logger
 from ayon_core.addon import AYONAddon, IPluginPaths
@@ -69,15 +69,18 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get pools from Deadline API.
+
         Args:
             webservice_url (str): Server url.
-             auth (Optional[Tuple[str, str]]): Tuple containing username,
+            auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
+
         Returns:
-            List[str]: Pools.
-        Throws:
-            RuntimeError: If deadline webservice_url is unreachable.
+            List[str]: Limit Groups.
+
+        Raises:
+            RuntimeError: If deadline webservice is unreachable.
 
         """
         endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
@@ -91,14 +94,17 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get Groups from Deadline API.
+
         Args:
             webservice_url (str): Server url.
             auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
+
         Returns:
             List[str]: Limit Groups.
-        Throws:
+
+        Raises:
             RuntimeError: If deadline webservice_url is unreachable.
 
         """
@@ -113,14 +119,17 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get Limit Groups from Deadline API.
+
         Args:
             webservice_url (str): Server url.
             auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
+
         Returns:
             List[str]: Limit Groups.
-        Throws:
+
+        Raises:
             RuntimeError: If deadline webservice_url is unreachable.
 
         """
@@ -135,14 +144,17 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get Workers (eg.machine names) from Deadline API.
+
         Args:
             webservice_url (str): Server url.
             auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
+
         Returns:
             List[str]: Limit Groups.
-        Throws:
+
+        Raises:
             RuntimeError: If deadline webservice_url is unreachable.
 
         """
