@@ -3,6 +3,7 @@ import sys
 
 import requests
 import six
+from typing import Optional, Iterable, Pattern, Union, List, Tuple
 
 from ayon_core.lib import Logger
 from ayon_core.addon import AYONAddon, IPluginPaths
@@ -38,10 +39,10 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         self.deadline_servers_info = deadline_servers_info
 
-        self._pools_per_server = {}
-        self._limit_groups_per_server = {}
-        self._groups_per_server = {}
-        self._machines_per_server = {}
+        self._pools_by_server_name = {}
+        self._limit_groups_by_server_name = {}
+        self._groups_by_server_name = {}
+        self.__machines_by_server_name = {}
 
     def get_plugin_paths(self):
         """Deadline plugin paths."""
@@ -51,7 +52,10 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         # abstract on the parent class
         return {}
 
-    def get_publish_plugin_paths(self, host_name=None):
+    def get_publish_plugin_paths(
+        self,
+        host_name: Optional[str] = None
+    ) -> List[str]:
         publish_dir = os.path.join(DEADLINE_ADDON_ROOT, "plugins", "publish")
         paths = [os.path.join(publish_dir, "global")]
         if host_name:
@@ -59,8 +63,12 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return paths
 
     @staticmethod
-    def get_deadline_pools(webservice, auth=None, log=None):
-        """Get pools from Deadline.
+    def get_deadline_pools(
+        webservice: str,
+        auth: Optional[Tuple[str, str]] = None,
+        log: Optional[Logger] = None
+    ) -> List[str]:
+        """Get pools from Deadline API.
         Args:
             webservice (str): Server url.
              auth (Optional[Tuple[str, str]]): Tuple containing username,
@@ -77,11 +85,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             endpoint, auth, log, item_type="pools")
 
     @staticmethod
-    def get_deadline_groups(webservice, auth=None, log=None):
-        """Get Groups from Deadline.
+    def get_deadline_groups(
+        webservice: str,
+        auth: Optional[Tuple[str, str]] = None,
+        log: Optional[Logger] = None
+    ) -> List[str]:
+        """Get Groups from Deadline API.
         Args:
             webservice (str): Server url.
-             auth (Optional[Tuple[str, str]]): Tuple containing username,
+            auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
@@ -95,11 +107,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             endpoint, auth, log, item_type="groups")
 
     @staticmethod
-    def get_deadline_limit_groups(webservice, auth=None, log=None):
-        """Get Limit Groups from Deadline.
+    def get_deadline_limit_groups(
+        webservice: str,
+        auth: Optional[Tuple[str, str]] = None,
+        log: Optional[Logger] = None
+    ) -> List[str]:
+        """Get Limit Groups from Deadline API.
         Args:
             webservice (str): Server url.
-             auth (Optional[Tuple[str, str]]): Tuple containing username,
+            auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
@@ -113,11 +129,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             endpoint, auth, log, item_type="limitgroups")
 
     @staticmethod
-    def get_deadline_workers(webservice, auth=None, log=None):
-        """Get Groups from Deadline.
+    def get_deadline_workers(
+        webservice: str,
+        auth: Optional[Tuple[str, str]] = None,
+        log: Optional[Logger] = None
+    ) -> List[str]:
+        """Get Workers (eg.machine names) from Deadline API.
         Args:
             webservice (str): Server url.
-             auth (Optional[Tuple[str, str]]): Tuple containing username,
+            auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
@@ -155,8 +175,8 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return response.json()
 
-    def pools_per_server(self, server_name):
-        pools = self._pools_per_server.get(server_name)
+    def pools_by_server_name(self, server_name: str) -> List[str]:
+        pools = self._pools_by_server_name.get(server_name)
         if pools is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
 
@@ -166,12 +186,12 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
                 dl_server_info["value"],
                 auth
             )
-            self._pools_per_server[server_name] = pools
+            self._pools_by_server_name[server_name] = pools
 
         return pools
 
-    def groups_per_server(self, server_name):
-        groups = self._groups_per_server.get(server_name)
+    def groups_by_server_name(self, server_name: str) -> List[str]:
+        groups = self._groups_by_server_name.get(server_name)
         if groups is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
 
@@ -181,12 +201,12 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
                 dl_server_info["value"],
                 auth
             )
-            self._groups_per_server[server_name] = groups
+            self._groups_by_server_name[server_name] = groups
 
         return groups
 
-    def limit_groups_per_server(self, server_name):
-        limit_groups = self._limit_groups_per_server.get(server_name)
+    def limit_groups_by_server_name(self, server_name: str) -> List[str]:
+        limit_groups = self._limit_groups_by_server_name.get(server_name)
         if limit_groups is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
 
@@ -196,12 +216,12 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
                 dl_server_info["value"],
                 auth
             )
-            self._limit_groups_per_server[server_name] = limit_groups
+            self._limit_groups_by_server_name[server_name] = limit_groups
 
         return limit_groups
 
-    def machines_per_server(self, server_name):
-        machines = self._machines_per_server.get(server_name)
+    def machines_by_server_nameserver(self, server_name: str) -> List[str]:
+        machines = self.__machines_by_server_name.get(server_name)
         if machines is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
 
@@ -211,7 +231,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
                 dl_server_info["value"],
                 auth
             )
-            self._machines_per_server[server_name] = machines
+            self.__machines_by_server_name[server_name] = machines
 
         return machines
 
