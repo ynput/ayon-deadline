@@ -1,23 +1,19 @@
 import os
-import sys
 
-import requests
-import six
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
-from ayon_core.lib import Logger
 from ayon_core.addon import AYONAddon, IPluginPaths
 
+from .lib import (
+    get_deadline_workers,
+    get_deadline_groups,
+    get_deadline_limit_groups,
+    get_deadline_pools
+)
 from .version import __version__
 
 
 DEADLINE_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-
-class DeadlineWebserviceError(Exception):
-    """
-    Exception to throw when connection to Deadline server fails.
-    """
 
 
 class DeadlineAddon(AYONAddon, IPluginPaths):
@@ -62,141 +58,6 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             paths.append(os.path.join(publish_dir, host_name))
         return paths
 
-    @classmethod
-    def get_deadline_pools(
-        cls,
-        webservice_url: str,
-        auth: Optional[Tuple[str, str]] = None,
-        log: Optional[Logger] = None
-    ) -> List[str]:
-        """Get pools from Deadline API.
-
-        Args:
-            webservice_url (str): Server url.
-            auth (Optional[Tuple[str, str]]): Tuple containing username,
-                password
-            log (Optional[Logger]): Logger to log errors to, if provided.
-
-        Returns:
-            List[str]: Limit Groups.
-
-        Raises:
-            RuntimeError: If deadline webservice is unreachable.
-
-        """
-        endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
-        return cls._get_deadline_info(
-            endpoint, auth, log, item_type="pools")
-
-    @classmethod
-    def get_deadline_groups(
-        cls,
-        webservice_url: str,
-        auth: Optional[Tuple[str, str]] = None,
-        log: Optional[Logger] = None
-    ) -> List[str]:
-        """Get Groups from Deadline API.
-
-        Args:
-            webservice_url (str): Server url.
-            auth (Optional[Tuple[str, str]]): Tuple containing username,
-                password
-            log (Optional[Logger]): Logger to log errors to, if provided.
-
-        Returns:
-            List[str]: Limit Groups.
-
-        Raises:
-            RuntimeError: If deadline webservice_url is unreachable.
-
-        """
-        endpoint = "{}/api/groups".format(webservice_url)
-        return cls._get_deadline_info(
-            endpoint, auth, log, item_type="groups")
-
-    @classmethod
-    def get_deadline_limit_groups(
-        cls,
-        webservice_url: str,
-        auth: Optional[Tuple[str, str]] = None,
-        log: Optional[Logger] = None
-    ) -> List[str]:
-        """Get Limit Groups from Deadline API.
-
-        Args:
-            webservice_url (str): Server url.
-            auth (Optional[Tuple[str, str]]): Tuple containing username,
-                password
-            log (Optional[Logger]): Logger to log errors to, if provided.
-
-        Returns:
-            List[str]: Limit Groups.
-
-        Raises:
-            RuntimeError: If deadline webservice_url is unreachable.
-
-        """
-        endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice_url)
-        return cls._get_deadline_info(
-            endpoint, auth, log, item_type="limitgroups")
-
-    @classmethod
-    def get_deadline_workers(
-        cls,
-        webservice_url: str,
-        auth: Optional[Tuple[str, str]] = None,
-        log: Optional[Logger] = None
-    ) -> List[str]:
-        """Get Workers (eg.machine names) from Deadline API.
-
-        Args:
-            webservice_url (str): Server url.
-            auth (Optional[Tuple[str, str]]): Tuple containing username,
-                password
-            log (Optional[Logger]): Logger to log errors to, if provided.
-
-        Returns:
-            List[str]: Limit Groups.
-
-        Raises:
-            RuntimeError: If deadline webservice_url is unreachable.
-
-        """
-        endpoint = "{}/api/slaves?NamesOnly=true".format(webservice_url)
-        return cls._get_deadline_info(
-            endpoint, auth, log, item_type="workers")
-
-    @classmethod
-    def _get_deadline_info(
-        cls,
-        endpoint,
-        auth=None,
-        log=None,
-        item_type=None
-    ):
-        from .abstract_submit_deadline import requests_get
-
-        if not log:
-            log = Logger.get_logger(__name__)
-
-        try:
-            kwargs = {}
-            if auth:
-                kwargs["auth"] = auth
-            response = requests_get(endpoint, **kwargs)
-        except requests.exceptions.ConnectionError as exc:
-            msg = 'Cannot connect to DL web service {}'.format(endpoint)
-            log.error(msg)
-            six.reraise(
-                DeadlineWebserviceError,
-                DeadlineWebserviceError('{} - {}'.format(msg, exc)),
-                sys.exc_info()[2])
-        if not response.ok:
-            log.warning(f"No {item_type} retrieved")
-            return []
-
-        return response.json()
-
     def get_pools_by_server_name(self, server_name: str) -> List[str]:
         """Returns dictionary of pools per DL server
 
@@ -213,7 +74,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
-            pools = self.get_deadline_pools(
+            pools = get_deadline_pools(
                 dl_server_info["value"],
                 auth
             )
@@ -237,7 +98,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
-            groups = self.get_deadline_groups(
+            groups = get_deadline_groups(
                 dl_server_info["value"],
                 auth
             )
@@ -261,7 +122,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
-            limit_groups = self.get_deadline_limit_groups(
+            limit_groups = get_deadline_limit_groups(
                 dl_server_info["value"],
                 auth
             )
@@ -285,7 +146,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
-            machines = self.get_deadline_workers(
+            machines = get_deadline_workers(
                 dl_server_info["value"],
                 auth
             )

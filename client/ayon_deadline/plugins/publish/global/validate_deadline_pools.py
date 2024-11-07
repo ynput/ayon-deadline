@@ -4,7 +4,7 @@ from ayon_core.pipeline import (
     PublishXmlValidationError,
     OptionalPyblishPluginMixin
 )
-from ayon_deadline.lib import FARM_FAMILIES
+from ayon_deadline.lib import FARM_FAMILIES, get_deadline_pools
 
 
 class ValidateDeadlinePools(OptionalPyblishPluginMixin,
@@ -69,7 +69,7 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
                 "Querying available pools for Deadline url: {}".format(
                     deadline_url)
             )
-            pools = deadline_addon.get_deadline_pools(
+            pools = get_deadline_pools(
                 deadline_url, auth=auth, log=self.log
             )
             # some DL return "none" as a pool name

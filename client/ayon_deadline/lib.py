@@ -1,8 +1,12 @@
 import os
+import sys
+import requests
 from dataclasses import dataclass, field, asdict
 from functools import partial
-from typing import Optional, Dict, Any
+from typing import Optional, List, Tuple, Any, Dict
 import json
+
+from ayon_core.lib import Logger
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -47,6 +51,142 @@ def get_instance_job_envs(instance) -> "dict[str, str]":
         env = dict(sorted(env.items()))
 
     return env
+
+
+def get_deadline_pools(
+    webservice_url: str,
+    auth: Optional[Tuple[str, str]] = None,
+    log: Optional[Logger] = None
+) -> List[str]:
+    """Get pools from Deadline API.
+
+    Args:
+        webservice_url (str): Server url.
+        auth (Optional[Tuple[str, str]]): Tuple containing username,
+            password
+        log (Optional[Logger]): Logger to log errors to, if provided.
+
+    Returns:
+        List[str]: Limit Groups.
+
+    Raises:
+        RuntimeError: If deadline webservice is unreachable.
+
+    """
+    endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
+    return _get_deadline_info(
+        endpoint, auth, log, item_type="pools")
+
+
+def get_deadline_groups(
+    webservice_url: str,
+    auth: Optional[Tuple[str, str]] = None,
+    log: Optional[Logger] = None
+) -> List[str]:
+    """Get Groups from Deadline API.
+
+    Args:
+        webservice_url (str): Server url.
+        auth (Optional[Tuple[str, str]]): Tuple containing username,
+            password
+        log (Optional[Logger]): Logger to log errors to, if provided.
+
+    Returns:
+        List[str]: Limit Groups.
+
+    Raises:
+        RuntimeError: If deadline webservice_url is unreachable.
+
+    """
+    endpoint = "{}/api/groups".format(webservice_url)
+    return _get_deadline_info(
+        endpoint, auth, log, item_type="groups")
+
+
+def get_deadline_limit_groups(
+    webservice_url: str,
+    auth: Optional[Tuple[str, str]] = None,
+    log: Optional[Logger] = None
+) -> List[str]:
+    """Get Limit Groups from Deadline API.
+
+    Args:
+        webservice_url (str): Server url.
+        auth (Optional[Tuple[str, str]]): Tuple containing username,
+            password
+        log (Optional[Logger]): Logger to log errors to, if provided.
+
+    Returns:
+        List[str]: Limit Groups.
+
+    Raises:
+        RuntimeError: If deadline webservice_url is unreachable.
+
+    """
+    endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice_url)
+    return _get_deadline_info(
+        endpoint, auth, log, item_type="limitgroups")
+
+def get_deadline_workers(
+    webservice_url: str,
+    auth: Optional[Tuple[str, str]] = None,
+    log: Optional[Logger] = None
+) -> List[str]:
+    """Get Workers (eg.machine names) from Deadline API.
+
+    Args:
+        webservice_url (str): Server url.
+        auth (Optional[Tuple[str, str]]): Tuple containing username,
+            password
+        log (Optional[Logger]): Logger to log errors to, if provided.
+
+    Returns:
+        List[str]: Limit Groups.
+
+    Raises:
+        RuntimeError: If deadline webservice_url is unreachable.
+
+    """
+    endpoint = "{}/api/slaves?NamesOnly=true".format(webservice_url)
+    return _get_deadline_info(
+        endpoint, auth, log, item_type="workers")
+
+
+def _get_deadline_info(
+    endpoint,
+    auth=None,
+    log=None,
+    item_type=None
+):
+    from .abstract_submit_deadline import requests_get
+
+    if not log:
+        log = Logger.get_logger(__name__)
+
+    try:
+        kwargs = {}
+        if auth:
+            kwargs["auth"] = auth
+        response = requests_get(endpoint, **kwargs)
+    except requests.exceptions.ConnectionError as exc:
+        msg = 'Cannot connect to DL web service {}'.format(endpoint)
+        log.error(msg)
+        raise(
+            DeadlineWebserviceError,
+            DeadlineWebserviceError('{} - {}'.format(msg, exc)),
+            sys.exc_info()[2]
+        )
+    if not response.ok:
+        log.warning(f"No {item_type} retrieved")
+        return []
+
+    return response.json()
+
+
+class DeadlineWebserviceError(Exception):
+    """
+    Exception to throw when connection to Deadline server fails.
+    """
 
 
 class DeadlineKeyValueVar(dict):
@@ -365,7 +505,7 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         return serialized
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'AYONDeadlineJobInfo':
+    def from_dict(cls, data: Dict[str, Any]) -> 'AYONDeadlineJobInfo':
 
         implemented_field_values = {
             "ChunkSize": data["chunk_size"],
