@@ -315,17 +315,8 @@ class AfterEffectsSubmitDeadlineModel(BaseSettingsModel):
 
 class CelactionSubmitDeadlineModel(BaseSettingsModel):
     enabled: bool = SettingsField(True, title="Enabled")
-    deadline_department: str = SettingsField("", title="Deadline apartment")
-    deadline_priority: int = SettingsField(50, title="Deadline priority")
-    deadline_pool: str = SettingsField("", title="Deadline pool")
-    deadline_pool_secondary: str = SettingsField(
-        "", title="Deadline pool (secondary)"
-    )
-    deadline_group: str = SettingsField("", title="Deadline Group")
-    deadline_chunk_size: int = SettingsField(10, title="Deadline Chunk size")
-    deadline_job_delay: str = SettingsField(
-        "", title="Delay job (timecode dd:hh:mm:ss)"
-    )
+    optional: bool = SettingsField(title="Optional")
+    active: bool = SettingsField(title="Active")
 
 
 class BlenderSubmitDeadlineModel(BaseSettingsModel):
@@ -474,13 +465,8 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
     },
     "CelactionSubmitDeadline": {
         "enabled": True,
-        "deadline_department": "",
-        "deadline_priority": 50,
-        "deadline_pool": "",
-        "deadline_pool_secondary": "",
-        "deadline_group": "",
-        "deadline_chunk_size": 10,
-        "deadline_job_delay": "00:00:00:00"
+        "optional": False,
+        "active": True,
     },
     "FusionSubmitDeadline": {
         "enabled": True,
