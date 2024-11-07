@@ -90,16 +90,16 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         addons_manager = AddonsManager()
         deadline_addon = addons_manager["deadline"]
         deadline_server_name = settings["deadline_server"]
-        pools = deadline_addon.pools_by_server_name(deadline_server_name)
+        pools = deadline_addon.get_pools_by_server_name(deadline_server_name)
         for pool in pools:
             cls.pool_enum_values.append({"value": pool, "label": pool})
 
-        groups = deadline_addon.groups_by_server_name(deadline_server_name)
+        groups = deadline_addon.get_groups_by_server_name(deadline_server_name)
         for group in groups:
             cls.group_enum_values.append({"value": group, "label": group})
 
         limit_groups = (
-            deadline_addon.limit_groups_by_server_name(deadline_server_name))
+            deadline_addon.get_limit_groups_by_server_name(deadline_server_name))
         if not limit_groups:
             limit_groups.append("none")  # enum cannot be empty
         for limit_group in limit_groups:
@@ -107,7 +107,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 {"value": limit_group, "label": limit_group})
 
         machines = (
-            deadline_addon.machines_by_server_nameserver(deadline_server_name))
+            deadline_addon.get_machines_by_server_nameserver(deadline_server_name))
         for machine in machines:
             cls.machines_enum_values.append(
                 {"value": machine, "label": machine})

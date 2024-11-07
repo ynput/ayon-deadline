@@ -197,7 +197,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return response.json()
 
-    def pools_by_server_name(self, server_name: str) -> List[str]:
+    def get_pools_by_server_name(self, server_name: str) -> List[str]:
         """Returns dictionary of pools per DL server
 
         Args:
@@ -221,7 +221,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return pools
 
-    def groups_by_server_name(self, server_name: str) -> List[str]:
+    def get_groups_by_server_name(self, server_name: str) -> List[str]:
         """Returns dictionary of groups per DL server
 
         Args:
@@ -245,7 +245,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return groups
 
-    def limit_groups_by_server_name(self, server_name: str) -> List[str]:
+    def get_limit_groups_by_server_name(self, server_name: str) -> List[str]:
         """Returns dictionary of limit groups per DL server
 
         Args:
@@ -269,7 +269,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return limit_groups
 
-    def machines_by_server_nameserver(self, server_name: str) -> List[str]:
+    def get_machines_by_server_nameserver(self, server_name: str) -> List[str]:
         """Returns dictionary of machines/workers per DL server
 
         Args:
