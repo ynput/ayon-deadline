@@ -85,7 +85,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         """
         endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
-        return DeadlineAddon._get_deadline_info(
+        return cls._get_deadline_info(
             endpoint, auth, log, item_type="pools")
 
     @classmethod
@@ -111,7 +111,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         """
         endpoint = "{}/api/groups".format(webservice_url)
-        return DeadlineAddon._get_deadline_info(
+        return cls._get_deadline_info(
             endpoint, auth, log, item_type="groups")
 
     @classmethod
@@ -137,7 +137,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         """
         endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice_url)
-        return DeadlineAddon._get_deadline_info(
+        return cls._get_deadline_info(
             endpoint, auth, log, item_type="limitgroups")
 
     @classmethod
@@ -163,7 +163,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         """
         endpoint = "{}/api/slaves?NamesOnly=true".format(webservice_url)
-        return DeadlineAddon._get_deadline_info(
+        return cls._get_deadline_info(
             endpoint, auth, log, item_type="workers")
 
     @classmethod
