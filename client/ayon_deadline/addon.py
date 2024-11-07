@@ -130,7 +130,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return limit_groups
 
-    def get_machines_by_server_nameserver(self, server_name: str) -> List[str]:
+    def get_machines_by_server_name(self, server_name: str) -> List[str]:
         """Returns dictionary of machines/workers per DL server
 
         Args:

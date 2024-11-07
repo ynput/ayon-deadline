@@ -107,7 +107,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 {"value": limit_group, "label": limit_group})
 
         machines = (
-            deadline_addon.get_machines_by_server_nameserver(deadline_server_name))
+            deadline_addon.get_machines_by_server_name(deadline_server_name))
         for machine in machines:
             cls.machines_enum_values.append(
                 {"value": machine, "label": machine})
