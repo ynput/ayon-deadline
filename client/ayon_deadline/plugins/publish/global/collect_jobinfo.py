@@ -114,6 +114,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
+        """Get list of attr defs that are set in Settings as artist overridable
+
+        Args:
+            create_context (ayon_core.pipeline.create.CreateContext)
+            instance (ayon_core.pipeline.create.CreatedInstance):
+
+        Returns:
+            (list)
+        """
         if instance.product_type not in cls.families:
             return []
 
@@ -148,7 +157,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
-        # explicit
+        # explicit frames to render - for test renders
         defs.append(
             TextDef(
                 "frames",
@@ -168,7 +177,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     @classmethod
     def _get_artist_overrides(cls, overrides, profile):
-        """Provide list of Defs that could be filled by artist"""
+        """Provide list of all possible Defs that could be filled by artist"""
         # should be matching to extract_jobinfo_overrides_enum
         default_values = {}
         for key in overrides:
