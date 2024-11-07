@@ -109,16 +109,6 @@ class CollectJobInfoItem(BaseSettingsModel):
         True, title="Workfile Dependency")
     multiprocess: bool = SettingsField(False, title="Multiprocess")
 
-    env_allowed_keys: list[str] = SettingsField(
-        default_factory=list,
-        title="Allowed environment keys",
-        description="Pass selected environment variables with current value"
-    )
-    env_search_replace_values: list[EnvSearchReplaceSubmodel] = SettingsField(
-        default_factory=list,
-        title="Search & replace in environment values",
-        description="Replace string values in 'Name' with value from 'Value'"
-    )
     additional_job_info: str = SettingsField(
         "",
         title="Additional JobInfo data",
