@@ -88,7 +88,6 @@ class NukeSubmitDeadline(
         if instance.data.get("bakingNukeScripts"):
             for baking_script in instance.data["bakingNukeScripts"]:
                 self.job_info.JobType = "Normal"
-                self.job_info.ChunkSize = 99999999
 
                 response_data = instance.data["deadlineSubmissionJob"]
                 if response_data.get("_id"):
