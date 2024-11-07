@@ -188,6 +188,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return response.json()
 
     def pools_by_server_name(self, server_name: str) -> List[str]:
+        """Returns dictionary of pools per DL server
+
+        Args:
+            server_name (str): Deadline Server name from Project Settings.
+
+        Returns:
+            Dict[str, List[str]]: {"default": ["pool1", "pool2"]}
+
+        """
         pools = self._pools_by_server_name.get(server_name)
         if pools is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
@@ -203,6 +212,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return pools
 
     def groups_by_server_name(self, server_name: str) -> List[str]:
+        """Returns dictionary of groups per DL server
+
+        Args:
+            server_name (str): Deadline Server name from Project Settings.
+
+        Returns:
+            Dict[str, List[str]]: {"default": ["group1", "group2"]}
+
+        """
         groups = self._groups_by_server_name.get(server_name)
         if groups is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
@@ -218,6 +236,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return groups
 
     def limit_groups_by_server_name(self, server_name: str) -> List[str]:
+        """Returns dictionary of limit groups per DL server
+
+        Args:
+            server_name (str): Deadline Server name from Project Settings.
+
+        Returns:
+            Dict[str, List[str]]: {"default": ["limit1", "limit2"]}
+
+        """
         limit_groups = self._limit_groups_by_server_name.get(server_name)
         if limit_groups is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
@@ -233,6 +260,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return limit_groups
 
     def machines_by_server_nameserver(self, server_name: str) -> List[str]:
+        """Returns dictionary of machines/workers per DL server
+
+        Args:
+            server_name (str): Deadline Server name from Project Settings.
+
+        Returns:
+            Dict[str, List[str]]: {"default": ["renderNode1", "PC1"]}
+
+        """
         machines = self.__machines_by_server_name.get(server_name)
         if machines is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
@@ -246,4 +282,3 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             self.__machines_by_server_name[server_name] = machines
 
         return machines
-
