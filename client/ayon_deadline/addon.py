@@ -42,7 +42,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         self._pools_by_server_name = {}
         self._limit_groups_by_server_name = {}
         self._groups_by_server_name = {}
-        self.__machines_by_server_name = {}
+        self._machines_by_server_name = {}
 
     def get_plugin_paths(self):
         """Deadline plugin paths."""
@@ -279,7 +279,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             Dict[str, List[str]]: {"default": ["renderNode1", "PC1"]}
 
         """
-        machines = self.__machines_by_server_name.get(server_name)
+        machines = self._machines_by_server_name.get(server_name)
         if machines is None:
             dl_server_info = self.deadline_servers_info.get(server_name)
 
@@ -289,6 +289,6 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
                 dl_server_info["value"],
                 auth
             )
-            self.__machines_by_server_name[server_name] = machines
+            self._machines_by_server_name[server_name] = machines
 
         return machines
