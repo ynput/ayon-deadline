@@ -209,7 +209,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         """
         pools = self._pools_by_server_name.get(server_name)
         if pools is None:
-            dl_server_info = self.deadline_servers_info.get(server_name)
+            dl_server_info = self.deadline_servers_info[server_name]
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
@@ -233,7 +233,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         """
         groups = self._groups_by_server_name.get(server_name)
         if groups is None:
-            dl_server_info = self.deadline_servers_info.get(server_name)
+            dl_server_info = self.deadline_servers_info[server_name]
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
@@ -257,7 +257,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         """
         limit_groups = self._limit_groups_by_server_name.get(server_name)
         if limit_groups is None:
-            dl_server_info = self.deadline_servers_info.get(server_name)
+            dl_server_info = self.deadline_servers_info[server_name]
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
@@ -281,7 +281,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         """
         machines = self._machines_by_server_name.get(server_name)
         if machines is None:
-            dl_server_info = self.deadline_servers_info.get(server_name)
+            dl_server_info = self.deadline_servers_info[server_name]
 
             auth = (dl_server_info["default_username"],
                     dl_server_info["default_password"])
