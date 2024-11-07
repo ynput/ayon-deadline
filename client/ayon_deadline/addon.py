@@ -64,89 +64,89 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
     @staticmethod
     def get_deadline_pools(
-        webservice: str,
+        webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get pools from Deadline API.
         Args:
-            webservice (str): Server url.
+            webservice_url (str): Server url.
              auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
             List[str]: Pools.
         Throws:
-            RuntimeError: If deadline webservice is unreachable.
+            RuntimeError: If deadline webservice_url is unreachable.
 
         """
-        endpoint = "{}/api/pools?NamesOnly=true".format(webservice)
+        endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="pools")
 
     @staticmethod
     def get_deadline_groups(
-        webservice: str,
+        webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get Groups from Deadline API.
         Args:
-            webservice (str): Server url.
+            webservice_url (str): Server url.
             auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
             List[str]: Limit Groups.
         Throws:
-            RuntimeError: If deadline webservice is unreachable.
+            RuntimeError: If deadline webservice_url is unreachable.
 
         """
-        endpoint = "{}/api/groups".format(webservice)
+        endpoint = "{}/api/groups".format(webservice_url)
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="groups")
 
     @staticmethod
     def get_deadline_limit_groups(
-        webservice: str,
+        webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get Limit Groups from Deadline API.
         Args:
-            webservice (str): Server url.
+            webservice_url (str): Server url.
             auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
             List[str]: Limit Groups.
         Throws:
-            RuntimeError: If deadline webservice is unreachable.
+            RuntimeError: If deadline webservice_url is unreachable.
 
         """
-        endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice)
+        endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice_url)
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="limitgroups")
 
     @staticmethod
     def get_deadline_workers(
-        webservice: str,
+        webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
     ) -> List[str]:
         """Get Workers (eg.machine names) from Deadline API.
         Args:
-            webservice (str): Server url.
+            webservice_url (str): Server url.
             auth (Optional[Tuple[str, str]]): Tuple containing username,
                 password
             log (Optional[Logger]): Logger to log errors to, if provided.
         Returns:
             List[str]: Limit Groups.
         Throws:
-            RuntimeError: If deadline webservice is unreachable.
+            RuntimeError: If deadline webservice_url is unreachable.
 
         """
-        endpoint = "{}/api/slaves?NamesOnly=true".format(webservice)
+        endpoint = "{}/api/slaves?NamesOnly=true".format(webservice_url)
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="workers")
 
