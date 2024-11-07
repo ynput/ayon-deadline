@@ -62,8 +62,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             paths.append(os.path.join(publish_dir, host_name))
         return paths
 
-    @staticmethod
+    @classmethod
     def get_deadline_pools(
+        cls,
         webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
@@ -87,8 +88,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="pools")
 
-    @staticmethod
+    @classmethod
     def get_deadline_groups(
+        cls,
         webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
@@ -112,8 +114,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="groups")
 
-    @staticmethod
+    @classmethod
     def get_deadline_limit_groups(
+        cls,
         webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
@@ -137,8 +140,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="limitgroups")
 
-    @staticmethod
+    @classmethod
     def get_deadline_workers(
+        cls,
         webservice_url: str,
         auth: Optional[Tuple[str, str]] = None,
         log: Optional[Logger] = None
@@ -162,8 +166,14 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return DeadlineAddon._get_deadline_info(
             endpoint, auth, log, item_type="workers")
 
-    @staticmethod
-    def _get_deadline_info(endpoint, auth=None, log=None, item_type=None):
+    @classmethod
+    def _get_deadline_info(
+        cls,
+        endpoint,
+        auth=None,
+        log=None,
+        item_type=None
+    ):
         from .abstract_submit_deadline import requests_get
 
         if not log:
