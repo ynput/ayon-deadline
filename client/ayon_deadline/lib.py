@@ -402,8 +402,8 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         """Serialize the dataclass instance to a JSON string."""
         return json.dumps(asdict(self))
 
-    @classmethod
-    def _sanitize(cls, value) -> str:
+    @staticmethod
+    def _sanitize(value) -> str:
         if isinstance(value, str):
             if value == "none":
                 return None
