@@ -97,7 +97,6 @@ class CollectJobInfoItem(BaseSettingsModel):
     concurrent_tasks: int = SettingsField(
         1, title="Number of concurrent tasks")
     department: str = SettingsField("", title="Department")
-    use_gpu: bool = SettingsField("", title="Use GPU")
     job_delay: str = SettingsField(
         "", title="Delay job",
         placeholder="dd:hh:mm:ss"
@@ -248,9 +247,11 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     optional: bool = SettingsField(title="Optional")
     active: bool = SettingsField(title="Active")
 
+    use_gpu: bool = SettingsField(True, title="Use GPU")
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
         default_factory=list,
         title="Node based Limit Groups",
+        description="Provide list of node types to get particular limit"
     )
 
 

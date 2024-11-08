@@ -4,6 +4,7 @@ from dataclasses import dataclass, field, asdict
 
 import pyblish.api
 
+from ayon_core.lib import BoolDef
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin
 )
@@ -37,6 +38,10 @@ class NukeSubmitDeadline(
     families = ["render", "prerender"]
     optional = True
     targets = ["local"]
+    settings_category = "deadline"
+
+    use_gpu = None
+    node_class_limit_groups = {}
 
     def process(self, instance):
         """Plugin entry point."""
@@ -124,8 +129,7 @@ class NukeSubmitDeadline(
             start=start_frame,
             end=end_frame
         )
-
-        limit_groups = self._get_limit_groups(job_info.LimitGroups or [])
+        limit_groups = self._get_limit_groups(self.node_class_limit_groups)
         job_info.LimitGroups = limit_groups
 
         return job_info
@@ -136,18 +140,30 @@ class NukeSubmitDeadline(
         context = instance.context
         version = re.search(r"\d+\.\d+", context.data.get("hostVersion"))
 
+        attribute_values = self.get_attr_values_from_data(instance.data)
+
         render_dir = os.path.dirname(render_path)
         plugin_info = NukePluginInfo(
             SceneFile=scene_path,
             Version=version.group(),
             OutputFilePath=render_dir.replace("\\", "/"),
             ProjectPath=scene_path,
-            UseGpu=True,
+            UseGpu=attribute_values["use_gpu"],
             WriteNode=write_node_name
         )
 
         plugin_payload: dict = asdict(plugin_info)
         return plugin_payload
+
+    @classmethod
+    def get_attribute_defs(cls):
+        return [
+            BoolDef(
+                "use_gpu",
+                label="Use GPU",
+                default=cls.use_gpu,
+            ),
+        ]
 
     def _get_limit_groups(self, limit_groups):
         """Search for limit group nodes and return group name.
