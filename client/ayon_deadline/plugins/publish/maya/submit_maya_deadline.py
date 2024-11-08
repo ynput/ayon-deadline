@@ -340,10 +340,8 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                                                      self.tile_priority)
         assembly_job_info.TileJob = False
 
-        # TODO: This should be a new publisher attribute definition
-        pool = instance.context.data["project_settings"]["deadline"]
-        pool = pool["publish"]["ProcessSubmittedJobOnFarm"]["deadline_pool"]
-        assembly_job_info.Pool = pool or instance.data.get("primaryPool", "")
+        assembly_job_info.Pool = (instance.data.get("primaryPool") or
+                                  self.job_info.Pool)
 
         assembly_plugin_info = {
             "CleanupTiles": 1,
