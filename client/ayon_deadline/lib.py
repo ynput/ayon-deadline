@@ -354,13 +354,13 @@ class DeadlineJobInfo:
     # Machine Limit
     MachineLimit: Optional[int] = field(default=None)  # Default: 0
     MachineLimitProgress: Optional[float] = field(default=None)  # Default -1.0
-    Whitelist: Optional[str] = field(
-        default=None)  # Default blank (comma-separated list)
-    Blacklist: Optional[str] = field(
-        default=None)  # Default blank (comma-separated list)
+    Whitelist: Optional[List[str]] = field(
+        default_factory=list)  # Default blank (comma-separated list)
+    Blacklist: Optional[List[str]] = field(
+        default_factory=list)  # Default blank (comma-separated list)
 
     # Limits
-    LimitGroups: Optional[str] = field(default=None)  # Default: blank
+    LimitGroups: Optional[List[str]] = field(default_factory=list)  # Default: blank
 
     # Dependencies
     JobDependencies: Optional[str] = field(default=None)  # Default: blank
@@ -502,6 +502,13 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             self.AssetDependency
         ]:
             serialized.update(attribute.serialize())
+
+        for attribute_key in [
+            "LimitGroups",
+            "Whitelist",
+            "Blacklist",
+        ]:
+            serialized[attribute_key] = ",".join(serialized[attribute_key])
 
         return serialized
 

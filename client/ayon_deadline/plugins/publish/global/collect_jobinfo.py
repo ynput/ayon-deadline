@@ -76,9 +76,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         machine_list = attr_values["machine_list"]
         if machine_list:
             if attr_values["machine_list_deny"]:
-                job_info.Blacklist = ",".join(machine_list)
+                job_info.Blacklist = machine_list
             else:
-                job_info.Whitelist = ",".join(machine_list)
+                job_info.Whitelist = machine_list
 
     @classmethod
     def apply_settings(cls, project_settings):
@@ -194,8 +194,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                     if value in cls.limit_group_enum_values:
                         filtered.append(value)
                 default_value = filtered
-            if isinstance(default_value, list):
-                default_value = ",".join(default_value)
             if key == "group" and default_value not in cls.group_enum_values:
                 default_value = ""
             default_values[key] = default_value
