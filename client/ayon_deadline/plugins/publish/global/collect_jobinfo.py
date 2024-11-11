@@ -299,23 +299,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         """
         context_data = instance.context.data
         host_name = context_data["hostName"]
-        project_settings = context_data["project_settings"]
         task_entity = context_data["taskEntity"]
 
         task_name = task_type = None
         if task_entity:
             task_name = task_entity["name"]
             task_type = task_entity["taskType"]
-        profiles = (
-            project_settings
-            ["deadline"]
-            ["publish"]
-            ["CollectJobInfo"]
-            ["profiles"]
-        )
 
         profile = filter_profiles(
-            profiles,
+            self.profiles,
             {
                 "host_names": host_name,
                 "task_types": task_type,
