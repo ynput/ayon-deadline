@@ -555,6 +555,7 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         if isinstance(value, str):
             if value == "none":
                 return None
+            return value
         if isinstance(value, list):
             filtered = []
             for val in value:
