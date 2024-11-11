@@ -278,6 +278,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     def on_values_changed(cls, event):
         for instance_change in event["changes"]:
             instance = instance_change["instance"]
+            #recalculate only if context changes
+            if not instance_change.get("productName"):
+                continue
+
             if not cls.instance_matches_plugin_families(instance):
                 continue
 
