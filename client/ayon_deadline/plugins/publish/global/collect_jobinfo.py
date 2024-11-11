@@ -266,13 +266,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             )
         ]
 
-        override_defs = []
-        for attr_def in attr_defs:
-            if attr_def.key not in overrides:
-                continue
-            override_defs.append(attr_def)
-
-        return override_defs
+        return [
+            attr_def
+            for attr_def in attr_defs
+            if attr_def.key in overrides
+        ]
 
     @classmethod
     def register_create_context_callbacks(cls, create_context):
