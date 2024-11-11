@@ -87,7 +87,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         cls.profiles = profiles or []
 
-        addons_manager = AddonsManager()
+        addons_manager = AddonsManager(project_settings)
         deadline_addon = addons_manager["deadline"]
         deadline_server_name = settings["deadline_server"]
         pools = deadline_addon.get_pools_by_server_name(deadline_server_name)
