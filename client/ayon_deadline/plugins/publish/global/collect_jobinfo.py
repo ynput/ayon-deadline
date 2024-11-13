@@ -193,11 +193,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                         filtered.append(value)
                 default_value = filtered
             if key == "limit_groups":
-                filtered = []
-                for value in default_value:
-                    if value in cls.limit_group_enum_values:
-                        filtered.append(value)
-                default_value = filtered
+                default_value = [
+                    value
+                    for value in default_value
+                    if value in cls.limit_group_enum_values
+                ]
             if key == "group" and default_value not in cls.group_enum_values:
                 default_value = ""
             default_values[key] = default_value
