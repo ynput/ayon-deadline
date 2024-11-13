@@ -97,8 +97,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         ]
 
         groups = deadline_addon.get_groups_by_server_name(deadline_server_name)
-        for group in groups:
-            cls.group_enum_values.append({"value": group, "label": group})
+        cls.group_enum_values = [
+            {"value": group, "label": group}
+            for group in groups
+        ]
 
         limit_groups = (
             deadline_addon.get_limit_groups_by_server_name(deadline_server_name))
