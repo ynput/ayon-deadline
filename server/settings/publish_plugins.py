@@ -352,6 +352,34 @@ class PublishPluginsModel(BaseSettingsModel):
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
+    "CollectJobInfo": {
+        "profiles": [
+            {
+              "group": "",
+              "priority": 50,
+              "job_delay": "",
+              "overrides": [],
+              "chunk_size": 999,
+              "department": "",
+              "host_names": [],
+              "task_names": [],
+              "task_types": [],
+              "limit_groups": [],
+              "machine_list": [],
+              "multiprocess": False,
+              "primary_pool": "",
+              "machine_limit": 0,
+              "use_published": True,
+              "secondary_pool": "",
+              "concurrent_tasks": 1,
+              "machine_list_deny": False,
+              "additional_job_info": "",
+              "additional_plugin_info": "",
+              "use_asset_dependencies": True,
+              "use_workfile_dependency": True
+            }
+        ]
+    },
     "CollectAYONServerToFarmJob": {
         "enabled": False
     },
