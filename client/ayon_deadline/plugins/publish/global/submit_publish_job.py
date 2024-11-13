@@ -482,7 +482,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "comment": instance.context.data.get("comment"),
             "job": render_job or None,
             "instances": instances
-
         }
         if deadline_publish_job_id:
             publish_job["deadline_publish_job_id"] = deadline_publish_job_id
