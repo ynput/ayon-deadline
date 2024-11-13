@@ -108,11 +108,13 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             cls.limit_group_enum_values.append(
                 {"value": limit_group, "label": limit_group})
 
-        machines = (
-            deadline_addon.get_machines_by_server_name(deadline_server_name))
-        for machine in machines:
-            cls.machines_enum_values.append(
-                {"value": machine, "label": machine})
+        machines = deadline_addon.get_machines_by_server_name(
+            deadline_server_name
+        )
+        cls.machines_enum_values = [
+            {"value": machine, "label": machine}
+            for machine in machines
+        ]
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
