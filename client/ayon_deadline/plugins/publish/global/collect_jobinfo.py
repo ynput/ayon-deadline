@@ -91,8 +91,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         deadline_addon = addons_manager["deadline"]
         deadline_server_name = settings["deadline_server"]
         pools = deadline_addon.get_pools_by_server_name(deadline_server_name)
-        for pool in pools:
-            cls.pool_enum_values.append({"value": pool, "label": pool})
+        cls.pool_enum_values = [
+            {"value": pool, "label": pool}
+            for pool in pools
+        ]
 
         groups = deadline_addon.get_groups_by_server_name(deadline_server_name)
         for group in groups:
