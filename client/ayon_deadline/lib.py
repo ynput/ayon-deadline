@@ -17,7 +17,8 @@ FARM_FAMILIES = [
     "vrayscene", "maxrender",
     "arnold_rop", "mantra_rop",
     "karma_rop", "vray_rop", "redshift_rop",
-    "renderFarm", "usdrender", "publish.hou"
+    "renderFarm", "usdrender", "publish.hou",
+    "deadline"
 ]
 
 # Constant defining where we store job environment variables on instance or
