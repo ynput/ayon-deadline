@@ -358,7 +358,14 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
               "group": "",
               "priority": 50,
               "job_delay": "",
-              "overrides": [],
+              "overrides": [
+                "department",
+                "chunk_size",
+                "group",
+                "priority",
+                "primary_pool",
+                "secondary_pool"
+              ],
               "chunk_size": 999,
               "department": "",
               "host_names": [],
