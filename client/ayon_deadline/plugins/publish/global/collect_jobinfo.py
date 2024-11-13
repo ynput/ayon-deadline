@@ -111,7 +111,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         ]
         if not limit_group_items:
             limit_group_items.append({"value": None, "label": "< none >"})
-        cls.group_enum_values = limit_group_items
+        cls.limit_group_enum_values = limit_group_items
 
         machines = deadline_addon.get_machines_by_server_name(
             deadline_server_name
