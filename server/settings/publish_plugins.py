@@ -135,7 +135,6 @@ class CollectJobInfoItem(BaseSettingsModel):
 
 class CollectJobInfoModel(BaseSettingsModel):
     _isGroup = True
-    enabled: bool = SettingsField(False)
     profiles: list[CollectJobInfoItem] = SettingsField(default_factory=list)
 
 
@@ -177,9 +176,6 @@ class ScenePatchesSubmodel(BaseSettingsModel):
 class MayaSubmitDeadlineModel(BaseSettingsModel):
     """Maya deadline submitter settings."""
 
-    enabled: bool = SettingsField(title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
     import_reference: bool = SettingsField(
         title="Use Scene with Imported Reference"
     )
@@ -204,12 +200,6 @@ class MayaSubmitDeadlineModel(BaseSettingsModel):
         return value
 
 
-class MaxSubmitDeadlineModel(BaseSettingsModel):
-    enabled: bool = SettingsField(True)
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
-
 def fusion_deadline_plugin_enum():
     """Return a list of value/label dicts for the enumerator.
 
@@ -229,9 +219,6 @@ def fusion_deadline_plugin_enum():
 
 
 class FusionSubmitDeadlineModel(BaseSettingsModel):
-    enabled: bool = SettingsField(True, title="Enabled")
-    optional: bool = SettingsField(False, title="Optional")
-    active: bool = SettingsField(True, title="Active")
     concurrent_tasks: int = SettingsField(
         1, title="Number of concurrent tasks"
     )
@@ -243,10 +230,6 @@ class FusionSubmitDeadlineModel(BaseSettingsModel):
 class NukeSubmitDeadlineModel(BaseSettingsModel):
     """Nuke deadline submitter settings."""
 
-    enabled: bool = SettingsField(title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
     use_gpu: bool = SettingsField(True, title="Use GPU")
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
         default_factory=list,
@@ -255,19 +238,8 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     )
 
 
-class HarmonySubmitDeadlineModel(BaseSettingsModel):
-    """Harmony deadline submitter settings."""
-
-    enabled: bool = SettingsField(title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
-
 class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     """Houdini deadline render submitter settings."""
-    enabled: bool = SettingsField(title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
 
     export_priority: int = SettingsField(title="Export Priority")
     export_chunk_size: int = SettingsField(title="Export Chunk Size")
@@ -289,33 +261,6 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     )
 
 
-class HoudiniCacheSubmitDeadlineModel(BaseSettingsModel):
-    """Houdini deadline cache submitter settings."""
-    enabled: bool = SettingsField(title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
-
-class AfterEffectsSubmitDeadlineModel(BaseSettingsModel):
-    """After Effects deadline submitter settings."""
-
-    enabled: bool = SettingsField(title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
-
-class CelactionSubmitDeadlineModel(BaseSettingsModel):
-    enabled: bool = SettingsField(True, title="Enabled")
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
-
-class BlenderSubmitDeadlineModel(BaseSettingsModel):
-    enabled: bool = SettingsField(True)
-    optional: bool = SettingsField(title="Optional")
-    active: bool = SettingsField(title="Active")
-
-
 class AOVFilterSubmodel(BaseSettingsModel):
     _layout = "expanded"
     name: str = SettingsField(title="Host")
@@ -328,7 +273,6 @@ class AOVFilterSubmodel(BaseSettingsModel):
 class ProcessCacheJobFarmModel(BaseSettingsModel):
     """Process submitted job on farm."""
 
-    enabled: bool = SettingsField(title="Enabled")
     deadline_department: str = SettingsField(title="Department")
     deadline_pool: str = SettingsField(title="Pool")
     deadline_group: str = SettingsField(title="Group")
@@ -338,7 +282,6 @@ class ProcessCacheJobFarmModel(BaseSettingsModel):
 class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
     """Process submitted job on farm."""
 
-    enabled: bool = SettingsField(title="Enabled")
     deadline_department: str = SettingsField(title="Department")
     deadline_pool: str = SettingsField(title="Pool")
     deadline_group: str = SettingsField(title="Group")
@@ -368,7 +311,12 @@ class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
 class PublishPluginsModel(BaseSettingsModel):
     CollectJobInfo: CollectJobInfoModel = SettingsField(
         default_factory=CollectJobInfoModel,
-        title="Collect JobInfo")
+        title="Collect JobInfo",
+        description="Generic plugin collecting Deadline job properties like "
+                    "Pools, Groups etc. It allows atomic control based on "
+                    "Profiles (eg. different tasky types might use different "
+                    "Pools etc.)"
+    )
     CollectAYONServerToFarmJob: CollectAYONServerToFarmJobModel = SettingsField(  # noqa
         default_factory=CollectAYONServerToFarmJobModel,
         title="Add AYON server to farm job",
@@ -382,34 +330,12 @@ class PublishPluginsModel(BaseSettingsModel):
         default_factory=ValidateExpectedFilesModel,
         title="Validate Expected Files"
     )
-    AfterEffectsSubmitDeadline: AfterEffectsSubmitDeadlineModel = (
-        SettingsField(
-            default_factory=AfterEffectsSubmitDeadlineModel,
-            title="After Effects to deadline",
-            section="Hosts"
-        )
-    )
-    BlenderSubmitDeadline: BlenderSubmitDeadlineModel = SettingsField(
-        default_factory=BlenderSubmitDeadlineModel,
-        title="Blender Submit Deadline")
-    CelactionSubmitDeadline: CelactionSubmitDeadlineModel = SettingsField(
-        default_factory=CelactionSubmitDeadlineModel,
-        title="Celaction Submit Deadline")
     FusionSubmitDeadline: FusionSubmitDeadlineModel = SettingsField(
         default_factory=FusionSubmitDeadlineModel,
         title="Fusion submit to Deadline")
-    HarmonySubmitDeadline: HarmonySubmitDeadlineModel = SettingsField(
-        default_factory=HarmonySubmitDeadlineModel,
-        title="Harmony Submit to deadline")
-    HoudiniCacheSubmitDeadline: HoudiniCacheSubmitDeadlineModel = SettingsField(
-        default_factory=HoudiniCacheSubmitDeadlineModel,
-        title="Houdini Submit cache to deadline")
     HoudiniSubmitDeadline: HoudiniSubmitDeadlineModel = SettingsField(
         default_factory=HoudiniSubmitDeadlineModel,
         title="Houdini Submit render to deadline")
-    MaxSubmitDeadline: MaxSubmitDeadlineModel = SettingsField(
-        default_factory=MaxSubmitDeadlineModel,
-        title="Max Submit to deadline")
     MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
         default_factory=MayaSubmitDeadlineModel,
         title="Maya Submit to deadline")
@@ -426,10 +352,6 @@ class PublishPluginsModel(BaseSettingsModel):
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
-    "CollectDeadlinePools": {
-        "primary_pool": "",
-        "secondary_pool": ""
-    },
     "CollectAYONServerToFarmJob": {
         "enabled": False
     },
@@ -444,55 +366,18 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
             "deadline"
         ]
     },
-    "AfterEffectsSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
-    },
-    "BlenderSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
-    },
-    "CelactionSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
-    },
     "FusionSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
-    },
-    "HarmonySubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
-    },
-    "HoudiniCacheSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
+        "concurrent_tasks": 1,
+        "plugin": "Fusion"
     },
     "HoudiniSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
         "export_priority": 50,
         "export_chunk_size": 10,
         "export_group": "",
         "export_limits": "",
         "export_machine_limit": 0
     },
-    "MaxSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
-    },
     "MayaSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
         "tile_assembler_plugin": "DraftTileAssembler",
         "import_reference": False,
         "strict_error_checking": True,
@@ -500,19 +385,15 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "scene_patches": []
     },
     "NukeSubmitDeadline": {
-        "enabled": True,
-        "optional": False,
-        "active": True,
+        "use_gpu": True
     },
     "ProcessSubmittedCacheJobOnFarm": {
-        "enabled": True,
         "deadline_department": "",
         "deadline_pool": "",
         "deadline_group": "",
         "deadline_priority": 50
     },
     "ProcessSubmittedJobOnFarm": {
-        "enabled": True,
         "deadline_department": "",
         "deadline_pool": "",
         "deadline_group": "",
