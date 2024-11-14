@@ -521,7 +521,7 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             "Priority": data["priority"],
             "MachineLimit": data["machine_limit"],
             "ConcurrentTasks": data["concurrent_tasks"],
-            "Frames": data["frames"],
+            "Frames": data.get("frames", ""),
             "Group": cls._sanitize(data["group"]),
             "Pool": cls._sanitize(data["primary_pool"]),
             "SecondaryPool": cls._sanitize(data["secondary_pool"]),
