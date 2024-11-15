@@ -7,6 +7,10 @@ from ayon_server.settings import (
 )
 
 
+class CollectAYONServerToFarmJobModel(BaseSettingsModel):
+    enabled: bool = SettingsField(False, title="Enabled")
+
+
 class CollectDeadlinePoolsModel(BaseSettingsModel):
     """Settings Deadline default pools."""
 
@@ -373,6 +377,15 @@ class PublishPluginsModel(BaseSettingsModel):
     CollectDeadlinePools: CollectDeadlinePoolsModel = SettingsField(
         default_factory=CollectDeadlinePoolsModel,
         title="Default Pools")
+    CollectAYONServerToFarmJob: CollectAYONServerToFarmJobModel = SettingsField(  # noqa
+        default_factory=CollectAYONServerToFarmJobModel,
+        title="Add AYON server to farm job",
+        description=(
+            "When enabled submit along your `AYON_SERVER_URL` to the farm job."
+            " On the Deadline AYON Plug-in on the Deadline Repository settings"
+            " you can specify a custom API key for those server URLs."
+        )
+    )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
         title="Validate Expected Files"
@@ -424,6 +437,9 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
     "CollectDeadlinePools": {
         "primary_pool": "",
         "secondary_pool": ""
+    },
+    "CollectAYONServerToFarmJob": {
+        "enabled": False
     },
     "ValidateExpectedFiles": {
         "enabled": True,
@@ -570,7 +586,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "deadline_group": "",
         "deadline_priority": 50,
         "skip_integration_repre_list": [],
-        "families_transfer": ["render3d", "render2d", "ftrack", "slate"],
+        "families_transfer": ["render3d", "render2d", "slate"],
         "aov_filter": [
             {
                 "name": "maya",
