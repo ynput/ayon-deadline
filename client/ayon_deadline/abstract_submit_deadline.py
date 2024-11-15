@@ -101,7 +101,7 @@ class AbstractSubmitDeadline(
         assert self._deadline_url, "Requires Deadline Webservice URL"
 
         job_info = self.get_generic_job_info(instance)
-        self.job_info = self.get_job_info(job_info=job_info)
+        self.job_info = self.get_job_info(job_info=deepcopy(job_info))
 
         self._set_scene_path(
             context.data["currentFile"], job_info.UsePublished)
