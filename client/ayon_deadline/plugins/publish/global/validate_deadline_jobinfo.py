@@ -4,7 +4,7 @@ from ayon_core.pipeline import (
     PublishValidationError,
     OptionalPyblishPluginMixin
 )
-from ayon_deadline.lib import FARM_FAMILIES, get_deadline_pools
+from ayon_deadline.lib import FARM_FAMILIES
 
 
 class ValidateDeadlineJobInfo(
