@@ -116,6 +116,8 @@ class AbstractSubmitDeadline(
         job_id = self.process_submission()
         self.log.info("Submitted job to Deadline: {}.".format(job_id))
 
+        instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
+
         # TODO: Find a way that's more generic and not render type specific
         if instance.data.get("splitRender"):
             self.log.info("Splitting export and render in two jobs")
@@ -130,6 +132,8 @@ class AbstractSubmitDeadline(
             auth = instance.data["deadline"]["auth"]
             verify = instance.data["deadline"]["verify"]
             render_job_id = self.submit(payload, auth, verify)
+
+            instance.data["deadline"]["job_info"] = deepcopy(render_job_info)
             self.log.info("Render job id: %s", render_job_id)
 
     def _set_scene_path(self, current_file, use_published):
