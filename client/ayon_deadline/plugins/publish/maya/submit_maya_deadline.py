@@ -39,17 +39,6 @@ from ayon_maya.api.lib import get_attr_in_layer
 from ayon_deadline import abstract_submit_deadline
 
 
-def _validate_deadline_bool_value(instance, attribute, value):
-    if not isinstance(value, (str, bool)):
-        raise TypeError(
-            "Attribute {} must be str or bool.".format(attribute))
-    if value not in {"1", "0", True, False}:
-        raise ValueError(
-            ("Value of {} must be one of "
-             "'0', '1', True, False").format(attribute)
-        )
-
-
 @dataclass
 class MayaPluginInfo(object):
     SceneFile: str = field(default=None)   # Input
@@ -61,9 +50,22 @@ class MayaPluginInfo(object):
     Renderer: str = field(default=None)
     ProjectPath: str = field(default=None)  # Resolve relative references
     # Include all lights flag
-    RenderSetupIncludeLights: str = field(
-        default="1", validator=_validate_deadline_bool_value)
+    RenderSetupIncludeLights: str = field(default="1")
     StrictErrorChecking: bool = field(default=True)
+
+    def __post__init__(self):
+        self._validate_deadline_bool_value()
+
+    def _validate_deadline_bool_value(self):
+        if not isinstance(self.RenderSetupIncludeLights, (str, bool)):
+            raise TypeError(
+                "Attribute 'RenderSetupIncludeLights' must be str or bool."
+            )
+        if self.RenderSetupIncludeLights not in {"1", "0", True, False}:
+            raise ValueError(
+                ("Value of {} must be one of "
+                 "'0', '1', True, False").format("RenderSetupIncludeLights")
+            )
 
 
 @dataclass
