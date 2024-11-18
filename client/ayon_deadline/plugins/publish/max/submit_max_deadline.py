@@ -49,8 +49,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         # do not add expected files for multiCamera
         if instance.data.get("multiCamera"):
-            job_info.OutputDirectory = None
-            job_info.OutputFilename = None
+            job_info.OutputDirectory.clear()
+            job_info.OutputFilename.clear()
 
         return job_info
 
