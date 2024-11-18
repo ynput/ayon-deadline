@@ -63,8 +63,8 @@ class MayaPluginInfo(object):
             )
         if self.RenderSetupIncludeLights not in {"1", "0", True, False}:
             raise ValueError(
-                ("Value of {} must be one of "
-                 "'0', '1', True, False").format("RenderSetupIncludeLights")
+                "Value of 'RenderSetupIncludeLights' must be one of "
+                "'0', '1', True, False"
             )
 
 
