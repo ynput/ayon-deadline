@@ -114,7 +114,7 @@ class AbstractSubmitDeadline(
             self.apply_additional_plugin_info(plugin_info_data)
 
         job_id = self.process_submission()
-        self.log.info("Submitted job to Deadline: {}.".format(job_id))
+        self.log.info(f"Submitted job to Deadline: {job_id}.")
 
         instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
 
