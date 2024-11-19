@@ -193,21 +193,35 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         # should be matching to extract_jobinfo_overrides_enum
         default_values = {}
         for key in overrides:
-            default_value = profile[key]
             if key == "machine_limit":
+                available_values = {
+                    item["value"]
+                    for item in cls.machines_enum_values
+                }
                 default_value = [
                     value
                     for value in default_value
-                    if value in cls.machines_enum_values
+                    if value in available_values
                 ]
             elif key == "limit_groups":
+                available_values = {
+                    item["value"]
+                    for item in cls.limit_group_enum_values
+                }
                 default_value = [
                     value
                     for value in default_value
-                    if value in cls.limit_group_enum_values
+                    if value in available_values
                 ]
-            if key == "group" and default_value not in cls.group_enum_values:
-                default_value = ""
+            elif key == "group":
+                available_values = [
+                    item["value"]
+                    for item in cls.group_enum_values
+                ]
+                if not available_values:
+                    default_value = None
+                elif default_value not in available_values:
+                    default_value = available_values[0]
             default_values[key] = default_value
 
         attr_defs = [
