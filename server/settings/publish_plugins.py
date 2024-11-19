@@ -30,16 +30,16 @@ class CollectAYONServerToFarmJobModel(BaseSettingsModel):
 def extract_jobinfo_overrides_enum():
     """Enum of fields that could be overridden by artist in Publisher UI"""
     return [
-        {"label": "Department", "value": "department"},
-        {"label": "Delay job (timecode dd:hh:mm:ss)", "value": "job_delay"},
-        {"label": "Frames per Task", "value": "chunk_size"},
-        {"label": "Group", "value": "group"},
-        {"label": "Priority", "value": "priority"},
-        {"label": "Limit groups", "value": "limit_groups"},
-        {"label": "Primary pool", "value": "primary_pool"},
-        {"label": "Secondary pool", "value": "secondary_pool"},
-        {"label": "Machine List", "value": "machine_list"},
-        {"label": "Machine List is a Deny", "value": "machine_list_deny"},
+        {"value": department, "label": "Department"},
+        {"value": job_delay, "label": "Delay job (timecode dd:hh:mm:ss)"},
+        {"value": chunk_size, "label": "Frames per Task"},
+        {"value": group, "label": "Group"},
+        {"value": priority, "label": "Priority"},
+        {"value": limit_groups, "label": "Limit groups"},
+        {"value": primary_pool, "label": "Primary pool"},
+        {"value": secondary_pool, "label": "Secondary pool"},
+        {"value": machine_list, "label": "Machine List"},
+        {"value": machine_list_deny, "label": "Machine List is a Deny"},
     ]
 
 
