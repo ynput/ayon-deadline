@@ -25,7 +25,11 @@ from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
 
-from .lib import get_ayon_render_job_envs, get_instance_job_envs
+from .lib import (
+    get_ayon_render_job_envs,
+    get_instance_job_envs,
+    get_instance_job_extra_info
+)
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
@@ -410,6 +414,12 @@ class DeadlineJobInfo(object):
         """
         for key, value in get_instance_job_envs(instance).items():
             self.EnvironmentKeyValue[key] = value
+
+        for key, value in get_instance_job_extra_info(instance).items():
+            if isinstance(key, int):
+                self.ExtraInfo[key] = value
+            else:
+                self.ExtraInfoKeyValue[key] = value
 
 
 @six.add_metaclass(AbstractMetaInstancePlugin)
