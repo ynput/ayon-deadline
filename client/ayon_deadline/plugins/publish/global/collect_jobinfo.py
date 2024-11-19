@@ -179,7 +179,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             )
         )
 
-        defs = cls._host_specific_attr_defs(create_context, instance, defs)
+        defs.extend(cls._host_specific_attr_defs(create_context, instance))
 
         defs.append(
             UISeparatorDef("deadline_defs_end")
@@ -346,11 +346,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         return profile or {}
 
     @classmethod
-    def _host_specific_attr_defs(cls, create_context, instance, defs):
-
+    def _host_specific_attr_defs(cls, create_context, instance):
         host_name = create_context.host_name
         if host_name == "maya":
-            defs.extend([
+            return [
                 NumberDef(
                     "tile_priority",
                     label="Tile Assembler Priority",
@@ -360,6 +359,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                     "strict_error_checking",
                     label="Strict Error Checking",
                 ),
-            ])
+            ]
 
-        return defs
+        return []
