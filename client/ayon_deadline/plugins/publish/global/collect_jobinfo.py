@@ -193,6 +193,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         # should be matching to extract_jobinfo_overrides_enum
         default_values = {}
         for key in overrides:
+            default_value = profile[key]
             if key == "machine_limit":
                 available_values = {
                     item["value"]
