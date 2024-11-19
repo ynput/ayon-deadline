@@ -41,7 +41,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     plugin = None
 
     def process(self, instance):
-        if not instance.data["farm"]:
+        if not instance.data.get("farm"):
             self.log.debug("Render on farm is disabled. "
                            "Skipping deadline submission.")
             return
