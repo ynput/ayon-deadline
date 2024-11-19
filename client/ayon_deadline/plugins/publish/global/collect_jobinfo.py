@@ -200,7 +200,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                     for value in default_value
                     if value in cls.machines_enum_values
                 ]
-            if key == "limit_groups":
+            elif key == "limit_groups":
                 default_value = [
                     value
                     for value in default_value
