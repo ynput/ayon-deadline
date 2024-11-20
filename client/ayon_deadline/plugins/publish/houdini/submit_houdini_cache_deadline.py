@@ -53,8 +53,7 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         scenename = os.path.basename(filepath)
         job_name = "{scene} - {instance} [PUBLISH]".format(
             scene=scenename, instance=instance.name)
-        batch_name = "{code} - {scene}".format(
-            code=project_name, scene=scenename)
+        batch_name = f"{project_name} - {scenename}"
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
 
