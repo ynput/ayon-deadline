@@ -135,7 +135,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         Returns:
             (list)
         """
-        if instance.product_type not in cls.families:
+        if not cls.instance_matches_plugin_families(instance):
             return []
 
         host_name = create_context.host_name
