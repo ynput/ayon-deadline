@@ -78,23 +78,30 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         job_info.BatchName = batch_name
         job_info.Plugin = instance.data["plugin"]
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
-        frames = instance.data.get("frames", "")
-        if isinstance(frames, list):
-            # list of files
-            frames = "{start}-{end}x{step}".format(
-                start=int(instance.data["frameStart"]),
-                end=int(instance.data["frameEnd"]),
-                step=int(instance.data["byFrameStep"]),
-            )
 
-            job_info.Frames = frames
+        frames = "{start}-{end}x{step}".format(
+            start=int(instance.data["frameStart"]),
+            end=int(instance.data["frameEnd"]),
+            step=int(instance.data["byFrameStep"]),
+        )
+
+        job_info.Frames = frames
 
         job_info.Pool = instance.data.get("primaryPool")
         job_info.SecondaryPool = instance.data.get("secondaryPool")
 
         attr_values = self.get_attr_values_from_data(instance.data)
 
-        job_info.ChunkSize = instance.data.get("chunk_size", self.chunk_size)
+        chunk_size = instance.data.get("chunk_size", self.chunk_size)
+        # When `frames` instance data is a string, it indicates that
+        #  the output is a single file.
+        # Set the chunk size to a large number because multiple
+        #  machines cannot render to the same file.
+        if isinstance(instance.data.get("frames"), str):
+            chunk_size = 99999999
+
+        job_info.ChunkSize = chunk_size
+
         job_info.Comment = context.data.get("comment")
         job_info.Priority = attr_values.get("priority", self.priority)
         job_info.Group = attr_values.get("group", self.group)
