@@ -78,8 +78,9 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         job_info.BatchName = batch_name
         job_info.Plugin = instance.data["plugin"]
         job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
-        rop_node = self.get_rop_node(instance)
-        if rop_node.type().name() != "alembic":
+        frames = instance.data.get("frames", "")
+        if isinstance(frames, list):
+            # list of files
             frames = "{start}-{end}x{step}".format(
                 start=int(instance.data["frameStart"]),
                 end=int(instance.data["frameEnd"]),
