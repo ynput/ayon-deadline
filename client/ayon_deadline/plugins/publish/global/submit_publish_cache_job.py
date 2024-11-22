@@ -348,6 +348,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
                 if "deadline" not in inst:
                     inst["deadline"] = {}
                 inst["deadline"] = instance.data["deadline"]
+                inst["deadline"].pop("job_info")
 
         # publish job file
         publish_job = {

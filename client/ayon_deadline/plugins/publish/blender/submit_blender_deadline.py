@@ -2,67 +2,31 @@
 """Submitting render job to Deadline."""
 
 import os
-import getpass
-import attr
-from datetime import datetime
+from dataclasses import dataclass, field, asdict
 
-from ayon_core.lib import (
-    BoolDef,
-    NumberDef,
-    TextDef,
-    is_in_tests,
-)
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
-@attr.s
-class BlenderPluginInfo():
-    SceneFile = attr.ib(default=None)   # Input
-    Version = attr.ib(default=None)  # Mandatory for Deadline
-    SaveFile = attr.ib(default=True)
+@dataclass
+class BlenderPluginInfo:
+    SceneFile: str = field(default=None)   # Input
+    Version: str = field(default=None)  # Mandatory for Deadline
+    SaveFile: bool = field(default=True)
 
 
 class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                             AYONPyblishPluginMixin):
     label = "Submit Render to Deadline"
     hosts = ["blender"]
-    families = ["render"]
+    families = ["render"]  # TODO this should be farm specific as render.farm
     settings_category = "deadline"
 
-    use_published = True
-    priority = 50
-    chunk_size = 1
-    jobInfo = {}
-    pluginInfo = {}
-    group = None
-    job_delay = "00:00:00:00"
-
-    def get_job_info(self):
-        job_info = DeadlineJobInfo(Plugin="Blender")
-
-        job_info.update(self.jobInfo)
-
+    def get_job_info(self, job_info=None):
         instance = self._instance
-        context = instance.context
-
-        # Always use the original work file name for the Job name even when
-        # rendering is done from the published Work File. The original work
-        # file name is clearer because it can also have subversion strings,
-        # etc. which are stripped for the published file.
-        src_filepath = context.data["currentFile"]
-        src_filename = os.path.basename(src_filepath)
-
-        if is_in_tests():
-            src_filename += datetime.now().strftime("%d%m%Y%H%M%S")
-
-        job_info.Name = f"{src_filename} - {instance.name}"
-        job_info.BatchName = src_filename
-        instance.data.get("blenderRenderPlugin", "Blender")
-        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
+        job_info.Plugin = instance.data.get("blenderRenderPlugin", "Blender")
 
         # Deadline requires integers in frame range
         frames = "{start}-{end}x{step}".format(
@@ -71,49 +35,6 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             step=int(instance.data["byFrameStep"]),
         )
         job_info.Frames = frames
-
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-        job_info.Comment = instance.data.get("comment")
-
-        if self.group != "none" and self.group:
-            job_info.Group = self.group
-
-        attr_values = self.get_attr_values_from_data(instance.data)
-        render_globals = instance.data.setdefault("renderGlobals", {})
-        machine_list = attr_values.get("machineList", "")
-        if machine_list:
-            if attr_values.get("whitelist", True):
-                machine_list_key = "Whitelist"
-            else:
-                machine_list_key = "Blacklist"
-            render_globals[machine_list_key] = machine_list
-
-        job_info.ChunkSize = attr_values.get("chunkSize", self.chunk_size)
-        job_info.Priority = attr_values.get("priority", self.priority)
-        job_info.ScheduledType = "Once"
-        job_info.JobDelay = attr_values.get("job_delay", self.job_delay)
-
-        # Add options from RenderGlobals
-        render_globals = instance.data.get("renderGlobals", {})
-        job_info.update(render_globals)
-
-        # Set job environment variables
-        job_info.add_instance_job_env_vars(self._instance)
-        job_info.add_render_job_env_var()
-
-        # Adding file dependencies.
-        if self.asset_dependencies:
-            dependencies = instance.context.data["fileDependencies"]
-            for dependency in dependencies:
-                job_info.AssetDependency += dependency
-
-        # Add list of expected files to job
-        # ---------------------------------
-        exp = instance.data.get("expectedFiles")
-        for filepath in iter_expected_files(exp):
-            job_info.OutputDirectory += os.path.dirname(filepath)
-            job_info.OutputFilename += os.path.basename(filepath)
 
         return job_info
 
@@ -127,11 +48,7 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             SaveFile=True,
         )
 
-        plugin_payload = attr.asdict(plugin_info)
-
-        # Patching with pluginInfo from settings
-        for key, value in self.pluginInfo.items():
-            plugin_payload[key] = value
+        plugin_payload = asdict(plugin_info)
 
         return plugin_payload
 
@@ -160,39 +77,3 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         the metadata and the rendered files are in the same location.
         """
         return super().from_published_scene(False)
-
-    @classmethod
-    def get_attribute_defs(cls):
-        defs = super(BlenderSubmitDeadline, cls).get_attribute_defs()
-        defs.extend([
-            BoolDef("use_published",
-                    default=cls.use_published,
-                    label="Use Published Scene"),
-
-            NumberDef("priority",
-                      minimum=1,
-                      maximum=250,
-                      decimals=0,
-                      default=cls.priority,
-                      label="Priority"),
-
-            NumberDef("chunkSize",
-                      minimum=1,
-                      maximum=50,
-                      decimals=0,
-                      default=cls.chunk_size,
-                      label="Frame Per Task"),
-
-            TextDef("group",
-                    default=cls.group,
-                    label="Group Name"),
-
-            TextDef("job_delay",
-                    default=cls.job_delay,
-                    label="Job Delay",
-                    placeholder="dd:hh:mm:ss",
-                    tooltip="Delay the job by the specified amount of time. "
-                            "Timecode: dd:hh:mm:ss."),
-        ])
-
-        return defs

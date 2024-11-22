@@ -2,14 +2,13 @@ import os
 
 import pyblish.api
 
-from ayon_deadline.lib import FARM_FAMILIES, JOB_ENV_DATA_KEY
+from ayon_deadline.lib import JOB_ENV_DATA_KEY
 
 
 class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     """Collect set of environment variables to submit with deadline jobs"""
     order = pyblish.api.CollectorOrder
     label = "Deadline Farm Environment Variables"
-    families = FARM_FAMILIES
     targets = ["local"]
 
     ENV_KEYS = [
@@ -37,7 +36,6 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     ]
 
     def process(self, context):
-
         env = {}
         for key in self.ENV_KEYS:
             value = os.getenv(key)

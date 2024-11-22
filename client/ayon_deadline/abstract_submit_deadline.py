@@ -6,13 +6,11 @@ It provides Deadline JobInfo data class.
 """
 import json.decoder
 from abc import abstractmethod
-import platform
 import getpass
-from functools import partial
-from collections import OrderedDict
+import os
+import datetime
+from copy import deepcopy
 
-import six
-import attr
 import requests
 
 import pyblish.api
@@ -24,8 +22,9 @@ from ayon_core.pipeline.publish import (
 from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
 )
-
-from .lib import get_ayon_render_job_envs, get_instance_job_envs
+from ayon_core.pipeline.farm.tools import iter_expected_files
+from ayon_core.lib import is_in_tests
+from ayon_deadline.lib import AYONDeadlineJobInfo
 
 JSONDecodeError = getattr(json.decoder, "JSONDecodeError", ValueError)
 
@@ -72,358 +71,17 @@ def requests_get(*args, **kwargs):
     return requests.get(*args, **kwargs)
 
 
-class DeadlineKeyValueVar(dict):
-    """
-
-    Serializes dictionary key values as "{key}={value}" like Deadline uses
-    for EnvironmentKeyValue.
-
-    As an example:
-        EnvironmentKeyValue0="A_KEY=VALUE_A"
-        EnvironmentKeyValue1="OTHER_KEY=VALUE_B"
-
-    The keys are serialized in alphabetical order (sorted).
-
-    Example:
-        >>> var = DeadlineKeyValueVar("EnvironmentKeyValue")
-        >>> var["my_var"] = "hello"
-        >>> var["my_other_var"] = "hello2"
-        >>> var.serialize()
-
-
-    """
-    def __init__(self, key):
-        super(DeadlineKeyValueVar, self).__init__()
-        self.__key = key
-
-    def serialize(self):
-        key = self.__key
-
-        # Allow custom location for index in serialized string
-        if "{}" not in key:
-            key = key + "{}"
-
-        return {
-            key.format(index): "{}={}".format(var_key, var_value)
-            for index, (var_key, var_value) in enumerate(sorted(self.items()))
-        }
-
-
-class DeadlineIndexedVar(dict):
-    """
-
-    Allows to set and query values by integer indices:
-        Query: var[1] or var.get(1)
-        Set: var[1] = "my_value"
-        Append: var += "value"
-
-    Note: Iterating the instance is not guarantueed to be the order of the
-          indices. To do so iterate with `sorted()`
-
-    """
-    def __init__(self, key):
-        super(DeadlineIndexedVar, self).__init__()
-        self.__key = key
-
-    def serialize(self):
-        key = self.__key
-
-        # Allow custom location for index in serialized string
-        if "{}" not in key:
-            key = key + "{}"
-
-        return {
-            key.format(index): value for index, value in sorted(self.items())
-        }
-
-    def next_available_index(self):
-        # Add as first unused entry
-        i = 0
-        while i in self.keys():
-            i += 1
-        return i
-
-    def update(self, data):
-        # Force the integer key check
-        for key, value in data.items():
-            self.__setitem__(key, value)
-
-    def __iadd__(self, other):
-        index = self.next_available_index()
-        self[index] = other
-        return self
-
-    def __setitem__(self, key, value):
-        if not isinstance(key, int):
-            raise TypeError("Key must be an integer: {}".format(key))
-
-        if key < 0:
-            raise ValueError("Negative index can't be set: {}".format(key))
-        dict.__setitem__(self, key, value)
-
-
-@attr.s
-class DeadlineJobInfo(object):
-    """Mapping of all Deadline *JobInfo* attributes.
-
-    This contains all JobInfo attributes plus their default values.
-    Those attributes set to `None` shouldn't be posted to Deadline as
-    the only required one is `Plugin`. Their default values used by Deadline
-    are stated in
-    comments.
-
-    ..seealso:
-        https://docs.thinkboxsoftware.com/products/deadline/10.1/1_User%20Manual/manual/manual-submission.html
-
-    """
-
-    # Required
-    # ----------------------------------------------
-    Plugin = attr.ib()
-
-    # General
-    Frames = attr.ib(default=None)  # default: 0
-    Name = attr.ib(default="Untitled")
-    Comment = attr.ib(default=None)  # default: empty
-    Department = attr.ib(default=None)  # default: empty
-    BatchName = attr.ib(default=None)  # default: empty
-    UserName = attr.ib(default=getpass.getuser())
-    MachineName = attr.ib(default=platform.node())
-    Pool = attr.ib(default=None)  # default: "none"
-    SecondaryPool = attr.ib(default=None)
-    Group = attr.ib(default=None)  # default: "none"
-    Priority = attr.ib(default=50)
-    ChunkSize = attr.ib(default=1)
-    ConcurrentTasks = attr.ib(default=1)
-    LimitConcurrentTasksToNumberOfCpus = attr.ib(
-        default=None)  # default: "true"
-    OnJobComplete = attr.ib(default="Nothing")
-    SynchronizeAllAuxiliaryFiles = attr.ib(default=None)  # default: false
-    ForceReloadPlugin = attr.ib(default=None)  # default: false
-    Sequential = attr.ib(default=None)  # default: false
-    SuppressEvents = attr.ib(default=None)  # default: false
-    Protected = attr.ib(default=None)  # default: false
-    InitialStatus = attr.ib(default="Active")
-    NetworkRoot = attr.ib(default=None)
-
-    # Timeouts
-    # ----------------------------------------------
-    MinRenderTimeSeconds = attr.ib(default=None)  # Default: 0
-    MinRenderTimeMinutes = attr.ib(default=None)  # Default: 0
-    TaskTimeoutSeconds = attr.ib(default=None)  # Default: 0
-    TaskTimeoutMinutes = attr.ib(default=None)  # Default: 0
-    StartJobTimeoutSeconds = attr.ib(default=None)  # Default: 0
-    StartJobTimeoutMinutes = attr.ib(default=None)  # Default: 0
-    InitializePluginTimeoutSeconds = attr.ib(default=None)  # Default: 0
-    # can be one of <Error/Notify/ErrorAndNotify/Complete>
-    OnTaskTimeout = attr.ib(default=None)  # Default: Error
-    EnableTimeoutsForScriptTasks = attr.ib(default=None)  # Default: false
-    EnableFrameTimeouts = attr.ib(default=None)  # Default: false
-    EnableAutoTimeout = attr.ib(default=None)  # Default: false
-
-    # Interruptible
-    # ----------------------------------------------
-    Interruptible = attr.ib(default=None)  # Default: false
-    InterruptiblePercentage = attr.ib(default=None)
-    RemTimeThreshold = attr.ib(default=None)
-
-    # Notifications
-    # ----------------------------------------------
-    # can be comma separated list of users
-    NotificationTargets = attr.ib(default=None)  # Default: blank
-    ClearNotificationTargets = attr.ib(default=None)  # Default: false
-    # A comma separated list of additional email addresses
-    NotificationEmails = attr.ib(default=None)  # Default: blank
-    OverrideNotificationMethod = attr.ib(default=None)  # Default: false
-    EmailNotification = attr.ib(default=None)  # Default: false
-    PopupNotification = attr.ib(default=None)  # Default: false
-    # String with `[EOL]` used for end of line
-    NotificationNote = attr.ib(default=None)  # Default: blank
-
-    # Machine Limit
-    # ----------------------------------------------
-    MachineLimit = attr.ib(default=None)  # Default: 0
-    MachineLimitProgress = attr.ib(default=None)  # Default: -1.0
-    Whitelist = attr.ib(default=None)  # Default: blank
-    Blacklist = attr.ib(default=None)  # Default: blank
-
-    # Limits
-    # ----------------------------------------------
-    # comma separated list of limit groups
-    LimitGroups = attr.ib(default=None)  # Default: blank
-
-    # Dependencies
-    # ----------------------------------------------
-    # comma separated list of job IDs
-    JobDependencies = attr.ib(default=None)  # Default: blank
-    JobDependencyPercentage = attr.ib(default=None)  # Default: -1
-    IsFrameDependent = attr.ib(default=None)  # Default: false
-    FrameDependencyOffsetStart = attr.ib(default=None)  # Default: 0
-    FrameDependencyOffsetEnd = attr.ib(default=None)  # Default: 0
-    ResumeOnCompleteDependencies = attr.ib(default=None)  # Default: true
-    ResumeOnDeletedDependencies = attr.ib(default=None)  # Default: false
-    ResumeOnFailedDependencies = attr.ib(default=None)  # Default: false
-    # comma separated list of asset paths
-    RequiredAssets = attr.ib(default=None)  # Default: blank
-    # comma separated list of script paths
-    ScriptDependencies = attr.ib(default=None)  # Default: blank
-
-    # Failure Detection
-    # ----------------------------------------------
-    OverrideJobFailureDetection = attr.ib(default=None)  # Default: false
-    FailureDetectionJobErrors = attr.ib(default=None)  # 0..x
-    OverrideTaskFailureDetection = attr.ib(default=None)  # Default: false
-    FailureDetectionTaskErrors = attr.ib(default=None)  # 0..x
-    IgnoreBadJobDetection = attr.ib(default=None)  # Default: false
-    SendJobErrorWarning = attr.ib(default=None)  # Default: false
-
-    # Cleanup
-    # ----------------------------------------------
-    DeleteOnComplete = attr.ib(default=None)  # Default: false
-    ArchiveOnComplete = attr.ib(default=None)  # Default: false
-    OverrideAutoJobCleanup = attr.ib(default=None)  # Default: false
-    OverrideJobCleanup = attr.ib(default=None)
-    JobCleanupDays = attr.ib(default=None)  # Default: false
-    # <ArchiveJobs/DeleteJobs>
-    OverrideJobCleanupType = attr.ib(default=None)
-
-    # Scheduling
-    # ----------------------------------------------
-    # <None/Once/Daily/Custom>
-    ScheduledType = attr.ib(default=None)  # Default: None
-    # <dd/MM/yyyy HH:mm>
-    ScheduledStartDateTime = attr.ib(default=None)
-    ScheduledDays = attr.ib(default=None)  # Default: 1
-    # <dd:hh:mm:ss>
-    JobDelay = attr.ib(default=None)
-    # <Day of the Week><Start/Stop>Time=<HH:mm:ss>
-    Scheduled = attr.ib(default=None)
-
-    # Scripts
-    # ----------------------------------------------
-    # all accept path to script
-    PreJobScript = attr.ib(default=None)  # Default: blank
-    PostJobScript = attr.ib(default=None)  # Default: blank
-    PreTaskScript = attr.ib(default=None)  # Default: blank
-    PostTaskScript = attr.ib(default=None)  # Default: blank
-
-    # Event Opt-Ins
-    # ----------------------------------------------
-    # comma separated list of plugins
-    EventOptIns = attr.ib(default=None)  # Default: blank
-
-    # Environment
-    # ----------------------------------------------
-    EnvironmentKeyValue = attr.ib(factory=partial(DeadlineKeyValueVar,
-                                                  "EnvironmentKeyValue"))
-
-    IncludeEnvironment = attr.ib(default=None)  # Default: false
-    UseJobEnvironmentOnly = attr.ib(default=None)  # Default: false
-    CustomPluginDirectory = attr.ib(default=None)  # Default: blank
-
-    # Job Extra Info
-    # ----------------------------------------------
-    ExtraInfo = attr.ib(factory=partial(DeadlineIndexedVar, "ExtraInfo"))
-    ExtraInfoKeyValue = attr.ib(factory=partial(DeadlineKeyValueVar,
-                                                "ExtraInfoKeyValue"))
-
-    # Task Extra Info Names
-    # ----------------------------------------------
-    OverrideTaskExtraInfoNames = attr.ib(default=None)  # Default: false
-    TaskExtraInfoName = attr.ib(factory=partial(DeadlineIndexedVar,
-                                                "TaskExtraInfoName"))
-
-    # Output
-    # ----------------------------------------------
-    OutputFilename = attr.ib(factory=partial(DeadlineIndexedVar,
-                                             "OutputFilename"))
-    OutputFilenameTile = attr.ib(factory=partial(DeadlineIndexedVar,
-                                                 "OutputFilename{}Tile"))
-    OutputDirectory = attr.ib(factory=partial(DeadlineIndexedVar,
-                                              "OutputDirectory"))
-
-    # Asset Dependency
-    # ----------------------------------------------
-    AssetDependency = attr.ib(factory=partial(DeadlineIndexedVar,
-                                              "AssetDependency"))
-
-    # Tile Job
-    # ----------------------------------------------
-    TileJob = attr.ib(default=None)  # Default: false
-    TileJobFrame = attr.ib(default=None)  # Default: 0
-    TileJobTilesInX = attr.ib(default=None)  # Default: 0
-    TileJobTilesInY = attr.ib(default=None)  # Default: 0
-    TileJobTileCount = attr.ib(default=None)  # Default: 0
-
-    # Maintenance Job
-    # ----------------------------------------------
-    MaintenanceJob = attr.ib(default=None)  # Default: false
-    MaintenanceJobStartFrame = attr.ib(default=None)  # Default: 0
-    MaintenanceJobEndFrame = attr.ib(default=None)  # Default: 0
-
-    def serialize(self):
-        """Return all data serialized as dictionary.
-
-        Returns:
-            OrderedDict: all serialized data.
-
-        """
-        def filter_data(a, v):
-            if isinstance(v, (DeadlineIndexedVar, DeadlineKeyValueVar)):
-                return False
-            if v is None:
-                return False
-            return True
-
-        serialized = attr.asdict(
-            self, dict_factory=OrderedDict, filter=filter_data)
-
-        # Custom serialize these attributes
-        for attribute in [
-            self.EnvironmentKeyValue,
-            self.ExtraInfo,
-            self.ExtraInfoKeyValue,
-            self.TaskExtraInfoName,
-            self.OutputFilename,
-            self.OutputFilenameTile,
-            self.OutputDirectory,
-            self.AssetDependency
-        ]:
-            serialized.update(attribute.serialize())
-
-        return serialized
-
-    def update(self, data):
-        """Update instance with data dict"""
-        for key, value in data.items():
-            setattr(self, key, value)
-
-    def add_render_job_env_var(self):
-        """Add required env vars for valid render job submission."""
-        for key, value in get_ayon_render_job_envs().items():
-            self.EnvironmentKeyValue[key] = value
-
-    def add_instance_job_env_vars(self, instance):
-        """Add all job environments as specified on the instance and context
-
-        Any instance `job_env` vars will override the context `job_env` vars.
-        """
-        for key, value in get_instance_job_envs(instance).items():
-            self.EnvironmentKeyValue[key] = value
-
-
-@six.add_metaclass(AbstractMetaInstancePlugin)
-class AbstractSubmitDeadline(pyblish.api.InstancePlugin,
-                             AYONPyblishPluginMixin):
+class AbstractSubmitDeadline(
+    pyblish.api.InstancePlugin,
+    AYONPyblishPluginMixin,
+    metaclass=AbstractMetaInstancePlugin
+):
     """Class abstracting access to Deadline."""
 
     label = "Submit to Deadline"
     order = pyblish.api.IntegratorOrder + 0.1
 
     import_reference = False
-    use_published = True
-    asset_dependencies = False
-    default_priority = 50
 
     def __init__(self, *args, **kwargs):
         super(AbstractSubmitDeadline, self).__init__(*args, **kwargs)
@@ -442,34 +100,30 @@ class AbstractSubmitDeadline(pyblish.api.InstancePlugin,
 
         assert self._deadline_url, "Requires Deadline Webservice URL"
 
-        file_path = None
-        if self.use_published:
-            if not self.import_reference:
-                file_path = self.from_published_scene()
-            else:
-                self.log.info("use the scene with imported reference for rendering") # noqa
-                file_path = context.data["currentFile"]
+        job_info = self.get_generic_job_info(instance)
+        self.job_info = self.get_job_info(job_info=deepcopy(job_info))
 
-        # fallback if nothing was set
-        if not file_path:
-            self.log.warning("Falling back to workfile")
-            file_path = context.data["currentFile"]
-
-        self.scene_path = file_path
-        self.log.info("Using {} for render/export.".format(file_path))
-
-        self.job_info = self.get_job_info()
+        self._set_scene_path(
+            context.data["currentFile"], job_info.UsePublished)
         self.plugin_info = self.get_plugin_info()
+
         self.aux_files = self.get_aux_files()
 
+        plugin_info_data = instance.data["deadline"]["plugin_info_data"]
+        if plugin_info_data:
+            self.apply_additional_plugin_info(plugin_info_data)
+
         job_id = self.process_submission()
-        self.log.info("Submitted job to Deadline: {}.".format(job_id))
+        self.log.info(f"Submitted job to Deadline: {job_id}.")
+
+        instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
 
         # TODO: Find a way that's more generic and not render type specific
         if instance.data.get("splitRender"):
             self.log.info("Splitting export and render in two jobs")
             self.log.info("Export job id: %s", job_id)
-            render_job_info = self.get_job_info(dependency_job_ids=[job_id])
+            render_job_info = self.get_job_info(
+                job_info=job_info, dependency_job_ids=[job_id])
             render_plugin_info = self.get_plugin_info(job_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,
@@ -478,7 +132,27 @@ class AbstractSubmitDeadline(pyblish.api.InstancePlugin,
             auth = instance.data["deadline"]["auth"]
             verify = instance.data["deadline"]["verify"]
             render_job_id = self.submit(payload, auth, verify)
+
+            instance.data["deadline"]["job_info"] = deepcopy(render_job_info)
             self.log.info("Render job id: %s", render_job_id)
+
+    def _set_scene_path(self, current_file, use_published):
+        """Points which workfile should be rendered"""
+        file_path = None
+        if use_published:
+            if not self.import_reference:  # TODO remove or implement
+                file_path = self.from_published_scene()
+            else:
+                self.log.info(
+                    "use the scene with imported reference for rendering")
+                file_path = current_file
+
+        # fallback if nothing was set
+        if not file_path:
+            self.log.warning("Falling back to workfile")
+            file_path = current_file
+        self.scene_path = file_path
+        self.log.info("Using {} for render/export.".format(file_path))
 
     def process_submission(self):
         """Process data for submission.
@@ -495,14 +169,64 @@ class AbstractSubmitDeadline(pyblish.api.InstancePlugin,
         verify = self._instance.data["deadline"]["verify"]
         return self.submit(payload, auth, verify)
 
+    def get_generic_job_info(self, instance: pyblish.api.Instance):
+        context: pyblish.api.Context = instance.context
+        job_info: AYONDeadlineJobInfo = instance.data["deadline"]["job_info"]
+
+        # Always use the original work file name for the Job name even when
+        # rendering is done from the published Work File. The original work
+        # file name is clearer because it can also have subversion strings,
+        # etc. which are stripped for the published file.
+        batch_name = os.path.basename(context.data["currentFile"])
+
+        if is_in_tests():
+            batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
+
+        job_info.Name = "%s - %s" % (batch_name, instance.name)
+        job_info.BatchName = batch_name
+        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
+        job_info.Comment = context.data.get("comment")
+
+        if job_info.Pool != "none":
+            job_info.Pool = job_info.Pool
+        if job_info.SecondaryPool != "none":
+            job_info.SecondaryPool = job_info.SecondaryPool
+
+        exp = instance.data.get("expectedFiles")
+        for filepath in iter_expected_files(exp):
+            job_info.OutputDirectory += os.path.dirname(filepath)
+            job_info.OutputFilename += os.path.basename(filepath)
+
+        # Adding file dependencies.
+        if not is_in_tests() and job_info.UseAssetDependencies:
+            dependencies = instance.context.data.get("fileDependencies", [])
+            for dependency in dependencies:
+                job_info.AssetDependency += dependency
+
+        # Set job environment variables
+        job_info.add_instance_job_env_vars(instance)
+        job_info.add_render_job_env_var()
+
+        return job_info
+
+    def apply_additional_plugin_info(self, plugin_info_data):
+        """Adds additional fields and values which aren't explicitly impl."""
+        for key, value in plugin_info_data.items():
+            # self.plugin_info is dict, should it be?
+            self.plugin_info[key] = value
+
     @abstractmethod
-    def get_job_info(self):
+    def get_job_info(self, job_info=None, **kwargs):
         """Return filled Deadline JobInfo.
 
         This is host/plugin specific implementation of how to fill data in.
 
+        Args:
+            job_info (AYONDeadlineJobInfo): dataclass object with collected
+                values from Settings and Publisher UI
+
         See:
-            :class:`DeadlineJobInfo`
+            :class:`AYONDeadlineJobInfo`
 
         Returns:
             :class:`DeadlineJobInfo`: Filled Deadline JobInfo.
@@ -511,7 +235,7 @@ class AbstractSubmitDeadline(pyblish.api.InstancePlugin,
         pass
 
     @abstractmethod
-    def get_plugin_info(self):
+    def get_plugin_info(self, **kwargs):
         """Return filled Deadline PluginInfo.
 
         This is host/plugin specific implementation of how to fill data in.
