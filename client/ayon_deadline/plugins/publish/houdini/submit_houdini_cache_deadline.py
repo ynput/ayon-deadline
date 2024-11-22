@@ -1,32 +1,28 @@
 import os
-import getpass
 from datetime import datetime
 
-import attr
+from dataclasses import dataclass, field, asdict
 import pyblish.api
 from ayon_core.lib import (
-    TextDef,
-    NumberDef,
     is_in_tests,
 )
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
-@attr.s
-class HoudiniPluginInfo(object):
-    Build = attr.ib(default=None)
-    IgnoreInputs = attr.ib(default=True)
-    ScriptJob = attr.ib(default=True)
-    SceneFile = attr.ib(default=None)   # Input
-    SaveFile = attr.ib(default=True)
-    ScriptFilename = attr.ib(default=None)
-    OutputDriver = attr.ib(default=None)
-    Version = attr.ib(default=None)  # Mandatory for Deadline
-    ProjectPath = attr.ib(default=None)
+@dataclass
+class HoudiniPluginInfo:
+    Build: str = field(default=None)
+    IgnoreInputs: bool = field(default=True)
+    ScriptJob: bool = field(default=True)
+    SceneFile: bool = field(default=None)   # Input
+    SaveFile: bool = field(default=True)
+    ScriptFilename: str = field(default=None)
+    OutputDriver: str = field(default=None)
+    Version: str = field(default=None)  # Mandatory for Deadline
+    ProjectPath: str = field(default=None)
 
 
 class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,   # noqa
@@ -45,19 +41,7 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
     targets = ["local"]
     settings_category = "deadline"
 
-    priority = 50
-    chunk_size = 999999
-    group = None
-    limits = ""
-    machine_limit = 0
-    jobInfo = {}
-    pluginInfo = {}
-
-
-    def get_job_info(self):
-        job_info = DeadlineJobInfo(Plugin="Houdini")
-
-        job_info.update(self.jobInfo)
+    def get_job_info(self, job_info=None):
         instance = self._instance
         context = instance.context
         assert all(
@@ -69,15 +53,14 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         scenename = os.path.basename(filepath)
         job_name = "{scene} - {instance} [PUBLISH]".format(
             scene=scenename, instance=instance.name)
-        batch_name = "{code} - {scene}".format(code=project_name,
-                                               scene=scenename)
+        batch_name = f"{project_name} - {scenename}"
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
 
         job_info.Name = job_name
         job_info.BatchName = batch_name
-        job_info.Plugin = instance.data["plugin"]
-        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
+        job_info.Plugin = instance.data.get("plugin") or "Houdini"
+
         rop_node = self.get_rop_node(instance)
         if rop_node.type().name() != "alembic":
             frames = "{start}-{end}x{step}".format(
@@ -87,24 +70,6 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             )
 
             job_info.Frames = frames
-
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-
-        attr_values = self.get_attr_values_from_data(instance.data)
-
-        job_info.ChunkSize = instance.data.get("chunk_size", self.chunk_size)
-        job_info.Comment = context.data.get("comment")
-        job_info.Priority = attr_values.get("priority", self.priority)
-        job_info.Group = attr_values.get("group", self.group)
-        job_info.LimitGroups = attr_values.get("limits", self.limits)
-        job_info.MachineLimit = attr_values.get(
-            "machine_limit", self.machine_limit
-        )
-
-        # Set job environment variables
-        job_info.add_instance_job_env_vars(self._instance)
-        job_info.add_render_job_env_var()
 
         return job_info
 
@@ -127,7 +92,7 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             ProjectPath=os.path.dirname(self.scene_path)
         )
 
-        plugin_payload = attr.asdict(plugin_info)
+        plugin_payload = asdict(plugin_info)
 
         return plugin_payload
 
@@ -145,33 +110,3 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         rop_node = hou.node(rop)
 
         return rop_node
-
-    @classmethod
-    def get_attribute_defs(cls):
-        defs = super(HoudiniCacheSubmitDeadline, cls).get_attribute_defs()
-        defs.extend([
-            NumberDef("priority",
-                      minimum=1,
-                      maximum=250,
-                      decimals=0,
-                      default=cls.priority,
-                      label="Priority"),
-            TextDef("group",
-                    default=cls.group,
-                    label="Group Name"),
-            TextDef(
-                "limits",
-                default=cls.limits,
-                label="Limit Groups",
-                placeholder="value1,value2",
-                tooltip="Enter a comma separated list of limit groups."
-            ),
-            NumberDef(
-                "machine_limit",
-                default=cls.machine_limit,
-                label="Machine Limit",
-                tooltip="maximum number of machines for this job."
-            ),
-        ])
-
-        return defs

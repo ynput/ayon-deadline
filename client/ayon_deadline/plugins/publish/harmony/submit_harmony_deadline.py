@@ -5,14 +5,11 @@ from pathlib import Path
 from collections import OrderedDict
 from zipfile import ZipFile, is_zipfile
 import re
-from datetime import datetime
 
 import attr
 import pyblish.api
 
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
-from ayon_core.lib import is_in_tests
 
 
 class _ZipFile(ZipFile):
@@ -242,40 +239,12 @@ class HarmonySubmitDeadline(
     targets = ["local"]
     settings_category = "deadline"
 
-    optional = True
-    use_published = False
-    priority = 50
-    chunk_size = 1000000
-    group = "none"
-    department = ""
-
-    def get_job_info(self):
-        job_info = DeadlineJobInfo("Harmony")
-        job_info.Name = self._instance.data["name"]
+    def get_job_info(self, job_info=None):
         job_info.Plugin = "HarmonyAYON"
         job_info.Frames = "{}-{}".format(
             self._instance.data["frameStartHandle"],
             self._instance.data["frameEndHandle"]
         )
-        # for now, get those from presets. Later on it should be
-        # configurable in Harmony UI directly.
-        job_info.Priority = self.priority
-        job_info.Pool = self._instance.data.get("primaryPool")
-        job_info.SecondaryPool = self._instance.data.get("secondaryPool")
-        job_info.ChunkSize = self.chunk_size
-        batch_name = os.path.basename(self._instance.data["source"])
-        if is_in_tests():
-            batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
-        job_info.BatchName = batch_name
-        job_info.Department = self.department
-        job_info.Group = self.group
-
-        # Set job environment variables
-        job_info.add_render_job_env_var()
-        job_info.add_instance_job_env_vars(self._instance)
-
-        # to recognize render jobs
-        job_info.add_render_job_env_var()
 
         return job_info
 
