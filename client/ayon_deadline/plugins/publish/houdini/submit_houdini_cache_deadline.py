@@ -59,17 +59,22 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
 
         job_info.Name = job_name
         job_info.BatchName = batch_name
-        job_info.Plugin = instance.data.get("plugin") or "Houdini"
+        job_info.Plugin = instance.data.get("plugin", "Houdini")
 
-        rop_node = self.get_rop_node(instance)
-        if rop_node.type().name() != "alembic":
-            frames = "{start}-{end}x{step}".format(
-                start=int(instance.data["frameStart"]),
-                end=int(instance.data["frameEnd"]),
-                step=int(instance.data["byFrameStep"]),
-            )
+        frames = "{start}-{end}x{step}".format(
+            start=int(instance.data["frameStart"]),
+            end=int(instance.data["frameEnd"]),
+            step=int(instance.data["byFrameStep"]),
+        )
 
-            job_info.Frames = frames
+        job_info.Frames = frames
+
+        # When `frames` instance data is a string, it indicates that
+        #  the output is a single file.
+        # Set the chunk size to a large number because multiple
+        #  machines cannot render to the same file.
+        if isinstance(instance.data.get("frames"), str):
+            job_info.ChunkSize = 99999999
 
         return job_info
 
