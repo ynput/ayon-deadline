@@ -2,7 +2,7 @@ import os
 
 import pyblish.api
 
-from ayon_deadline.lib import FARM_FAMILIES, JOB_ENV_DATA_KEY
+from ayon_deadline.lib import JOB_ENV_DATA_KEY
 
 
 class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
