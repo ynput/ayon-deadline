@@ -219,9 +219,6 @@ def fusion_deadline_plugin_enum():
 
 
 class FusionSubmitDeadlineModel(BaseSettingsModel):
-    concurrent_tasks: int = SettingsField(
-        1, title="Number of concurrent tasks"
-    )
     plugin: str = SettingsField("Fusion",
                                 enum_resolver=fusion_deadline_plugin_enum,
                                 title="Deadline Plugin")
@@ -402,7 +399,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         ]
     },
     "FusionSubmitDeadline": {
-        "concurrent_tasks": 1,
         "plugin": "Fusion"
     },
     "HoudiniSubmitDeadline": {
