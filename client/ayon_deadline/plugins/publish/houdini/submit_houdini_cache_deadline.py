@@ -59,7 +59,7 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
 
         job_info.Name = job_name
         job_info.BatchName = batch_name
-        job_info.Plugin = instance.data.get("plugin") or "Houdini"
+        job_info.Plugin = instance.data.get("plugin", "Houdini")
 
         frames = "{start}-{end}x{step}".format(
             start=int(instance.data["frameStart"]),
