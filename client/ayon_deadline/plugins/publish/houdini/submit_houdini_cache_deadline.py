@@ -69,32 +69,12 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
 
         job_info.Frames = frames
 
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-
-        attr_values = self.get_attr_values_from_data(instance.data)
-
-        chunk_size = instance.data.get("chunk_size", self.chunk_size)
         # When `frames` instance data is a string, it indicates that
         #  the output is a single file.
         # Set the chunk size to a large number because multiple
         #  machines cannot render to the same file.
         if isinstance(instance.data.get("frames"), str):
-            chunk_size = 99999999
-
-        job_info.ChunkSize = chunk_size
-
-        job_info.Comment = context.data.get("comment")
-        job_info.Priority = attr_values.get("priority", self.priority)
-        job_info.Group = attr_values.get("group", self.group)
-        job_info.LimitGroups = attr_values.get("limits", self.limits)
-        job_info.MachineLimit = attr_values.get(
-            "machine_limit", self.machine_limit
-        )
-
-        # Set job environment variables
-        job_info.add_instance_job_env_vars(self._instance)
-        job_info.add_render_job_env_var()
+            job_info.ChunkSize = 99999999
 
         return job_info
 
