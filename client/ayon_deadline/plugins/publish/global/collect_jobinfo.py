@@ -93,48 +93,51 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         addons_manager = AddonsManager(project_settings)
         deadline_addon = addons_manager["deadline"]
         deadline_server_name = settings["deadline_server"]
-        pools = groups = limit_groups = machines = []
+        pools = []
+        groups = []
+        limit_groups = []
+        machines = []
         try:
-            pools = deadline_addon.get_pools_by_server_name(
-                deadline_server_name)
-            groups = deadline_addon.get_groups_by_server_name(
-                deadline_server_name)
-            limit_groups = deadline_addon.get_limit_groups_by_server_name(
-                deadline_server_name
-            )
-            machines = deadline_addon.get_machines_by_server_name(
-                deadline_server_name
-            )
+            pools = [
+                {"value": pool, "label": pool}
+                for pool in deadline_addon.get_pools_by_server_name(
+                    deadline_server_name
+                )
+            ]
+            groups = [
+                {"value": group, "label": group}
+                for group in deadline_addon.get_groups_by_server_name(
+                    deadline_server_name
+                )
+            ]
+            limit_groups = [
+                {"value": limit_group, "label": limit_group}
+                for limit_group in (
+                    deadline_addon.get_limit_groups_by_server_name(
+                        deadline_server_name
+                    )
+                )
+            ]
+            machines = [
+                {"value": machine, "label": machine}
+                for machine in deadline_addon.get_machines_by_server_name(
+                    deadline_server_name
+                )
+            ]
+
         except Exception:
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
-            if not pools:
-                pools.append("< none >")
-            if not groups:
-                groups.append("< none >")
-            if not limit_groups:
-                limit_groups.append("< none >")
-            if not machines:
-                machines.append("< none >")
 
-        cls.pool_enum_values = [
-            {"value": pool, "label": pool}
-            for pool in pools
-        ]
+        for items in [
+            pools, groups, limit_groups, machines
+        ]:
+            if not items:
+                items.append({"value": None, "label": "< none >"})
 
-        cls.group_enum_values = [
-            {"value": group, "label": group}
-            for group in groups
-        ]
-
-        cls.limit_group_enum_values = [
-            {"value": limit_group, "label": limit_group}
-            for limit_group in limit_groups
-        ]
-
-        cls.machines_enum_values = [
-            {"value": machine, "label": machine}
-            for machine in machines
-        ]
+        cls.pool_enum_values = pools
+        cls.group_enum_values = groups
+        cls.limit_group_enum_values = limit_groups
+        cls.machines_enum_values = machines
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):
