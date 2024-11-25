@@ -16,7 +16,6 @@ from ayon_core.addon import AddonsManager
 from ayon_deadline.lib import (
     FARM_FAMILIES,
     AYONDeadlineJobInfo,
-    DeadlineWebserviceError
 )
 
 
