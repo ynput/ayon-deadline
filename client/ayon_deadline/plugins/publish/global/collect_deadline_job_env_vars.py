@@ -36,15 +36,15 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     ]
 
     def process(self, context):
-        env = {}
+        env = context.data.setdefault(JOB_ENV_DATA_KEY, {})
         for key in self.ENV_KEYS:
+            # Skip already set keys
+            if key in env:
+                continue
             value = os.getenv(key)
             if value:
                 self.log.debug(f"Setting job env: {key}: {value}")
                 env[key] = value
-
-        # Transfer some environment variables from current context
-        context.data.setdefault(JOB_ENV_DATA_KEY, {}).update(env)
 
 
 class CollectAYONServerToFarmJob(CollectDeadlineJobEnvVars):
