@@ -82,6 +82,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             instance_families.append("deadline")
 
         # 'publish.hou' has different submit job plugin
+        # TODO find out if we need separate submit publish job plugin
         if "publish.hou" in all_families:
             return
 
