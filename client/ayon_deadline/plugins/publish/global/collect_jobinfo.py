@@ -126,7 +126,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             ]
 
         except Exception:
-            cls.log.warning(f"Unable to connect to {deadline_server_name}")
+            cls.log.warning(
+                f"Unable to connect to {deadline_server_name}",
+                exc_info=True
+            )
 
         for items in [
             pools, groups, limit_groups, machines
