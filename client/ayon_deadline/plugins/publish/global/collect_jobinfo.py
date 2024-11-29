@@ -148,7 +148,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                     deadline_server_name
                 )
             ]
-
         except DeadlineWebserviceError:
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
 
