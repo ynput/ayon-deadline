@@ -16,6 +16,7 @@ from ayon_core.addon import AddonsManager
 from ayon_deadline.lib import (
     FARM_FAMILIES,
     AYONDeadlineJobInfo,
+    DeadlineWebserviceError,
 )
 
 
@@ -148,7 +149,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 )
             ]
 
-        except Exception:
+        except DeadlineWebserviceError:
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
 
         for items in [
