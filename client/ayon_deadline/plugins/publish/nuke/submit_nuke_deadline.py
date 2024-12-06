@@ -94,7 +94,8 @@ class NukeSubmitDeadline(
             for baking_script in instance.data["bakingNukeScripts"]:
                 self.job_info.JobType = "Normal"
 
-                response_data = instance.data["deadlineSubmissionJob"]
+                response_data = instance.data.get("deadlineSubmissionJob", {})
+                # frames_farm instance doesn't have render submission
                 if response_data.get("_id"):
                     self.job_info.BatchName = response_data["Props"]["Batch"]
                     self.job_info.JobDependency0 = response_data["_id"]
