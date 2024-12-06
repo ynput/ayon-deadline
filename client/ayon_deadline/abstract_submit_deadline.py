@@ -8,7 +8,7 @@ import json.decoder
 from abc import abstractmethod
 import getpass
 import os
-import datetime
+from datetime import datetime
 from copy import deepcopy
 
 import requests
