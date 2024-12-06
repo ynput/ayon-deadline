@@ -177,7 +177,7 @@ def _get_deadline_info(
         log.warning(f"No {item_type} retrieved")
         return []
 
-    return response.json()
+    return sorted(response.json(), key=lambda value: (value != "none", value))
 
 
 class DeadlineWebserviceError(Exception):
