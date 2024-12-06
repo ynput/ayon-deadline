@@ -16,6 +16,7 @@ from ayon_core.addon import AddonsManager
 from ayon_deadline.lib import (
     FARM_FAMILIES,
     AYONDeadlineJobInfo,
+    DeadlineWebserviceError,
 )
 
 
@@ -116,36 +117,50 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         addons_manager = AddonsManager(project_settings)
         deadline_addon = addons_manager["deadline"]
         deadline_server_name = settings["deadline_server"]
-        pools = deadline_addon.get_pools_by_server_name(deadline_server_name)
-        cls.pool_enum_values = [
-            {"value": pool, "label": pool}
-            for pool in pools
-        ]
+        pools = []
+        groups = []
+        limit_groups = []
+        machines = []
+        try:
+            pools = [
+                {"value": pool, "label": pool}
+                for pool in deadline_addon.get_pools_by_server_name(
+                    deadline_server_name
+                )
+            ]
+            groups = [
+                {"value": group, "label": group}
+                for group in deadline_addon.get_groups_by_server_name(
+                    deadline_server_name
+                )
+            ]
+            limit_groups = [
+                {"value": limit_group, "label": limit_group}
+                for limit_group in (
+                    deadline_addon.get_limit_groups_by_server_name(
+                        deadline_server_name
+                    )
+                )
+            ]
+            machines = [
+                {"value": machine, "label": machine}
+                for machine in deadline_addon.get_machines_by_server_name(
+                    deadline_server_name
+                )
+            ]
+        except DeadlineWebserviceError:
+            cls.log.warning(f"Unable to connect to {deadline_server_name}")
 
-        groups = deadline_addon.get_groups_by_server_name(deadline_server_name)
-        cls.group_enum_values = [
-            {"value": group, "label": group}
-            for group in groups
-        ]
+        for items in [
+            pools, groups, limit_groups, machines
+        ]:
+            if not items:
+                items.append({"value": None, "label": "< none >"})
 
-        limit_groups = deadline_addon.get_limit_groups_by_server_name(
-            deadline_server_name
-        )
-        limit_group_items = [
-            {"value": limit_group, "label": limit_group}
-            for limit_group in limit_groups
-        ]
-        if not limit_group_items:
-            limit_group_items.append({"value": None, "label": "< none >"})
-        cls.limit_group_enum_values = limit_group_items
-
-        machines = deadline_addon.get_machines_by_server_name(
-            deadline_server_name
-        )
-        cls.machines_enum_values = [
-            {"value": machine, "label": machine}
-            for machine in machines
-        ]
+        cls.pool_enum_values = pools
+        cls.group_enum_values = groups
+        cls.limit_group_enum_values = limit_groups
+        cls.machines_enum_values = machines
 
     @classmethod
     def get_attr_defs_for_instance(cls, create_context, instance):

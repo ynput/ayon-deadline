@@ -45,6 +45,10 @@ class NukeSubmitDeadline(
 
     def process(self, instance):
         """Plugin entry point."""
+        if not instance.data.get("farm"):
+            self.log.debug("Should not be processed on farm, skipping.")
+            return
+
         self._instance = instance
 
         context = instance.context

@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 from dataclasses import dataclass, field, asdict
 from functools import partial
@@ -173,11 +172,7 @@ def _get_deadline_info(
     except requests.exceptions.ConnectionError as exc:
         msg = 'Cannot connect to DL web service {}'.format(endpoint)
         log.error(msg)
-        raise(
-            DeadlineWebserviceError,
-            DeadlineWebserviceError('{} - {}'.format(msg, exc)),
-            sys.exc_info()[2]
-        )
+        raise DeadlineWebserviceError(msg) from exc
     if not response.ok:
         log.warning(f"No {item_type} retrieved")
         return []
