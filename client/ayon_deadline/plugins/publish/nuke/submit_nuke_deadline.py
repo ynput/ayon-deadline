@@ -130,10 +130,12 @@ class NukeSubmitDeadline(
 
         start_frame = int(instance.data["frameStartHandle"])
         end_frame = int(instance.data["frameEndHandle"])
-        job_info.Frames = "{start}-{end}".format(
-            start=start_frame,
-            end=end_frame
-        )
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            job_info.Frames = "{start}-{end}".format(
+                start=start_frame,
+                end=end_frame
+            )
         limit_groups = self._get_limit_groups(self.node_class_limit_groups)
         job_info.LimitGroups = limit_groups
 
