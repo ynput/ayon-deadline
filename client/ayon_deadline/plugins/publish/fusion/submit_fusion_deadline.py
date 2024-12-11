@@ -87,10 +87,10 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         # Store the response for dependent job submission plug-ins for all
         # the instances
+        transfer_keys = ["deadlineSubmissionJob", "deadline"]
         for saver_instance in saver_instances:
-            saver_instance.data["deadlineSubmissionJob"] = (
-                instance.data["deadlineSubmissionJob"]
-            )
+            for key in transfer_keys:
+                saver_instance.data[key] = instance.data[key]
 
     def get_job_info(self, job_info=None, **kwargs):
         instance = self._instance
