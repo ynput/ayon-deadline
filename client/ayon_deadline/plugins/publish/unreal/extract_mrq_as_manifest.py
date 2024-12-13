@@ -9,8 +9,8 @@ class ExtractMRQAsManifest(publish.Extractor):
 
     def process(self, instance):
         self.mrq = instance.data["mrq"]
-        _, manifest = (
-            MoviePipelineEditorLibrary.save_queue_to_manifest_file(self.mrq)
+        _, manifest = MoviePipelineEditorLibrary.save_queue_to_manifest_file(
+            self.mrq
         )
         manifest_string = (
             MoviePipelineEditorLibrary.convert_manifest_file_to_string(
