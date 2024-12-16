@@ -18,5 +18,5 @@ class CollectRenderItemsIntoMRQ(pyblish.api.InstancePlugin):
         new_job = self.mrq.allocate_new_job()
         new_job.map = unreal.SoftObjectPath(instance.data["master_level"])
         new_job.sequence = unreal.SoftObjectPath(instance.data["sequence"])
-        # new_job.set_configuration(instance.context.data["render_presets"][0])
+        new_job.set_configuration(instance.context.data["render_presets"][0])
         self.log.debug(f"{new_job = }")
