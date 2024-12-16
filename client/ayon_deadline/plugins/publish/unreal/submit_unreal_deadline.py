@@ -9,6 +9,7 @@ from ayon_core.lib import is_in_tests
 
 from ayon_deadline import abstract_submit_deadline
 from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
+from ayon_deadline.plugins.publish.unreal import CustomRenderBootstrap
 
 
 @attr.s
@@ -108,15 +109,11 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
-        cmd_args = [f"{master_level} -game ",
-                    f"-MoviePipelineConfig={render_queue_path}"]
-        cmd_args.extend([
-            "-windowed",
-            "-Log",
-            "-StdOut",
-            "-allowStdOutLogVerbosity"
-            "-Unattended"
-        ])
+        cmd_args = [
+            f'-execcmds="py {Path(CustomRenderBootstrap.__file__).as_posix()}"',
+            "-MoviePipelineConfig=MovieRenderPipeline/QueueManifest.utxt",  # TODO: get from work dir
+            "-log", "-unattended", "-stdout", "-allowstdoutlogverbosity", "-MRQInstance"
+        ]
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
