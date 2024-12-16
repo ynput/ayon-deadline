@@ -42,7 +42,9 @@ def on_custom_executor_finished(executor, success):
         "Custom Executor Finished. Quitting editor now! Success: "
         + str(success)
     )
-    unreal.SystemLibrary.quit_editor()
+    # ! this is conflicting with the deadline plugin shutdown
+    # gotta find a way to signal to deadline that rendering has finished
+    # unreal.SystemLibrary.quit_editor()
 
 
 def wait_for_asset_registry(delta_seconds):
