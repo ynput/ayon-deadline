@@ -25,6 +25,14 @@ FARM_FAMILIES = [
 JOB_ENV_DATA_KEY: str = "farmJobEnv"
 
 
+@dataclass
+class DeadlineServerInfo:
+    pools: List[str]
+    limit_groups: List[str]
+    groups: List[str]
+    machines: List[str]
+
+
 def get_ayon_render_job_envs() -> "dict[str, str]":
     """Get required env vars for valid render job submission."""
     return {
@@ -74,9 +82,8 @@ def get_deadline_pools(
         RuntimeError: If deadline webservice is unreachable.
 
     """
-    endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="pools")
+    endpoint = f"{webservice_url}/api/pools?NamesOnly=true"
+    return _get_deadline_info(endpoint, auth, log, "pools")
 
 
 def get_deadline_groups(
@@ -99,9 +106,8 @@ def get_deadline_groups(
         RuntimeError: If deadline webservice_url is unreachable.
 
     """
-    endpoint = "{}/api/groups".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="groups")
+    endpoint = f"{webservice_url}/api/groups"
+    return _get_deadline_info(endpoint, auth, log, "groups")
 
 
 def get_deadline_limit_groups(
@@ -124,9 +130,8 @@ def get_deadline_limit_groups(
         RuntimeError: If deadline webservice_url is unreachable.
 
     """
-    endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="limitgroups")
+    endpoint = f"{webservice_url}/api/limitgroups?NamesOnly=true"
+    return _get_deadline_info(endpoint, auth, log, "limitgroups")
 
 def get_deadline_workers(
     webservice_url: str,
@@ -148,16 +153,15 @@ def get_deadline_workers(
         RuntimeError: If deadline webservice_url is unreachable.
 
     """
-    endpoint = "{}/api/slaves?NamesOnly=true".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="workers")
+    endpoint = f"{webservice_url}/api/slaves?NamesOnly=true"
+    return _get_deadline_info(endpoint, auth, log, "workers")
 
 
 def _get_deadline_info(
     endpoint,
-    auth=None,
-    log=None,
-    item_type=None
+    auth,
+    log,
+    item_type
 ):
     from .abstract_submit_deadline import requests_get
 
@@ -170,7 +174,7 @@ def _get_deadline_info(
             kwargs["auth"] = auth
         response = requests_get(endpoint, **kwargs)
     except requests.exceptions.ConnectionError as exc:
-        msg = 'Cannot connect to DL web service {}'.format(endpoint)
+        msg = f"Cannot connect to DL web service {endpoint}"
         log.error(msg)
         raise DeadlineWebserviceError(msg) from exc
     if not response.ok:
