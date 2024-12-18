@@ -122,31 +122,24 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         limit_groups = []
         machines = []
         try:
+            server_info = deadline_addon.get_server_info_by_name(
+                deadline_server_name
+            )
             pools = [
                 {"value": pool, "label": pool}
-                for pool in deadline_addon.get_pools_by_server_name(
-                    deadline_server_name
-                )
+                for pool in server_info.pools
             ]
             groups = [
                 {"value": group, "label": group}
-                for group in deadline_addon.get_groups_by_server_name(
-                    deadline_server_name
-                )
+                for group in server_info.groups
             ]
             limit_groups = [
                 {"value": limit_group, "label": limit_group}
-                for limit_group in (
-                    deadline_addon.get_limit_groups_by_server_name(
-                        deadline_server_name
-                    )
-                )
+                for limit_group in server_info.limit_groups
             ]
             machines = [
                 {"value": machine, "label": machine}
-                for machine in deadline_addon.get_machines_by_server_name(
-                    deadline_server_name
-                )
+                for machine in server_info.machines
             ]
         except DeadlineWebserviceError:
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
