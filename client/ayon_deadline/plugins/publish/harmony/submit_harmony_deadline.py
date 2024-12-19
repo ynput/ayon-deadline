@@ -344,8 +344,8 @@ class HarmonySubmitDeadline(
         )
 
         leading_zeros = str(self._instance.data["leadingZeros"])
-        pattern = f"[0]{leading_zeros}1\\.[a-zA-Z]{3}"
-        render_prefix = re.sub(pattern, '',
+        frames_and_ext_pattern = f"0{{{leading_zeros}}}[1-9]\\.[a-zA-Z]{{3}}"
+        render_prefix = re.sub(frames_and_ext_pattern, "",
                                self._instance.data["expectedFiles"][0])
         harmony_plugin_info.set_output(
             self._instance.data["setMembers"][0],
