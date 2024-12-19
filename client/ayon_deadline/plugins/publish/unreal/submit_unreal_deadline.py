@@ -108,7 +108,7 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
-        pre_render_script = Path(abstract_submit_deadline.__file__).parent / "plugins" / "publish" / "CustomRenderBootstrap.py"
+        pre_render_script = Path(abstract_submit_deadline.__file__).parent / "plugins" / "publish" / "Scripts" / "CustomRenderBootstrap.py"
         cmd_args = [
             f'-execcmds="py {pre_render_script.as_posix()}"',
             "-MoviePipelineConfig=MovieRenderPipeline/QueueManifest.utxt",  # TODO: get from work dir
