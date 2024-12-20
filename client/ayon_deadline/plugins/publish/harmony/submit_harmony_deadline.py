@@ -279,7 +279,7 @@ class HarmonySubmitDeadline(
             # TODO remove when dependency on DL will be added
             # after DL release
             self.log.info(
-                f"'get_workdir' doesn't exist in Harmony addon. "
+                "'get_workdir' doesn't exist in Harmony addon. "
                 "You are using older version, falling back to "
                 "render in 'publish' workfile folder."
             )
