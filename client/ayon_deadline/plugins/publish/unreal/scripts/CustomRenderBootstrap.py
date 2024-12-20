@@ -28,20 +28,6 @@ def initialize_render_job():
     subsystem.render_queue_with_executor_instance(custom_executor)
 
 
-def on_custom_executor_finished(executor, success):
-    # Unfortunately the success bool isn't very useful at this time (errors report success)
-    # so we can't do much with it here, but if you really need it you can get the correct
-    # information from the individual job work callbacks on the PIE Executor and then you can
-    # bubble that information up with another delegate, etc.
-    unreal.log(
-        "Custom Executor Finished. Quitting editor now! Success: "
-        + str(success)
-    )
-    # ! this is a workaround to signal to deadline that rendering has finished as we don't have a connection to deadline here
-    # ! print statement will be parsed by deadline plugin so that where we can then close the running process
-    unreal.log("Progress: 100.0%")
-
-
 def wait_for_asset_registry(delta_seconds):
     asset_registry = unreal.AssetRegistryHelpers.get_asset_registry()
     if asset_registry.is_loading_assets():
