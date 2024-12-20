@@ -347,6 +347,9 @@ class HarmonySubmitDeadline(
 
         # for submit_publish job to create .json file in
         self._instance.data["outputDir"] = render_path
+        # to let DL Explore Output
+        # TODO update this when #79 is fixed
+        self.job_info.OutputDirectory[0] = render_path.as_posix()
         new_expected_files = []
         render_path_str = str(render_path.as_posix())
         for file in self._instance.data["expectedFiles"]:
