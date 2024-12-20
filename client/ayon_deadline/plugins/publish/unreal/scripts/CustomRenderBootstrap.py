@@ -1,5 +1,5 @@
 import unreal
-import MyCustomEditorRenderExecutor
+import CustomEditorRenderExecutor
 
 """
 This is a bootstrapping script that is executed when the editor starts in a
@@ -21,12 +21,7 @@ def initialize_render_job():
 
     # Create an instance of our custom executor
     global custom_executor
-    custom_executor = MyCustomEditorRenderExecutor.MoviePipelineMyCustomEditorRenderExecutor()
-
-    # Listen for the executor to be finished so we can request editor shutdown
-    custom_executor.on_executor_finished_delegate.add_callable_unique(
-        on_custom_executor_finished
-    )
+    custom_executor = CustomEditorRenderExecutor.MoviePipelineCustomEditorRenderExecutor()
 
     # Now tell our custom executor to render which will load the queue asset and then create PIE executor instances.
     subsystem = unreal.get_editor_subsystem(unreal.MoviePipelineQueueSubsystem)
