@@ -5,11 +5,14 @@ from pathlib import Path
 from collections import OrderedDict
 from zipfile import ZipFile, is_zipfile
 import re
+import shutil
 
 import attr
 import pyblish.api
 
 from ayon_deadline import abstract_submit_deadline
+
+import ayon_harmony.api as harmony
 
 
 class _ZipFile(ZipFile):
@@ -251,7 +254,8 @@ class HarmonySubmitDeadline(
     def _unzip_scene_file(self, published_scene: Path) -> Path:
         """Unzip scene zip file to its directory.
 
-        Unzip scene file (if it is zip file) to its current directory and
+        Unzip scene file (if it is zip file) to workfidir if available,
+        if not to its current directory and
         return path to xstage file there. Xstage file is determined by its
         name.
 
@@ -268,6 +272,30 @@ class HarmonySubmitDeadline(
             self.log.error("Published scene is not in zip.")
             self.log.error(published_scene)
             raise AssertionError("invalid scene format")
+
+        try:
+            workdir = harmony.get_workdir()
+        except AttributeError:
+            # TODO remove when dependency on DL will be added
+            # after DL release
+            self.log.info(
+                f"'get_workdir' doesn't exist in Harmony addon. "
+                "You are using older version, falling back to "
+                "render in 'publish' workfile folder."
+            )
+
+        if workdir:
+            workdir = Path(workdir)
+            renders_path = os.path.join(
+                workdir.parent, "renders", "harmony")
+            os.makedirs(renders_path, exist_ok=True)
+
+            self.log.info(f"Copying '{published_scene}' -> '{renders_path}'")
+            shutil.copy(
+                published_scene.as_posix(), renders_path)
+            published_scene = Path(
+                os.path.join(renders_path), published_scene.name)
+            self._instance.context.data["cleanupFullPaths"].append(published_scene)
 
         xstage_path = (
             published_scene.parent
@@ -344,7 +372,7 @@ class HarmonySubmitDeadline(
         )
 
         leading_zeros = str(self._instance.data["leadingZeros"])
-        pattern = f"[0]{leading_zeros}1\\.[a-zA-Z]{3}"
+        pattern = f"0{{{leading_zeros}}}[1-9]\\.[a-zA-Z]{{3}}"
         render_prefix = re.sub(pattern, '',
                                self._instance.data["expectedFiles"][0])
         harmony_plugin_info.set_output(
