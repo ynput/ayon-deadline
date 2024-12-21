@@ -3,34 +3,15 @@ import pyblish.api
 import unreal
 
 
-class CollectMediaRenderQueueAndPresets(pyblish.api.ContextPlugin):
-    """Collect Media Render Queue and Presets."""
+class CollectMediaRenderPresets(pyblish.api.ContextPlugin):
+    """Collect Media Render Presets."""
 
     order = pyblish.api.CollectorOrder
-    label = "Collect Media Render Queue and Presets"
+    label = "Collect Media Render Presets"
     hosts = ["unreal"]
     families = ["render"]
 
     def process(self, context):
-        self.collect_queue(context)
-        self.collect_presets(context)
-
-    def collect_queue(self, context):
-        mrq_subsystem = unreal.get_editor_subsystem(
-            unreal.MoviePipelineQueueSubsystem
-        )
-        mrq = mrq_subsystem.get_queue()
-        if not mrq:
-            raise Exception("No Media Render Queue found")
-
-        if len(mrq.get_jobs()) > 0:
-            self.log.info("Emptying current MRQ")
-            mrq.delete_all_jobs()
-
-        self.log.info(f"Saving MRQ asset {mrq}")
-        context.data["mrq"] = mrq
-
-    def collect_presets(self, context):
         all_assets = unreal.EditorAssetLibrary.list_assets(
             "/Game",
             recursive=True,

@@ -7,7 +7,7 @@ from ayon_core.pipeline import publish
 from ayon_core.lib import StringTemplate
 
 
-from unreal import MoviePipelineEditorLibrary
+import unreal
 
 
 class ExtractMRQAsManifest(publish.Extractor):
@@ -19,24 +19,53 @@ class ExtractMRQAsManifest(publish.Extractor):
         self.anatomy_data = deepcopy(instance.data["anatomyData"])
         self.project_data = deepcopy(instance.data["projectEntity"])
 
+        self.get_work_file_template()
+        self.configure_mrq(instance)
         self.serialize_mrq(instance)
         self.copy_manifest_to_publish(instance)
+
+
+    def get_work_file_template(self):
+        # get work file template
+        #   how can i build a @token?
+        project_templates = self.project_data["config"]["templates"]
+        _dir_template = project_templates["publish"]["default"][
+            "directory"
+        ].replace("@version", "version")
+        _file_template = project_templates["publish"]["default"][
+            "file"
+        ].replace("@version", "version")
+
+        self.dir_template = StringTemplate(_dir_template)
+        self.file_template = StringTemplate(_file_template)
+
+
+    def configure_mrq(self, instance):
+        mrq_subsystem = unreal.get_editor_subsystem(
+            unreal.MoviePipelineQueueSubsystem
+        )
+        self.mrq = mrq_subsystem.get_queue()
+        for job in self.mrq.get_jobs():
+            if job is instance.data["mrq_job"]:
+                job.set_is_enabled(True)
+                continue
+            job.set_is_enabled(False)
 
     def serialize_mrq(self, instance):
         # serialize mrq to file and string
         self.mrq = instance.data["mrq"]
         _, manifest = (
-            MoviePipelineEditorLibrary.save_queue_to_manifest_file(self.mrq)
+            unreal.MoviePipelineEditorLibrary.save_queue_to_manifest_file(self.mrq)
         )
         manifest_string = (
-            MoviePipelineEditorLibrary.convert_manifest_file_to_string(
+            unreal.MoviePipelineEditorLibrary.convert_manifest_file_to_string(
                 manifest
             )
         )
         instance.data["mrq_manifest"] = (
             manifest_string  # save manifest string for potential submission via string
         )
-        self.manifest_to_publish = Path(manifest).resolve()  # save manifest file for potential submission via file
+        self.manifest_to_publish = Path(manifest).resolve()
 
     def copy_manifest_to_publish(self, instance):
         # initialize template data
@@ -53,17 +82,8 @@ class ExtractMRQAsManifest(publish.Extractor):
         template_data["version"] = (
             f"v{template_data['version']:0{project_templates['common']['version_padding']}d}"
         )
-        # how can i build a @token?
-        _dir_template = project_templates["publish"]["default"][
-            "directory"
-        ].replace("@version", "version")
-        _file_template = project_templates["publish"]["default"][
-            "file"
-        ].replace("@version", "version")
-        dir_template = StringTemplate(_dir_template)
-        file_template = StringTemplate(_file_template)
-        publish_dir = Path(dir_template.format_strict(template_data))
-        publish_file = Path(file_template.format_strict(template_data))
+        publish_dir = Path(self.dir_template.format_strict(template_data))
+        publish_file = Path(self.file_template.format_strict(template_data))
         publish_manifest = publish_dir / publish_file
         self.log.debug(f"{publish_manifest = }")
 
