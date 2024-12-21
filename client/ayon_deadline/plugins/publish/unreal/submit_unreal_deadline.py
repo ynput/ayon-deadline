@@ -108,7 +108,7 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
-        pre_render_script = Path(abstract_submit_deadline.__file__).parent / "plugins" / "publish" / "Unreal" / "Scripts" / "CustomRenderBootstrap.py"
+        pre_render_script = Path(abstract_submit_deadline.__file__).parent / "plugins" / "publish" / "Unreal" / "Scripts" / "RemoteRenderPreLaunch.py"
         publish_mrq = self._instance.data["publish_mrq"]
         cmd_args = [
             f'-execcmds="py {pre_render_script.as_posix()}"',
