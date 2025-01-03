@@ -49,16 +49,22 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
         if not collected_deadline_url:
             raise ValueError("Instance doesn't have '[deadline][url]'.")
         context_data = instance.context.data
-        deadline_settings = context_data["project_settings"]["deadline"]
 
-        deadline_server_name = None
+
         # deadline url might be set directly from instance, need to find
         # metadata for it
-        for deadline_info in deadline_settings["deadline_urls"]:
-            dl_settings_url = deadline_info["value"].strip().rstrip("/")
-            if dl_settings_url == collected_deadline_url:
-                deadline_server_name = deadline_info["name"]
-                break
+        deadline_server_name = instance.data["deadline"].get("serverName")
+        if deadline_server_name is None:
+            self.log.warning(
+                "DEV WARNING: Instance does not have set"
+                " instance['deadline']['serverName']."
+            )
+            deadline_settings = context_data["project_settings"]["deadline"]
+            for deadline_info in deadline_settings["deadline_urls"]:
+                dl_settings_url = deadline_info["value"].strip().rstrip("/")
+                if dl_settings_url == collected_deadline_url:
+                    deadline_server_name = deadline_info["name"]
+                    break
 
         if not deadline_server_name:
             raise ValueError(f"Collected {collected_deadline_url} doesn't "
