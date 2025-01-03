@@ -1,19 +1,29 @@
 import os
+import subprocess
+import typing
 from typing import Optional, List, Dict, Any, Tuple
 
+import requests
 import ayon_api
 
+from ayon_core.lib import get_ayon_username
 from ayon_core.addon import AYONAddon, IPluginPaths
 
+from .version import __version__
+from .constants import AYON_PLUGIN_VERSION
 from .lib import (
+    JobType,
     DeadlineServerInfo,
     get_deadline_workers,
     get_deadline_groups,
     get_deadline_limit_groups,
     get_deadline_pools,
 )
-from .version import __version__
 
+if typing.TYPE_CHECKING:
+    from typing import Union, Literal
+
+    InitialStatus = Literal["Active", "Suspended"]
 
 DEADLINE_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -80,6 +90,137 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             self._server_info_by_name[server_name] = server_info
 
         return server_info
+
+    def submit_job(
+        self,
+        server_name: str,
+        plugin_info: Dict[str, Any],
+        job_info: Dict[str, Any],
+        aux_files: Optional[List[str]] = None,
+    ) -> str:
+        """Submit job to Deadline.
+
+        Args:
+            server_name (str): Deadline Server name from project Settings.
+            plugin_info (dict): Plugin info data.
+            job_info (dict): Job info data.
+            aux_files (Optional[List[str]]): List of auxiliary files.
+
+        Returns:
+            str: Job ID.
+
+        """
+        payload = {
+            "JobInfo": job_info,
+            "PluginInfo": plugin_info,
+            "AuxFiles": aux_files or [],
+        }
+        server_url, auth, verify = self._get_deadline_con_info(server_name)
+        response = requests.post(
+            f"{server_url}/api/jobs",
+            json=payload,
+            timeout=10,
+            auth=auth,
+            verify=verify
+        )
+        if not response.ok:
+            raise ValueError("Failed to create job")
+        return response.json()["_id"]
+
+    def submit_ayon_plugin_job(
+        self,
+        server_name: str,
+        args: "Union[List[str], str]",
+        job_name: str,
+        batch_name: str,
+        job_type: Optional[JobType] = None,
+        department: Optional[str] = None,
+        chunk_size: Optional[int] = 1,
+        priority: Optional[int] = 50,
+        initial_status: Optional["InitialStatus"] = "Active",
+        group: Optional[str] = None,
+        pool: Optional[str] = None,
+        secondary_pool: Optional[str] = None,
+        username: Optional[str] = None,
+        comment: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+        dependency_job_ids: Optional[List[str]] = None,
+        custom_job_info: Optional[Dict[str, Any]] = None,
+        aux_files: Optional[List[str]] = None,
+    ) -> str:
+        if chunk_size is None:
+            chunk_size = 1
+
+        if priority is None:
+            priority = 50
+
+        if priority < 0 or priority > 100:
+            raise ValueError("Priority must be between 0-100")
+
+        if initial_status is None:
+            initial_status = "Active"
+
+        if initial_status not in ["Active", "Suspended"]:
+            raise ValueError(
+                "InitialStatus must be one of"
+                " 'Active', 'Suspended'"
+            )
+
+        if username is None:
+            username = get_ayon_username()
+
+        if dependency_job_ids is None:
+            dependency_job_ids = []
+
+        if env is None:
+            env = {}
+
+        if job_type is None:
+            job_type = JobType.UNDEFINED
+
+        env.update(job_type.get_job_env())
+
+        job_info = {
+            "Plugin": "Ayon",
+            "BatchName": batch_name,
+            "Name": job_name,
+            "UserName": username,
+
+            "ChunkSize": chunk_size,
+            "Priority": priority,
+            "InitialStatus": initial_status,
+        }
+        for key, value in (
+            ("Comment", comment),
+            ("Department", department),
+            ("Group", group),
+            ("Pool", pool),
+            ("SecondaryPool", secondary_pool),
+        ):
+            if value is not None:
+                job_info[key] = value
+
+        for idx, job_id in enumerate(dependency_job_ids):
+            job_info[f"JobDependency{idx}"] = job_id
+
+        for idx, (key, value) in enumerate(env.items()):
+            info_key = f"EnvironmentKeyValue{idx}"
+            job_info[info_key] = f"{key}={value}"
+
+        if custom_job_info is not None:
+            job_info.update(custom_job_info)
+
+        if isinstance(args, str):
+            command = args
+        else:
+            command = subprocess.list2cmdline(args)
+
+        plugin_info = {
+            "Version": AYON_PLUGIN_VERSION,
+            "Arguments": command,
+            "SingleFrameOnly": "True",
+        }
+        return self.submit_job(server_name, plugin_info, job_info, aux_files)
 
     def _get_deadline_con_info(
         self, server_name: str

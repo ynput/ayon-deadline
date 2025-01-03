@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass, field, asdict
 from functools import partial
 from typing import Optional, List, Tuple, Any, Dict
+from enum import Enum
 
 import requests
 
@@ -60,6 +61,31 @@ def get_instance_job_envs(instance) -> "dict[str, str]":
         env = dict(sorted(env.items()))
 
     return env
+
+
+class JobType(str, Enum):
+    UNDEFINED = "undefined"
+    RENDER = "render"
+    PUBLISH = "publish"
+    REMOTE = "remote"
+
+    def get_job_env(self) -> Dict[str, str]:
+        return {
+            "AYON_PUBLISH_JOB": str(int(self == JobType.PUBLISH)),
+            "AYON_RENDER_JOB": str(int(self == JobType.RENDER)),
+            "AYON_REMOTE_PUBLISH": str(int(self == JobType.REMOTE)),
+        }
+
+    @classmethod
+    def get(
+        cls, value: Any, default: Optional[Any] = None
+    ) -> "JobType":
+        try:
+            return cls(value)
+        except ValueError:
+            if default is None:
+                return cls.UNDEFINED
+            return default
 
 
 def get_deadline_pools(
