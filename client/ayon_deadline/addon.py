@@ -148,6 +148,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         dependency_job_ids: Optional[List[str]] = None,
         custom_job_info: Optional[Dict[str, Any]] = None,
         aux_files: Optional[List[str]] = None,
+        frames: Optional[str] = None,
     ) -> str:
         if chunk_size is None:
             chunk_size = 1
@@ -200,6 +201,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             ("Group", group),
             ("Pool", pool),
             ("SecondaryPool", secondary_pool),
+            ("Frames", frames),
         ):
             if value is not None:
                 job_info[key] = value
