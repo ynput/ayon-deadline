@@ -20,6 +20,7 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     prepare_representations,
     create_metadata_path
 )
+from ayon_deadline.constants import AYON_PLUGIN_VERSION
 from ayon_deadline.abstract_submit_deadline import requests_post
 
 
@@ -148,7 +149,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
     # list of family names to transfer to new family if present
     families_transfer = ["render3d", "render2d", "slate"]
-    plugin_pype_version = "3.0"
 
     # poor man exclusion
     skip_integration_repre_list = []
@@ -248,7 +248,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "OutputDirectory0": output_dir.replace("\\", "/")
             },
             "PluginInfo": {
-                "Version": self.plugin_pype_version,
+                "Version": AYON_PLUGIN_VERSION,
                 "Arguments": " ".join(args),
                 "SingleFrameOnly": "True",
             },

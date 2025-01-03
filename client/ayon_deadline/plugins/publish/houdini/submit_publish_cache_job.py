@@ -18,6 +18,7 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     prepare_cache_representations,
     create_metadata_path
 )
+from ayon_deadline.constants import AYON_PLUGIN_VERSION
 from ayon_deadline.abstract_submit_deadline import requests_post
 
 
@@ -81,8 +82,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
     # regex for finding frame number in string
     R_FRAME_NUMBER = re.compile(r'.+\.(?P<frame>[0-9]+)\..+')
-
-    plugin_pype_version = "3.0"
 
     def _submit_deadline_post_job(self, instance, job):
         """Submit publish job to Deadline.
@@ -176,7 +175,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
                 "OutputDirectory0": output_dir.replace("\\", "/")
             },
             "PluginInfo": {
-                "Version": self.plugin_pype_version,
+                "Version": AYON_PLUGIN_VERSION,
                 "Arguments": " ".join(args),
                 "SingleFrameOnly": "True",
             },
