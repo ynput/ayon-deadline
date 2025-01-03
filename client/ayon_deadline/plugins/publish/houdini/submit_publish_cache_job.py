@@ -77,7 +77,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
     # custom deadline attributes
     deadline_department = ""
     deadline_pool = ""
-    deadline_pool_secondary = ""
     deadline_group = ""
     deadline_priority = None
 
@@ -153,16 +152,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             "--targets", "farm"
         ]
 
-        # Generate the payload for Deadline submission
-        # QUESTION: Shouldn't this be opposite?
-        #   - first instance and then "default pool"
-        primary_pool = self.deadline_pool or instance.data.get("primaryPool")
-        # QUESTION: Why is secondary pool not used?
-        #    - it was always removed in previous code
-        # secondary_pool = (
-        #     self.deadline_pool_secondary or instance.data.get("secondaryPool")
-        # )
-
         dependency_ids = []
         if job.get("_id"):
             dependency_ids.append(job["_id"])
@@ -183,7 +172,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             priority=priority,
             initial_status=initial_status,
             group=self.deadline_group,
-            pool=primary_pool,
+            pool=self.deadline_pool or None,
             dependency_job_ids=dependency_ids,
             output_directories=[output_dir.replace("\\", "/")],
             username=job["Props"]["User"],
