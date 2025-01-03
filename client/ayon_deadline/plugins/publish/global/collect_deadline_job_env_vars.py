@@ -12,27 +12,19 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     targets = ["local"]
 
     ENV_KEYS = [
-        # AYON
-        "AYON_BUNDLE_NAME",
-        "AYON_DEFAULT_SETTINGS_VARIANT",
-        "AYON_PROJECT_NAME",
-        "AYON_FOLDER_PATH",
-        "AYON_TASK_NAME",
+        # applications addon
         "AYON_APP_NAME",
-        "AYON_WORKDIR",
-        "AYON_APP_NAME",
-        "AYON_LOG_NO_COLORS",
-        "AYON_IN_TESTS",
-        "IS_TEST",  # backwards compatibility
 
-        # Ftrack
+        # ftrack addon
         "FTRACK_API_KEY",
         "FTRACK_API_USER",
         "FTRACK_SERVER",
-        "PYBLISHPLUGINPATH",
 
-        # Shotgrid
+        # Shotgrid / Flow addon
         "OPENPYPE_SG_USER",
+
+        # Not sure how this is usefull for farm, scared to remove
+        "PYBLISHPLUGINPATH",
     ]
 
     def process(self, context):
