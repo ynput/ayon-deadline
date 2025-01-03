@@ -230,10 +230,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         primary_pool = self.deadline_pool or instance.data.get("primaryPool")
         # QUESTION: Why is secondary pool not used?
         #    - it was always removed in previous code
-        secondary_pool = (
-            self.deadline_pool_secondary
-            or instance.data.get("secondaryPool")
-        )
+        # secondary_pool = (
+        #     self.deadline_pool_secondary
+        #     or instance.data.get("secondaryPool")
+        # )
+
         # Collect dependent jobs
         dependency_ids = None
         if instance.data.get("tileRendering"):
