@@ -2,7 +2,7 @@ import os
 
 import pyblish.api
 
-from ayon_deadline.lib import JOB_ENV_DATA_KEY
+from ayon_core.pipeline.publish import FARM_JOB_ENV_DATA_KEY
 
 
 class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
@@ -36,7 +36,7 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     ]
 
     def process(self, context):
-        env = context.data.setdefault(JOB_ENV_DATA_KEY, {})
+        env = context.data.setdefault(FARM_JOB_ENV_DATA_KEY, {})
         for key in self.ENV_KEYS:
             # Skip already set keys
             if key in env:
