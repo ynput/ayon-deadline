@@ -20,8 +20,8 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     prepare_representations,
     create_metadata_path
 )
-from ayon_deadline.constants import AYON_PLUGIN_VERSION
-from ayon_deadline.abstract_submit_deadline import requests_post
+from ayon_deadline import DeadlineAddon
+from ayon_deadline.lib import JobType
 
 
 def get_resource_files(resources, frame_range=None):
@@ -163,7 +163,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         product_name = data["productName"]
         job_name = "Publish - {}".format(product_name)
 
-        anatomy = instance.context.data['anatomy']
+        context = instance.context
+        anatomy = context.data["anatomy"]
 
         # instance.data.get("productName") != instances[0]["productName"]
         # 'Main' vs 'renderMain'
@@ -177,7 +178,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             deepcopy(instance.data["anatomyData"]),
             instance.data.get("folderEntity"),
             instances[0]["productName"],
-            instance.context,
+            context,
             instances[0]["productType"],
             override_version
         )
@@ -224,83 +225,52 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if settings_variant == "staging":
             args.append("--use-staging")
 
-        # Generate the payload for Deadline submission
+        # QUESTION: Shouldn't this be opposite?
+        #   - first instance and then "default pool"
+        primary_pool = self.deadline_pool or instance.data.get("primaryPool")
+        # QUESTION: Why is secondary pool not used?
+        #    - it was always removed in previous code
         secondary_pool = (
-            self.deadline_pool_secondary or instance.data.get("secondaryPool")
+            self.deadline_pool_secondary
+            or instance.data.get("secondaryPool")
         )
-        payload = {
-            "JobInfo": {
-                "Plugin": "Ayon",
-                "BatchName": job["Props"]["Batch"],
-                "Name": job_name,
-                "UserName": job["Props"]["User"],
-                "Comment": instance.context.data.get("comment", ""),
-
-                "Department": self.deadline_department,
-                "ChunkSize": 1,
-                "Priority": priority,
-                "InitialStatus": initial_status,
-
-                "Group": self.deadline_group,
-                "Pool": self.deadline_pool or instance.data.get("primaryPool"),
-                "SecondaryPool": secondary_pool,
-                # ensure the outputdirectory with correct slashes
-                "OutputDirectory0": output_dir.replace("\\", "/")
-            },
-            "PluginInfo": {
-                "Version": AYON_PLUGIN_VERSION,
-                "Arguments": " ".join(args),
-                "SingleFrameOnly": "True",
-            },
-            # Mandatory for Deadline, may be empty
-            "AuxFiles": [],
-        }
-
-        # add assembly jobs as dependencies
+        # Collect dependent jobs
+        dependency_ids = None
         if instance.data.get("tileRendering"):
             self.log.info("Adding tile assembly jobs as dependencies...")
-            job_index = 0
-            for assembly_id in instance.data.get("assemblySubmissionJobs"):
-                payload["JobInfo"]["JobDependency{}".format(
-                    job_index)] = assembly_id  # noqa: E501
-                job_index += 1
+            dependency_ids = instance.data.get("assemblySubmissionJobs")
         elif instance.data.get("bakingSubmissionJobs"):
             self.log.info(
                 "Adding baking submission jobs as dependencies..."
             )
-            job_index = 0
-            for assembly_id in instance.data["bakingSubmissionJobs"]:
-                payload["JobInfo"]["JobDependency{}".format(
-                    job_index)] = assembly_id  # noqa: E501
-                job_index += 1
+            dependency_ids = instance.data["bakingSubmissionJobs"]
+
         elif job.get("_id"):
-            payload["JobInfo"]["JobDependency0"] = job["_id"]
+            dependency_ids = [job["_id"]]
 
-        for index, (key_, value_) in enumerate(environment.items()):
-            payload["JobInfo"].update(
-                {
-                    "EnvironmentKeyValue%d"
-                    % index: "{key}={value}".format(
-                        key=key_, value=value_
-                    )
-                }
-            )
-        # remove secondary pool
-        payload["JobInfo"].pop("SecondaryPool", None)
-
+        server_name = instance.data["deadline"]["serverName"]
         self.log.debug("Submitting Deadline publish job ...")
 
-        url = "{}/api/jobs".format(self.deadline_url)
-        auth = instance.data["deadline"]["auth"]
-        verify = instance.data["deadline"]["verify"]
-        response = requests_post(
-            url, json=payload, timeout=10, auth=auth, verify=verify)
-        if not response.ok:
-            raise Exception(response.text)
-
-        deadline_publish_job_id = response.json()["_id"]
-
-        return deadline_publish_job_id
+        deadline_addon: DeadlineAddon = (
+            context.data["ayonAddonsManager"]["deadline"]
+        )
+        return deadline_addon.submit_ayon_plugin_job(
+            server_name,
+            args,
+            job_name,
+            job["Props"]["Batch"],
+            job_type=JobType.PUBLISH,
+            department=self.deadline_department,
+            priority=priority,
+            initial_status=initial_status,
+            group=self.deadline_group,
+            pool=primary_pool,
+            dependency_job_ids=dependency_ids,
+            output_directories=[output_dir.replace("\\", "/")],
+            username=job["Props"]["User"],
+            comment=context.data.get("comment"),
+            env=environment,
+        )
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None
@@ -448,9 +418,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "FTRACK_SERVER": os.environ.get("FTRACK_SERVER"),
             }
 
-        # get default deadline webservice url from deadline module
-        self.deadline_url = instance.data["deadline"]["url"]
-        assert self.deadline_url, "Requires Deadline Webservice URL"
 
         deadline_publish_job_id = \
             self._submit_deadline_post_job(instance, render_job, instances)
