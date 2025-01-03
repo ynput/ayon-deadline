@@ -2,7 +2,6 @@ import json
 from dataclasses import dataclass, field, asdict
 from functools import partial
 from typing import Optional, List, Tuple, Any, Dict
-from enum import Enum
 
 import requests
 
