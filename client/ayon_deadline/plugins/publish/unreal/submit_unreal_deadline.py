@@ -57,7 +57,8 @@ class UnrealSubmitDeadline(
         context = self._instance.context
 
         batch_name = self._get_batch_name()
-        dln_job_info.Name = self._instance.data["name"]
+        folder_path = self._instance.data["folderPath"]
+        dln_job_info.Name = f"{folder_path} - {self._instance.data['name']}"
         dln_job_info.BatchName = batch_name
         dln_job_info.Plugin = "UnrealEngine5"
         dln_job_info.UserName = context.data.get(
