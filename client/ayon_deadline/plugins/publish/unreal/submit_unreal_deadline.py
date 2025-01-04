@@ -158,7 +158,7 @@ class UnrealSubmitDeadline(
         if collected_version_control:
             change = (collected_version_control["change_info"]
                                                ["change"])
-            batch_name = f"{batch_name}_{change}"
+            batch_name = f"{batch_name} - CL {change}"
         return batch_name
 
     def _get_version_control(self):
