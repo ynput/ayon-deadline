@@ -97,7 +97,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         plugin_info: Dict[str, Any],
         job_info: Dict[str, Any],
         aux_files: Optional[List[str]] = None,
-    ) -> str:
+    ) -> Dict[str, Any]:
         """Submit job to Deadline.
 
         Args:
@@ -125,7 +125,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         )
         if not response.ok:
             raise ValueError("Failed to create job")
-        return response.json()["_id"]
+
+        payload["job_id"] = response.json()["_id"]
+        return payload
 
     def submit_ayon_plugin_job(
         self,
@@ -149,7 +151,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         custom_job_info: Optional[Dict[str, Any]] = None,
         aux_files: Optional[List[str]] = None,
         frames: Optional[str] = None,
-    ) -> str:
+    ) -> Dict[str, Any]:
         if chunk_size is None:
             chunk_size = 1
 
@@ -229,7 +231,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             "Arguments": command,
             "SingleFrameOnly": "True",
         }
-        return self.submit_job(server_name, plugin_info, job_info, aux_files)
+        return self.submit_job(
+            server_name, plugin_info, job_info, aux_files
+        )
 
     def _get_deadline_con_info(
         self, server_name: str

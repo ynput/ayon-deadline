@@ -178,7 +178,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             username=job["Props"]["User"],
             comment=context.data.get("comment"),
             env=environment,
-        )
+        )["job_id"]
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None
