@@ -144,6 +144,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         pool: Optional[str] = None,
         secondary_pool: Optional[str] = None,
         output_directories: Optional[List[str]] = None,
+        output_filenames: Optional[List[str]] = None,
         username: Optional[str] = None,
         comment: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
@@ -179,6 +180,9 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         if output_directories is None:
             output_directories = []
 
+        if output_filenames is None:
+            output_filenames = []
+
         if env is None:
             env = {}
 
@@ -211,8 +215,11 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         for idx, job_id in enumerate(dependency_job_ids):
             job_info[f"JobDependency{idx}"] = job_id
 
-        for idx, job_id in enumerate(output_directories):
-            job_info[f"OutputDirectory{idx}"] = job_id
+        for idx, directory in enumerate(output_directories):
+            job_info[f"OutputDirectory{idx}"] = directory
+
+        for idx, filename in enumerate(output_filenames):
+            job_info[f"OutputFilename{idx}"] = filename
 
         for idx, (key, value) in enumerate(env.items()):
             info_key = f"EnvironmentKeyValue{idx}"
