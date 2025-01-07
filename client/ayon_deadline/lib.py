@@ -240,20 +240,17 @@ class DeadlineKeyValueVar(dict):
 
 
     """
-    def __init__(self, key):
-        super(DeadlineKeyValueVar, self).__init__()
-        self.__key = key
+    def __init__(self, key: str):
+        super().__init__()
+        if not key.endswith("{}"):
+            key += "{}"
+        self._key = key
 
     def serialize(self):
-        key = self.__key
-
         # Allow custom location for index in serialized string
-        if "{}" not in key:
-            key = key + "{}"
-
         return {
-            key.format(index): "{}={}".format(var_key, var_value)
-            for index, (var_key, var_value) in enumerate(sorted(self.items()))
+            self._key.format(idx): f"{key}={value}"
+            for idx, (key, value) in enumerate(sorted(self.items()))
         }
 
 
@@ -265,23 +262,20 @@ class DeadlineIndexedVar(dict):
         Set: var[1] = "my_value"
         Append: var += "value"
 
-    Note: Iterating the instance is not guarantueed to be the order of the
+    Note: Iterating the instance is not guaranteed to be the order of the
           indices. To do so iterate with `sorted()`
 
     """
-    def __init__(self, key):
-        super(DeadlineIndexedVar, self).__init__()
-        self.__key = key
-
-    def serialize(self):
-        key = self.__key
-
-        # Allow custom location for index in serialized string
+    def __init__(self, key: str):
+        super().__init__()
         if "{}" not in key:
-            key = key + "{}"
+            key += "{}"
+        self._key = key
 
+    def serialize(self) -> Dict[str, str]:
         return {
-            key.format(index): value for index, value in sorted(self.items())
+            self._key.format(index): value
+            for index, value in sorted(self.items())
         }
 
     def next_available_index(self):
