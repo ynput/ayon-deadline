@@ -225,7 +225,7 @@ class HoudiniSubmitDeadline(
 
         # Add dependencies if given
         if dependency_job_ids:
-            job_info.JobDependencies = ",".join(dependency_job_ids)
+            job_info.JobDependencies = dependency_job_ids
 
         return job_info
 

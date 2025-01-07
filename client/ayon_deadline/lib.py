@@ -412,7 +412,7 @@ class DeadlineJobInfo:
     LimitGroups: Optional[List[str]] = field(default_factory=list)  # Default: blank
 
     # Dependencies
-    JobDependencies: Optional[str] = field(default=None)  # Default: blank
+    JobDependencies: List[str] = field(default_factory=list)  # Default: blank
     JobDependencyPercentage: Optional[int] = field(default=None)  # Default: -1
     IsFrameDependent: Optional[bool] = field(default=None)  # Default: false
     FrameDependencyOffsetStart: Optional[int] = field(default=None)  # Default: 0
