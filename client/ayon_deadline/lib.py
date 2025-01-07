@@ -2,12 +2,16 @@ import os
 import json
 from dataclasses import dataclass, field, asdict
 from functools import partial
-from typing import Optional, List, Tuple, Any, Dict
+import typing
+from typing import Optional, List, Tuple, Any, Dict, Iterable
 from enum import Enum
 
 import requests
 
 from ayon_core.lib import Logger
+
+if typing.TYPE_CHECKING:
+    from typing import Union, Self
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -486,6 +490,34 @@ class DeadlineJobInfo:
     MaintenanceJobStartFrame: int = field(default=0)
     MaintenanceJobEndFrame: int = field(default=0)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        """Serialize the dataclass instance to a JSON string."""
+        return json.dumps(self.to_dict())
+
+    def serialize(self):
+        """Return all data serialized as dictionary.
+
+        Returns:
+            OrderedDict: all serialized data.
+
+        """
+        output = {}
+        for key, value in tuple(self.to_dict().items()):
+            value = self._serialize_key_value(key, value)
+            if value is not None:
+                output[key] = value
+        return output
+
+    def _serialize_key_value(self, _key: str, value: Any) -> Any:
+        if isinstance(value, (DeadlineIndexedVar, DeadlineKeyValueVar)):
+            return value.serialize()
+        if isinstance(value, list):
+            return ",".join(value)
+        return value
+
 
 @dataclass
 class AYONDeadlineJobInfo(DeadlineJobInfo):
@@ -495,48 +527,6 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
     UsePublished: Optional[bool] = field(default=None)
     UseAssetDependencies: Optional[bool] = field(default=None)
     UseWorkfileDependency: Optional[bool] = field(default=None)
-
-    def serialize(self):
-        """Return all data serialized as dictionary.
-
-        Returns:
-            OrderedDict: all serialized data.
-
-    """
-        def filter_data(a, v):
-            if isinstance(v, (DeadlineIndexedVar, DeadlineKeyValueVar)):
-                return False
-            if v is None:
-                return False
-            return True
-
-        serialized = asdict(self)
-        serialized = {
-            k: v for k, v in serialized.items()
-            if filter_data(k, v)
-        }
-
-        # Custom serialize these attributes
-        for attribute in [
-            self.EnvironmentKeyValue,
-            self.ExtraInfo,
-            self.ExtraInfoKeyValue,
-            self.TaskExtraInfoName,
-            self.OutputFilename,
-            self.OutputFilenameTile,
-            self.OutputDirectory,
-            self.AssetDependency
-        ]:
-            serialized.update(attribute.serialize())
-
-        for attribute_key in [
-            "LimitGroups",
-            "Whitelist",
-            "Blacklist",
-        ]:
-            serialized[attribute_key] = ",".join(serialized[attribute_key])
-
-        return serialized
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'AYONDeadlineJobInfo':
@@ -571,10 +561,6 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         """
         for key, value in get_instance_job_envs(instance).items():
             self.EnvironmentKeyValue[key] = value
-
-    def to_json(self) -> str:
-        """Serialize the dataclass instance to a JSON string."""
-        return json.dumps(asdict(self))
 
     @staticmethod
     def _sanitize(value) -> str:
