@@ -10,6 +10,7 @@ import getpass
 import os
 from datetime import datetime
 from copy import deepcopy
+from typing import Optional
 
 import requests
 import pyblish.api
@@ -173,7 +174,7 @@ class AbstractSubmitDeadline(
 
     def get_generic_job_info(self, instance: pyblish.api.Instance):
         context: pyblish.api.Context = instance.context
-        job_info: AYONDeadlineJobInfo = instance.data["deadline"]["job_info"]
+        job_info: PublishDeadlineJobInfo = instance.data["deadline"]["job_info"]
 
         # Always use the original work file name for the Job name even when
         # rendering is done from the published Work File. The original work
@@ -218,7 +219,9 @@ class AbstractSubmitDeadline(
             self.plugin_info[key] = value
 
     @abstractmethod
-    def get_job_info(self, job_info=None, **kwargs):
+    def get_job_info(
+        self, job_info: Optional[PublishDeadlineJobInfo] = None, **kwargs
+    ):
         """Return filled Deadline JobInfo.
 
         This is host/plugin specific implementation of how to fill data in.
