@@ -6,18 +6,17 @@ from typing import Optional, List, Dict, Any, Tuple
 import requests
 import ayon_api
 
-from ayon_core.lib import get_ayon_username
 from ayon_core.addon import AYONAddon, IPluginPaths
 
 from .version import __version__
 from .constants import AYON_PLUGIN_VERSION
 from .lib import (
-    JobType,
     DeadlineServerInfo,
     get_deadline_workers,
     get_deadline_groups,
     get_deadline_limit_groups,
     get_deadline_pools,
+    DeadlineJobInfo,
 )
 
 if typing.TYPE_CHECKING:
@@ -95,7 +94,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         self,
         server_name: str,
         plugin_info: Dict[str, Any],
-        job_info: Dict[str, Any],
+        job_info: "Union[DeadlineJobInfo, Dict[str, Any]]",
         aux_files: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Submit job to Deadline.
@@ -107,9 +106,12 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             aux_files (Optional[List[str]]): List of auxiliary files.
 
         Returns:
-            str: Job ID.
+            Dict[str, Any]: Job payload, with 'job_id' key.
 
         """
+        if isinstance(job_info, DeadlineJobInfo):
+            job_info = job_info.serialize()
+
         payload = {
             "JobInfo": job_info,
             "PluginInfo": plugin_info,
@@ -133,110 +135,34 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         self,
         server_name: str,
         args: "Union[List[str], str]",
-        job_name: str,
-        batch_name: str,
-        job_type: Optional[JobType] = None,
-        department: Optional[str] = None,
-        chunk_size: Optional[int] = 1,
-        priority: Optional[int] = 50,
-        initial_status: Optional["InitialStatus"] = "Active",
-        group: Optional[str] = None,
-        pool: Optional[str] = None,
-        secondary_pool: Optional[str] = None,
-        output_directories: Optional[List[str]] = None,
-        output_filenames: Optional[List[str]] = None,
-        username: Optional[str] = None,
-        comment: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None,
-        dependency_job_ids: Optional[List[str]] = None,
-        custom_job_info: Optional[Dict[str, Any]] = None,
+        job_info: "Union[DeadlineJobInfo, Dict[str, Any]]",
         aux_files: Optional[List[str]] = None,
-        frames: Optional[str] = None,
+        single_frame_only: bool = True
     ) -> Dict[str, Any]:
-        if chunk_size is None:
-            chunk_size = 1
+        """Submit job to Deadline using Ayon plugin.
 
-        if priority is None:
-            priority = 50
+        Args:
+            server_name (str): Deadline Server name from settings.
+            args (Union[List[str], str]): Command line arguments.
+            job_info (Union[DeadlineJobInfo, Dict[str, Any]]): Job info data.
+            aux_files (Optional[List[str]]): List of auxiliary files.
+            single_frame_only (bool): Submit job for single frame only.
 
-        if priority < 0 or priority > 100:
-            raise ValueError("Priority must be between 0-100")
+        Returns:
+            Dict[str, Any]: Job payload, with 'job_id' key.
 
-        if initial_status is None:
-            initial_status = "Active"
+        """
+        if not isinstance(args, str):
+            args = subprocess.list2cmdline(args)
 
-        if initial_status not in ["Active", "Suspended"]:
-            raise ValueError(
-                "InitialStatus must be one of"
-                " 'Active', 'Suspended'"
-            )
-
-        if username is None:
-            username = get_ayon_username()
-
-        if dependency_job_ids is None:
-            dependency_job_ids = []
-
-        if output_directories is None:
-            output_directories = []
-
-        if output_filenames is None:
-            output_filenames = []
-
-        if env is None:
-            env = {}
-
-        if job_type is None:
-            job_type = JobType.UNDEFINED
-
-        env.update(job_type.get_job_env())
-
-        job_info = {
-            "Plugin": "Ayon",
-            "BatchName": batch_name,
-            "Name": job_name,
-            "UserName": username,
-
-            "ChunkSize": chunk_size,
-            "Priority": priority,
-            "InitialStatus": initial_status,
-        }
-        for key, value in (
-            ("Comment", comment),
-            ("Department", department),
-            ("Group", group),
-            ("Pool", pool),
-            ("SecondaryPool", secondary_pool),
-            ("Frames", frames),
-        ):
-            if value is not None:
-                job_info[key] = value
-
-        for idx, job_id in enumerate(dependency_job_ids):
-            job_info[f"JobDependency{idx}"] = job_id
-
-        for idx, directory in enumerate(output_directories):
-            job_info[f"OutputDirectory{idx}"] = directory
-
-        for idx, filename in enumerate(output_filenames):
-            job_info[f"OutputFilename{idx}"] = filename
-
-        for idx, (key, value) in enumerate(env.items()):
-            info_key = f"EnvironmentKeyValue{idx}"
-            job_info[info_key] = f"{key}={value}"
-
-        if custom_job_info is not None:
-            job_info.update(custom_job_info)
-
-        if isinstance(args, str):
-            command = args
-        else:
-            command = subprocess.list2cmdline(args)
+        if isinstance(job_info, DeadlineJobInfo):
+            job_info = job_info.serialize()
+        job_info["Plugin"] = "Ayon"
 
         plugin_info = {
             "Version": AYON_PLUGIN_VERSION,
-            "Arguments": command,
-            "SingleFrameOnly": "True",
+            "Arguments": args,
+            "SingleFrameOnly": "True" if single_frame_only else "False",
         }
         return self.submit_job(
             server_name, plugin_info, job_info, aux_files
