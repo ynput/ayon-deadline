@@ -112,11 +112,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             create_metadata_path(instance, anatomy)
 
         environment = get_instance_job_envs(instance)
-        environment.update({
-            "AYON_PUBLISH_JOB": "1",
-            "AYON_RENDER_JOB": "0",
-            "AYON_REMOTE_PUBLISH": "0",
-        })
+        environment.update(JobType.PUBLISH.get_job_env())
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
@@ -142,7 +138,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             context.data["ayonAddonsManager"]["deadline"]
         )
 
-        environment.update(JobType.PUBLISH.get_job_env())
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=job["Props"]["Batch"],
