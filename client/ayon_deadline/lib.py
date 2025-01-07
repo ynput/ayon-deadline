@@ -520,18 +520,19 @@ class DeadlineJobInfo:
 
 
 @dataclass
-class AYONDeadlineJobInfo(DeadlineJobInfo):
+class PublishDeadlineJobInfo(DeadlineJobInfo):
     """Contains additional AYON variables from Settings for internal logic."""
 
     # AYON custom fields used for Settings
-    UsePublished: Optional[bool] = field(default=None)
-    UseAssetDependencies: Optional[bool] = field(default=None)
-    UseWorkfileDependency: Optional[bool] = field(default=None)
+    use_published: Optional[bool] = field(default=None)
+    use_asset_dependencies: Optional[bool] = field(default=None)
+    use_workfile_dependency: Optional[bool] = field(default=None)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'AYONDeadlineJobInfo':
-
-        implemented_field_values = {
+    def from_attribute_values(
+        cls, data: Dict[str, Any]
+    ) -> "Self":
+        return cls(**{
             "ChunkSize": data["chunk_size"],
             "Priority": data["priority"],
             "MachineLimit": data["machine_limit"],
@@ -542,12 +543,10 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             "SecondaryPool": cls._sanitize(data["secondary_pool"]),
 
             # fields needed for logic, values unavailable during collection
-            "UsePublished": data["use_published"],
-            "UseAssetDependencies": data["use_asset_dependencies"],
-            "UseWorkfileDependency": data["use_workfile_dependency"]
-        }
-
-        return cls(**implemented_field_values)
+            "use_published": data["use_published"],
+            "use_asset_dependencies": data["use_asset_dependencies"],
+            "use_workfile_dependency": data["use_workfile_dependency"],
+        })
 
     def add_render_job_env_var(self):
         """Add required env vars for valid render job submission."""
@@ -562,8 +561,17 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         for key, value in get_instance_job_envs(instance).items():
             self.EnvironmentKeyValue[key] = value
 
+    def _serialize_key_value(self, key: str, value: Any):
+        if key in (
+            "use_published",
+            "use_asset_dependencies",
+            "use_workfile_dependency",
+        ):
+            return None
+        return super()._serialize_key_value(key, value)
+
     @staticmethod
-    def _sanitize(value) -> str:
+    def _sanitize(value) -> "Union[str, List[str], None]":
         if isinstance(value, str):
             if value == "none":
                 return None
