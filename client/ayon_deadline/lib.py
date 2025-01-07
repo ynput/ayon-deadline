@@ -291,22 +291,33 @@ class DeadlineIndexedVar(dict):
             i += 1
         return i
 
-    def update(self, data):
+    def add(self, value: str):
+        if value not in self.values():
+            self.append(value)
+
+    def append(self, value: str):
+        index = self.next_available_index()
+        self[index] = value
+
+    def extend(self, values: Iterable[str]):
+        for value in values:
+            self.append(value)
+
+    def update(self, data: Dict[int, str]):
         # Force the integer key check
         for key, value in data.items():
             self.__setitem__(key, value)
 
-    def __iadd__(self, other):
-        index = self.next_available_index()
-        self[index] = other
+    def __iadd__(self, value: str):
+        self.append(value)
         return self
 
     def __setitem__(self, key, value):
         if not isinstance(key, int):
-            raise TypeError("Key must be an integer: {}".format(key))
+            raise TypeError(f"Key must be an 'int', got {type(key)} ({key}).")
 
         if key < 0:
-            raise ValueError("Negative index can't be set: {}".format(key))
+            raise ValueError(f"Negative index can't be set: {key}")
         dict.__setitem__(self, key, value)
 
 
