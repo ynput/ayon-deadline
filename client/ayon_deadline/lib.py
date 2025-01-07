@@ -1,4 +1,3 @@
-import os
 import json
 from dataclasses import dataclass, field, asdict
 from functools import partial
@@ -7,6 +6,7 @@ from typing import Optional, List, Tuple, Any, Dict
 import requests
 
 from ayon_core.lib import Logger
+
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -22,6 +22,8 @@ FARM_FAMILIES = [
 
 # Constant defining where we store job environment variables on instance or
 # context data
+# DEPRECATED: Use `FARM_JOB_ENV_DATA_KEY` from `ayon_core.pipeline.publish`
+#     This variable is NOT USED anywhere in deadline addon.
 JOB_ENV_DATA_KEY: str = "farmJobEnv"
 
 
@@ -33,33 +35,10 @@ class DeadlineServerInfo:
     machines: List[str]
 
 
-def get_ayon_render_job_envs() -> "dict[str, str]":
-    """Get required env vars for valid render job submission."""
-    return {
-        "AYON_LOG_NO_COLORS": "1",
-        "AYON_RENDER_JOB": "1",
-        "AYON_BUNDLE_NAME": os.environ["AYON_BUNDLE_NAME"]
-    }
-
-
-def get_instance_job_envs(instance) -> "dict[str, str]":
-    """Add all job environments as specified on the instance and context.
-
-    Any instance `job_env` vars will override the context `job_env` vars.
+class DeadlineWebserviceError(Exception):
     """
-    env = {}
-    for job_env in [
-        instance.context.data.get(JOB_ENV_DATA_KEY, {}),
-        instance.data.get(JOB_ENV_DATA_KEY, {})
-    ]:
-        if job_env:
-            env.update(job_env)
-
-    # Return the dict sorted just for readability in future logs
-    if env:
-        env = dict(sorted(env.items()))
-
-    return env
+    Exception to throw when connection to Deadline server fails.
+    """
 
 
 def get_deadline_pools(
@@ -184,10 +163,32 @@ def _get_deadline_info(
     return sorted(response.json(), key=lambda value: (value != "none", value))
 
 
-class DeadlineWebserviceError(Exception):
+# ------------------------------------------------------------
+# NOTE It is pipeline related logic from here, probably
+#   should be moved to './pipeline' and used from there.
+#   - This file is imported in `ayon_deadline/addon.py` which should not
+#     have any pipeline logic.
+def get_instance_job_envs(instance) -> "dict[str, str]":
+    """Add all job environments as specified on the instance and context.
+
+    Any instance `job_env` vars will override the context `job_env` vars.
     """
-    Exception to throw when connection to Deadline server fails.
-    """
+    # Avoid import from 'ayon_core.pipeline'
+    from ayon_core.pipeline.publish import FARM_JOB_ENV_DATA_KEY
+
+    env = {}
+    for job_env in [
+        instance.context.data.get(FARM_JOB_ENV_DATA_KEY, {}),
+        instance.data.get(FARM_JOB_ENV_DATA_KEY, {})
+    ]:
+        if job_env:
+            env.update(job_env)
+
+    # Return the dict sorted just for readability in future logs
+    if env:
+        env = dict(sorted(env.items()))
+
+    return env
 
 
 class DeadlineKeyValueVar(dict):
@@ -222,7 +223,7 @@ class DeadlineKeyValueVar(dict):
             key = key + "{}"
 
         return {
-            key.format(index): "{}={}".format(var_key, var_value)
+            key.format(index): f"{var_key}={var_value}"
             for index, (var_key, var_value) in enumerate(sorted(self.items()))
         }
 
@@ -273,10 +274,10 @@ class DeadlineIndexedVar(dict):
 
     def __setitem__(self, key, value):
         if not isinstance(key, int):
-            raise TypeError("Key must be an integer: {}".format(key))
+            raise TypeError(f"Key must be an integer: {key}")
 
         if key < 0:
-            raise ValueError("Negative index can't be set: {}".format(key))
+            raise ValueError(f"Negative index can't be set: {key}")
         dict.__setitem__(self, key, value)
 
 
@@ -535,8 +536,7 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
 
     def add_render_job_env_var(self):
         """Add required env vars for valid render job submission."""
-        for key, value in get_ayon_render_job_envs().items():
-            self.EnvironmentKeyValue[key] = value
+        self.EnvironmentKeyValue["AYON_RENDER_JOB"] = "1"
 
     def add_instance_job_env_vars(self, instance):
         """Add all job environments as specified on the instance and context
