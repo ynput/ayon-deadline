@@ -310,6 +310,14 @@ class DeadlineIndexedVar(dict):
         dict.__setitem__(self, key, value)
 
 
+def _partial_key_value(key: str):
+    return partial(DeadlineKeyValueVar, key)
+
+
+def _partial_indexed(key: str):
+    return partial(DeadlineIndexedVar, key)
+
+
 @dataclass
 class DeadlineJobInfo:
     """Mapping of all Deadline JobInfo attributes.
@@ -328,8 +336,8 @@ class DeadlineJobInfo:
     Comment: Optional[str] = field(default=None)  # default: empty
     Department: Optional[str] = field(default=None)  # default: empty
     BatchName: Optional[str] = field(default=None)  # default: empty
-    UserName: str = field(default=None)
-    MachineName: str = field(default=None)
+    UserName: Optional[str] = field(default=None)
+    MachineName: Optional[str] = field(default=None)
     Pool: Optional[str] = field(default=None)  # default: "none"
     SecondaryPool: Optional[str] = field(default=None)
     Group: Optional[str] = field(default=None)  # default: "none"
@@ -345,7 +353,7 @@ class DeadlineJobInfo:
     Sequential: Optional[bool] = field(default=None)  # default: false
     SuppressEvents: Optional[bool] = field(default=None)  # default: false
     Protected: Optional[bool] = field(default=None)  # default: false
-    InitialStatus: str = field(default="Active")
+    InitialStatus: "InitialStatus" = field(default="Active")
     NetworkRoot: Optional[str] = field(default=None)
 
     # Timeouts
@@ -452,33 +460,32 @@ class DeadlineJobInfo:
         default=None)  # Default blank (comma-separated list)
 
     # Environment
-    EnvironmentKeyValue: Any = field(
-        default_factory=partial(DeadlineKeyValueVar, "EnvironmentKeyValue"))
+    EnvironmentKeyValue: DeadlineKeyValueVar = field(
+        default_factory=_partial_key_value("EnvironmentKeyValue"))
     IncludeEnvironment: Optional[bool] = field(default=False)  # Default: false
     UseJobEnvironmentOnly: Optional[bool] = field(default=False)  # Default: false
     CustomPluginDirectory: Optional[str] = field(default=None)  # Default blank
 
     # Job Extra Info
-    ExtraInfo: Any = field(
-        default_factory=partial(DeadlineIndexedVar, "ExtraInfo"))
-    ExtraInfoKeyValue: Any = field(
-        default_factory=partial(DeadlineKeyValueVar, "ExtraInfoKeyValue"))
+    ExtraInfo: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("ExtraInfo"))
+    ExtraInfoKeyValue: DeadlineKeyValueVar = field(
+        default_factory=_partial_key_value("ExtraInfoKeyValue"))
 
-    OverrideTaskExtraInfoNames: Optional[bool] = field(
-        default=False)  # Default false
+    OverrideTaskExtraInfoNames: Optional[bool] = field(default=False)  # Default false
 
-    TaskExtraInfoName: Any = field(
-        default_factory=partial(DeadlineIndexedVar, "TaskExtraInfoName"))
+    TaskExtraInfoName: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("TaskExtraInfoName"))
 
-    OutputFilename: Any = field(
-        default_factory=partial(DeadlineIndexedVar, "OutputFilename"))
-    OutputFilenameTile: str = field(
-        default_factory=partial(DeadlineIndexedVar, "OutputFilename{}Tile"))
-    OutputDirectory: str = field(
-        default_factory=partial(DeadlineIndexedVar, "OutputDirectory"))
+    OutputFilename: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("OutputFilename"))
+    OutputFilenameTile: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("OutputFilename{}Tile"))
+    OutputDirectory: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("OutputDirectory"))
 
-    AssetDependency: str = field(
-        default_factory=partial(DeadlineIndexedVar, "AssetDependency"))
+    AssetDependency: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("AssetDependency"))
 
     TileJob: bool = field(default=False)
     TileJobFrame: int = field(default=0)
