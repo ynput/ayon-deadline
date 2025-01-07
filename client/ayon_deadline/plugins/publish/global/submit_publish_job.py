@@ -21,7 +21,7 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     create_metadata_path
 )
 from ayon_deadline import DeadlineAddon
-from ayon_deadline.lib import JobType
+from ayon_deadline.lib import JobType, DeadlineJobInfo
 
 
 def get_resource_files(resources, frame_range=None):
@@ -244,22 +244,28 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         deadline_addon: DeadlineAddon = (
             context.data["ayonAddonsManager"]["deadline"]
         )
+
+        environment.update(JobType.PUBLISH.get_job_env())
+        job_info = DeadlineJobInfo(
+            Name=job_name,
+            BatchName=job["Props"]["Batch"],
+            Department=self.deadline_department,
+            Priority=priority,
+            InitialStatus=initial_status,
+            Group=self.deadline_group,
+            Pool=self.deadline_pool or None,
+            JobDependencies=dependency_ids,
+            UserName=job["Props"]["User"],
+            Comment=context.data.get("comment"),
+        )
+        job_info.OutputDirectory.append(
+            output_dir.replace("\\", "/")
+        )
+        job_info.EnvironmentKeyValue.update(environment)
         return deadline_addon.submit_ayon_plugin_job(
             server_name,
             args,
-            job_name,
-            job["Props"]["Batch"],
-            job_type=JobType.PUBLISH,
-            department=self.deadline_department,
-            priority=priority,
-            initial_status=initial_status,
-            group=self.deadline_group,
-            pool=self.deadline_pool or None,
-            dependency_job_ids=dependency_ids,
-            output_directories=[output_dir.replace("\\", "/")],
-            username=job["Props"]["User"],
-            comment=context.data.get("comment"),
-            env=environment,
+            job_info
         )["job_id"]
 
     def process(self, instance):
