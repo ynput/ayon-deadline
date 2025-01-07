@@ -508,6 +508,81 @@ class DeadlineJobInfo:
     MaintenanceJobStartFrame: int = field(default=0)
     MaintenanceJobEndFrame: int = field(default=0)
 
+    def __post_init__(self):
+        for attr_name in (
+            "JobDependencies",
+            "Whitelist",
+            "Blacklist",
+            "LimitGroups",
+        ):
+            value = getattr(self, attr_name)
+            if value is None:
+                continue
+            if not isinstance(value, list):
+                setattr(self, attr_name, value)
+
+        for attr_name in (
+            "ExtraInfo",
+            "TaskExtraInfoName",
+            "OutputFilename",
+            "OutputFilenameTile",
+            "OutputDirectory",
+            "AssetDependency",
+        ):
+            value = getattr(self, attr_name)
+            if value is None:
+                continue
+            if not isinstance(value, DeadlineIndexedVar):
+                setattr(self, attr_name, value)
+
+        for attr_name in (
+            "ExtraInfoKeyValue",
+            "EnvironmentKeyValue",
+        ):
+            value = getattr(self, attr_name)
+            if value is None:
+                continue
+            if not isinstance(value, DeadlineKeyValueVar):
+                setattr(self, attr_name, value)
+
+    def __setattr__(self, key, value):
+        if value is None:
+            super().__setattr__(key, value)
+            return
+
+        if key in (
+            "JobDependencies",
+            "Whitelist",
+            "Blacklist",
+            "LimitGroups",
+        ):
+            if isinstance(value, str):
+                value = value.split(",")
+
+        elif key in (
+            "ExtraInfo",
+            "TaskExtraInfoName",
+            "OutputFilename",
+            "OutputFilenameTile",
+            "OutputDirectory",
+            "AssetDependency",
+        ):
+            if not isinstance(value, DeadlineIndexedVar):
+                new_value = DeadlineIndexedVar(key)
+                new_value.update(value)
+                value = new_value
+
+        elif key in (
+            "ExtraInfoKeyValue",
+            "EnvironmentKeyValue",
+        ):
+            if not isinstance(value, DeadlineKeyValueVar):
+                new_value = DeadlineKeyValueVar(key)
+                new_value.update(value)
+                value = new_value
+
+        super().__setattr__(key, value)
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
