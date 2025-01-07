@@ -56,14 +56,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
-        instance.data["deadline"]["job_info"] = job_info
-
         # pass through explicitly key and values for PluginInfo
         plugin_info_data = None
         if attr_values["additional_plugin_info"]:
             plugin_info_data = json.loads(
                 attr_values["additional_plugin_info"]
             )
+
+        deadline_info = instance.data["deadline"]
+        deadline_info["job_info"] = job_info
         deadline_info["plugin_info_data"] = plugin_info_data
 
         self._add_deadline_families(instance)
