@@ -10,9 +10,8 @@ import ayon_api
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.lib import EnumDef, is_in_tests
+from ayon_core.lib import EnumDef
 from ayon_core.pipeline.version_start import get_versioning_start
-
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
     create_instances_for_aov,
@@ -21,7 +20,11 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     create_metadata_path
 )
 from ayon_deadline import DeadlineAddon
-from ayon_deadline.lib import JobType, DeadlineJobInfo
+from ayon_deadline.lib import (
+    JobType,
+    DeadlineJobInfo,
+    get_instance_job_envs,
+)
 
 
 def get_resource_files(resources, frame_range=None):
@@ -117,17 +120,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         },
     ]
 
-    environ_keys = [
-        "FTRACK_API_USER",
-        "FTRACK_API_KEY",
-        "FTRACK_SERVER",
-        "AYON_APP_NAME",
-        "AYON_USERNAME",
-        "AYON_SG_USERNAME",
-        "KITSU_LOGIN",
-        "KITSU_PWD"
-    ]
-
     # custom deadline attributes
     deadline_department = ""
     deadline_pool = ""
@@ -187,25 +179,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         metadata_path, rootless_metadata_path = \
             create_metadata_path(instance, anatomy)
 
-        settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
-        environment = {
-            "AYON_PROJECT_NAME": instance.context.data["projectName"],
-            "AYON_FOLDER_PATH": instance.context.data["folderPath"],
-            "AYON_TASK_NAME": instance.context.data["task"],
-            "AYON_USERNAME": instance.context.data["user"],
-            "AYON_LOG_NO_COLORS": "1",
-            "AYON_IN_TESTS": str(int(is_in_tests())),
+        environment = get_instance_job_envs(instance)
+        environment.update({
             "AYON_PUBLISH_JOB": "1",
             "AYON_RENDER_JOB": "0",
             "AYON_REMOTE_PUBLISH": "0",
-            "AYON_BUNDLE_NAME": os.environ["AYON_BUNDLE_NAME"],
-            "AYON_DEFAULT_SETTINGS_VARIANT": settings_variant,
-        }
-
-        # add environments from self.environ_keys
-        for env_key in self.environ_keys:
-            if os.getenv(env_key):
-                environment[env_key] = os.environ[env_key]
+        })
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
@@ -221,6 +200,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         ]
         # TODO remove when AYON launcher respects environment variable
         #   'AYON_DEFAULT_SETTINGS_VARIANT'
+        settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
         if settings_variant == "staging":
             args.append("--use-staging")
 
@@ -408,11 +388,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             render_job["Props"]["User"] = instance.context.data.get(
                 "deadlineUser", getpass.getuser())
 
-            render_job["Props"]["Env"] = {
-                "FTRACK_API_USER": os.environ.get("FTRACK_API_USER"),
-                "FTRACK_API_KEY": os.environ.get("FTRACK_API_KEY"),
-                "FTRACK_SERVER": os.environ.get("FTRACK_SERVER"),
-            }
+            render_job["Props"]["Env"] = get_instance_job_envs(instance)
 
 
         deadline_publish_job_id = \

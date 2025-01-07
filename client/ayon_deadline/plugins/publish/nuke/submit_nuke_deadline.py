@@ -108,6 +108,8 @@ class NukeSubmitDeadline(
                 scene_path = baking_script["bakeScriptPath"]
                 write_node_name = baking_script["bakeWriteNodeName"]
 
+                self.job_info.Name = os.path.basename(render_path)
+
                 self.plugin_info = self.get_plugin_info(
                     scene_path=scene_path,
                     render_path=render_path,
@@ -138,6 +140,9 @@ class NukeSubmitDeadline(
             )
         limit_groups = self._get_limit_groups(self.node_class_limit_groups)
         job_info.LimitGroups = limit_groups
+
+        render_path = instance.data["path"]
+        job_info.Name = os.path.basename(render_path)
 
         return job_info
 
