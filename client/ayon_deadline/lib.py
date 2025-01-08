@@ -1,5 +1,4 @@
-import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, fields
 from functools import partial
 import typing
 from typing import Optional, List, Tuple, Any, Dict, Iterable
@@ -578,13 +577,6 @@ class DeadlineJobInfo:
 
         super().__setattr__(key, value)
 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-    def to_json(self) -> str:
-        """Serialize the dataclass instance to a JSON string."""
-        return json.dumps(self.to_dict())
-
     def serialize(self):
         """Return all data serialized as dictionary.
 
@@ -593,8 +585,9 @@ class DeadlineJobInfo:
 
         """
         output = {}
-        for key, value in tuple(self.to_dict().items()):
-            value = self._serialize_key_value(key, value)
+        for field in fields(self):
+            key = field.name
+            value = self._serialize_key_value(field.name, getattr(self, key))
             if value is not None:
                 output[key] = value
         return output
