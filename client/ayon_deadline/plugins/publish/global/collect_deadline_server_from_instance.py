@@ -39,31 +39,29 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
-        instance_deadline_info = instance.data.setdefault("deadline", {})
+        deadline_info = instance.data.setdefault("deadline", {})
 
         context = instance.context
         host_name = context.data["hostName"]
         # TODO: Host specific logic should be avoided
         #   - all hosts should have same data structure on instances
+        server_name = None
         if host_name == "maya":
             deadline_url, server_name = self._collect_maya_deadline_server(instance)
         else:
             # TODO remove backwards compatibility
             deadline_url = instance.data.get("deadlineUrl")
-            server_name = None
             if not deadline_url:
-                deadline_url = instance_deadline_info.get("url")
-                server_name = instance_deadline_info.get("serverName")
-
-            if not server_name:
-                server_name = self._find_server_name(
-                    instance, deadline_url
-                )
+                deadline_url = deadline_info.get("url")
+                server_name = deadline_info.get("serverName")
 
         if not deadline_url:
             context_deadline_info = context.data["deadline"]
             deadline_url = context_deadline_info["defaultUrl"]
             server_name = context_deadline_info["defaultServerName"]
+
+        if not server_name:
+            server_name = self._find_server_name(instance, deadline_url)
 
         if not server_name:
             raise PublishError(
@@ -72,9 +70,9 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             )
 
         deadline_url = deadline_url.strip().rstrip("/")
-        instance_deadline_info["url"] = deadline_url
+        deadline_info["url"] = deadline_url
         # TODO prefer server name over url
-        instance_deadline_info["serverName"] = server_name
+        deadline_info["serverName"] = server_name
 
         self.log.debug(
             f"Server '{server_name}' ({deadline_url})"
