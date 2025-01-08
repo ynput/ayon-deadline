@@ -241,7 +241,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             server_name,
             args,
             job_info
-        )["job_id"]
+        )["response"]["_id"]
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None

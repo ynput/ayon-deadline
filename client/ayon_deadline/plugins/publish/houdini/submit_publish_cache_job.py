@@ -157,7 +157,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
         return deadline_addon.submit_ayon_plugin_job(
             server_name, args, job_info
-        )["job_id"]
+        )["response"]["_id"]
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None
