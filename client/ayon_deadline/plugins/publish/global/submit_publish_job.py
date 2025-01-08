@@ -210,6 +210,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
         if settings_variant == "staging":
             args.append("--use-staging")
+        elif settings_variant != "production":
+            args.extend(["--bundle", settings_variant])
 
         server_name = instance.data["deadline"]["serverName"]
         self.log.debug("Submitting Deadline publish job ...")
