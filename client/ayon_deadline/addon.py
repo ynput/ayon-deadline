@@ -90,6 +90,31 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         return server_info
 
+    def get_job_info(
+        self, server_name: str, job_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get job info from Deadline.
+
+        Args:
+            server_name (str): Deadline Server name from project Settings.
+            job_id (str): Deadline job id.
+
+        Returns:
+            Optional[Dict[str, Any]]: Job info from Deadline.
+
+        """
+        server_url, auth, verify = self._get_deadline_con_info(server_name)
+        response = requests.get(
+            f"{server_url}/api/jobs?JobID={job_id}",
+            auth=auth,
+            verify=verify
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data:
+            return data.pop(0)
+        return None
+
     def submit_job(
         self,
         server_name: str,
