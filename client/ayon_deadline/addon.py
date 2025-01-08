@@ -128,7 +128,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         if not response.ok:
             raise ValueError("Failed to create job")
 
-        payload["job_id"] = response.json()["_id"]
+        payload["response"] = response.json()
         return payload
 
     def submit_ayon_plugin_job(
