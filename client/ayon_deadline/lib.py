@@ -586,18 +586,20 @@ class DeadlineJobInfo:
         """
         output = {}
         for field in fields(self):
-            key = field.name
-            value = self._serialize_key_value(field.name, getattr(self, key))
-            if value is not None:
-                output[key] = value
+            self._fill_serialize_value(
+                field.name, getattr(self, field.name), output
+            )
         return output
 
-    def _serialize_key_value(self, _key: str, value: Any) -> Any:
+    def _fill_serialize_value(
+        self, key: str, value: Any, output: Dict[str, Any]
+    ) -> Any:
         if isinstance(value, (DeadlineIndexedVar, DeadlineKeyValueVar)):
-            return value.serialize()
-        if isinstance(value, list):
-            return ",".join(value)
-        return value
+            output.update(value.serialize())
+        elif isinstance(value, list):
+            output[key] = ",".join(value)
+        elif value is not None:
+            output[key] = value
 
 
 @dataclass
@@ -641,14 +643,15 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
         for key, value in get_instance_job_envs(instance).items():
             self.EnvironmentKeyValue[key] = value
 
-    def _serialize_key_value(self, key: str, value: Any):
-        if key in (
+    def _fill_serialize_value(
+        self, key: str, value: Any, output: Dict[str, Any]
+    ):
+        if key not in (
             "use_published",
             "use_asset_dependencies",
             "use_workfile_dependency",
         ):
-            return None
-        return super()._serialize_key_value(key, value)
+            super()._fill_serialize_value(key, value, output)
 
     @staticmethod
     def _sanitize(value) -> "Union[str, List[str], None]":
