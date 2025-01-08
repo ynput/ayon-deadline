@@ -3,6 +3,7 @@
 import os
 import json
 import re
+import getpass
 from copy import deepcopy
 
 import clique
@@ -144,7 +145,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # poor man exclusion
     skip_integration_repre_list = []
 
-    def _submit_deadline_post_job(self, instance, job, instances):
+    def _submit_deadline_post_job(
+        self, instance, render_job, instances
+    ):
         """Submit publish job to Deadline.
 
         Returns:
@@ -176,16 +179,24 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         # Transfer the environment from the original job to this dependent
         # job so they use the same environment
-        metadata_path, rootless_metadata_path = \
-            create_metadata_path(instance, anatomy)
+        metadata_path, rootless_metadata_path = create_metadata_path(
+            instance, anatomy
+        )
 
         environment = get_instance_job_envs(instance)
         environment.update(JobType.PUBLISH.get_job_env())
 
-        priority = self.deadline_priority or instance.data.get("priority", 50)
+        priority = (
+            self.deadline_priority
+            or instance.data.get("priority", 50)
+        )
 
         instance_settings = self.get_attr_values_from_data(instance.data)
         initial_status = instance_settings.get("publishJobState", "Active")
+
+        batch_name = self._get_batch_name(instance, render_job)
+        username = self._get_username(instance, render_job)
+        dependency_ids = self._get_dependency_ids(instance, render_job)
 
         args = [
             "--headless",
@@ -200,20 +211,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if settings_variant == "staging":
             args.append("--use-staging")
 
-        # Collect dependent jobs
-        dependency_ids = None
-        if instance.data.get("tileRendering"):
-            self.log.info("Adding tile assembly jobs as dependencies...")
-            dependency_ids = instance.data.get("assemblySubmissionJobs")
-        elif instance.data.get("bakingSubmissionJobs"):
-            self.log.info(
-                "Adding baking submission jobs as dependencies..."
-            )
-            dependency_ids = instance.data["bakingSubmissionJobs"]
-
-        elif job.get("_id"):
-            dependency_ids = [job["_id"]]
-
         server_name = instance.data["deadline"]["serverName"]
         self.log.debug("Submitting Deadline publish job ...")
 
@@ -223,14 +220,14 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         job_info = DeadlineJobInfo(
             Name=job_name,
-            BatchName=job["Props"]["Batch"],
+            BatchName=batch_name,
             Department=self.deadline_department,
             Priority=priority,
             InitialStatus=initial_status,
             Group=self.deadline_group,
             Pool=self.deadline_pool or None,
             JobDependencies=dependency_ids,
-            UserName=job["Props"]["User"],
+            UserName=username,
             Comment=context.data.get("comment"),
         )
         job_info.OutputDirectory.append(
@@ -242,6 +239,44 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             args,
             job_info
         )["response"]["_id"]
+
+    def _get_batch_name(self, instance, render_job):
+        batch_name = instance.data.get("jobBatchName")
+        if not batch_name and render_job:
+            batch_name = render_job["Props"]["Batch"]
+
+        if not batch_name:
+            batch_name = os.path.splitext(os.path.basename(
+                instance.context.data["currentFile"]
+            ))[0]
+        return batch_name
+
+    def _get_username(self, instance, render_job):
+        username = None
+        if render_job:
+            username = render_job["Props"]["User"]
+
+        if not username:
+            username = instance.context.data.get(
+                "deadlineUser", getpass.getuser()
+            )
+        return username
+
+    def _get_dependency_ids(self, instance, render_job):
+        # Collect dependent jobs
+        if instance.data.get("tileRendering"):
+            self.log.info("Adding tile assembly jobs as dependencies...")
+            return instance.data.get("assemblySubmissionJobs")
+
+        if instance.data.get("bakingSubmissionJobs"):
+            self.log.info(
+                "Adding baking submission jobs as dependencies..."
+            )
+            return instance.data["bakingSubmissionJobs"]
+
+        if render_job and render_job.get("_id"):
+            return [render_job["_id"]]
+        return None
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None
@@ -359,35 +394,13 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         render_job = instance.data.pop("deadlineSubmissionJob", None)
         if not render_job and instance.data.get("tileRendering") is False:
-            raise AssertionError(("Cannot continue without valid "
-                                  "Deadline submission."))
-        if not render_job:
-            import getpass
+            raise AssertionError(
+                "Cannot continue without valid Deadline submission."
+            )
 
-            render_job = {}
-            self.log.debug("Faking job data ...")
-            render_job["Props"] = {}
-            # Render job doesn't exist because we do not have prior submission.
-            # We still use data from it so lets fake it.
-            #
-            # Batch name reflect original scene name
-
-            if instance.data.get("assemblySubmissionJobs"):
-                render_job["Props"]["Batch"] = instance.data.get(
-                    "jobBatchName")
-            else:
-                batch = os.path.splitext(os.path.basename(
-                    instance.context.data.get("currentFile")))[0]
-                render_job["Props"]["Batch"] = batch
-            # User is deadline user
-            render_job["Props"]["User"] = instance.context.data.get(
-                "deadlineUser", getpass.getuser())
-
-            render_job["Props"]["Env"] = get_instance_job_envs(instance)
-
-
-        deadline_publish_job_id = \
-            self._submit_deadline_post_job(instance, render_job, instances)
+        deadline_publish_job_id = self._submit_deadline_post_job(
+            instance, render_job, instances
+        )
 
         # Inject deadline url to instances to query DL for job id for overrides
         for inst in instances:
