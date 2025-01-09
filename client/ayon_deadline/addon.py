@@ -154,9 +154,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             auth=auth,
             verify=verify
         )
-        if not response.ok:
-            raise ValueError("Failed to create job")
-
+        response.raise_for_status()
         payload["response"] = response.json()
         return payload
 
