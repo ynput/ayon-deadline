@@ -133,6 +133,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 {"value": group, "label": group}
                 for group in server_info.groups
             ]
+            # Always allow no group to be set and insert as first item so
+            # that in edge cases it's selected by default
+            groups.insert(0, {"value": None, "label": ""})
             limit_groups = [
                 {"value": limit_group, "label": limit_group}
                 for limit_group in server_info.limit_groups
@@ -145,7 +148,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
 
         for items in [
-            pools, groups, limit_groups, machines
+            pools, limit_groups, machines
         ]:
             if not items:
                 items.append({"value": None, "label": "< none >"})
