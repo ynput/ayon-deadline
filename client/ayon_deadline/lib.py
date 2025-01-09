@@ -633,7 +633,9 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
 
     def add_render_job_env_var(self):
         """Add required env vars for valid render job submission."""
-        self.EnvironmentKeyValue["AYON_RENDER_JOB"] = "1"
+        self.EnvironmentKeyValue.update(
+            JobType.RENDER.get_job_env()
+        )
 
     def add_instance_job_env_vars(self, instance):
         """Add all job environments as specified on the instance and context
