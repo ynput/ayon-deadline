@@ -130,11 +130,12 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         Args:
             server_name (str): Deadline Server name from project Settings.
             plugin_info (dict): Plugin info data.
-            job_info (dict): Job info data.
+            job_info (Union[DeadlineJobInfo, Dict[str, Any]]): Job info data.
             aux_files (Optional[List[str]]): List of auxiliary files.
 
         Returns:
-            Dict[str, Any]: Job payload, with 'job_id' key.
+            Dict[str, Any]: Job payload, with 'response' key containing
+                response data.
 
         """
         if isinstance(job_info, DeadlineJobInfo):
