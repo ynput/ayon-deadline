@@ -146,7 +146,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     skip_integration_repre_list = []
 
     def _submit_deadline_post_job(
-        self, instance, render_job, instances
+        self, instance, render_job, instances, rootless_metadata_path
     ):
         """Submit publish job to Deadline.
 
@@ -175,12 +175,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             context,
             instances[0]["productType"],
             override_version
-        )
-
-        # Transfer the environment from the original job to this dependent
-        # job so they use the same environment
-        metadata_path, rootless_metadata_path = create_metadata_path(
-            instance, anatomy
         )
 
         environment = get_instance_job_envs(instance)
@@ -400,8 +394,14 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Cannot continue without valid Deadline submission."
             )
 
+        # Transfer the environment from the original job to this dependent
+        # job so they use the same environment
+        metadata_path, rootless_metadata_path = create_metadata_path(
+            instance, anatomy
+        )
+
         deadline_publish_job_id = self._submit_deadline_post_job(
-            instance, render_job, instances
+            instance, render_job, instances, rootless_metadata_path
         )
 
         # Inject deadline url to instances to query DL for job id for overrides
@@ -430,9 +430,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         audio_file = instance.context.data.get("audioFile")
         if audio_file and os.path.isfile(audio_file):
             publish_job.update({"audio": audio_file})
-
-        metadata_path, rootless_metadata_path = \
-            create_metadata_path(instance, anatomy)
 
         with open(metadata_path, "w") as f:
             json.dump(publish_job, f, indent=4, sort_keys=True)
