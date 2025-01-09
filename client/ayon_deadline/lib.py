@@ -517,14 +517,14 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
     def from_dict(cls, data: Dict[str, Any]) -> 'AYONDeadlineJobInfo':
 
         implemented_field_values = {
-            "ChunkSize": data.get("chunk_size"),
-            "Priority": data.get("priority"),
-            "MachineLimit": data.get("machine_limit"),
-            "ConcurrentTasks": data.get("concurrent_tasks"),
+            "ChunkSize": data["chunk_size"],
+            "Priority": data["priority"],
+            "MachineLimit": data["machine_limit"],
+            "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data.get("frames", ""),
-            "Group": cls._sanitize(data.get("group")),
-            "Pool": cls._sanitize(data.get("primary_pool")),
-            "SecondaryPool": cls._sanitize(data.get("secondary_pool")),
+            "Group": cls._sanitize(data["group"]),
+            "Pool": cls._sanitize(data["primary_pool"]),
+            "SecondaryPool": cls._sanitize(data["secondary_pool"]),
 
             # fields needed for logic, values unavailable during collection
             "UsePublished": data["use_published"],
