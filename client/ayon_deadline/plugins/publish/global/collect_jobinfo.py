@@ -146,7 +146,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
 
         for items in [
-            pools, limit_groups, machines
+            pools, groups, limit_groups, machines
         ]:
             if not items:
                 items.append({"value": None, "label": "< none >"})
