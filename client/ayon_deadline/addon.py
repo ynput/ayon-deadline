@@ -78,7 +78,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         """
         server_info = self._server_info_by_name.get(server_name)
         if server_info is None:
-            server_url, auth, _ = self._get_deadline_con_info(server_name)
+            server_url, auth, _ = self.get_deadline_server_info(server_name)
             pools = get_deadline_pools(server_url, auth)
             groups = get_deadline_groups(server_url, auth)
             limit_groups = get_deadline_limit_groups(server_url, auth)
@@ -106,7 +106,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             Optional[Dict[str, Any]]: Job info from Deadline.
 
         """
-        server_url, auth, verify = self._get_deadline_con_info(server_name)
+        server_url, auth, verify = self.get_deadline_server_info(server_name)
         response = requests.get(
             f"{server_url}/api/jobs?JobID={job_id}",
             auth=auth,
@@ -146,7 +146,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             "PluginInfo": plugin_info,
             "AuxFiles": aux_files or [],
         }
-        server_url, auth, verify = self._get_deadline_con_info(server_name)
+        server_url, auth, verify = self.get_deadline_server_info(server_name)
         response = requests.post(
             f"{server_url}/api/jobs",
             json=payload,
@@ -195,7 +195,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             server_name, plugin_info, job_info, aux_files
         )
 
-    def _get_deadline_con_info(
+    def get_deadline_server_info(
         self, server_name: str
     ) -> Tuple[str, Optional[Tuple[str, str]], bool]:
         dl_server_info = self.deadline_servers_info[server_name]
