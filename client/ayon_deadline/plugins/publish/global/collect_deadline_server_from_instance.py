@@ -47,7 +47,9 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
         #   - all hosts should have same data structure on instances
         server_name = None
         if host_name == "maya":
-            deadline_url, server_name = self._collect_maya_deadline_server(instance)
+            deadline_url, server_name = self._collect_maya_deadline_server(
+                instance
+            )
         else:
             # TODO remove backwards compatibility
             deadline_url = instance.data.get("deadlineUrl")
