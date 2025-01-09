@@ -1,12 +1,10 @@
 import os
-import requests
 from collections.abc import Iterable
 
 import pyblish.api
 import clique
 
 from ayon_core.pipeline import PublishValidationError
-from ayon_deadline.abstract_submit_deadline import requests_get
 
 
 class ValidateExpectedFiles(pyblish.api.InstancePlugin):
