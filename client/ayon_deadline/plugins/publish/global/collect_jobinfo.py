@@ -129,6 +129,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 {"value": pool, "label": pool}
                 for pool in server_info.pools
             ]
+            # Groups always includes the default 'none' group
             groups = [
                 {"value": group, "label": group}
                 for group in server_info.groups
