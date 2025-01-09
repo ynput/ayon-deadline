@@ -83,7 +83,7 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
         self, instance: pyblish.api.Instance,
         deadline_url: str,
     ) -> Optional[str]:
-        """Find server name from project settings nased on url.
+        """Find server name from project settings based on url.
 
         Args:
             instance (pyblish.api.Instance): Instance object.
