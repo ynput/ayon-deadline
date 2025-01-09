@@ -223,6 +223,10 @@ class HarmonySubmitDeadline(
     Renders are submitted to a Deadline Web Service as
     supplied via the environment variable ``DEADLINE_REST_URL``.
 
+    Harmony workfile is `.zip` file that needs to be unzipped for Deadline
+    first (DL expects unzipped folder). In case of use of published workfile,
+    `.zip` file is copied to `work/../renders` and unzipped there.
+
     Note:
         If Deadline configuration is not detected, this plugin will
         be disabled.
@@ -252,7 +256,7 @@ class HarmonySubmitDeadline(
     def _unzip_scene_file(self, published_scene: Path) -> Path:
         """Unzip scene zip file to its directory.
 
-        Unzip scene file (if it is zip file) to work are if dir if available,
+        Unzip scene file (if it is zip file) to work area if dir if available,
         if not to its current directory and
         return path to xstage file there. Xstage file is determined by its
         name.
