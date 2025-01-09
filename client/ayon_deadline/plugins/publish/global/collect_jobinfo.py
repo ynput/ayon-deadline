@@ -129,13 +129,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 {"value": pool, "label": pool}
                 for pool in server_info.pools
             ]
+            # Groups always includes the default 'none' group
             groups = [
                 {"value": group, "label": group}
                 for group in server_info.groups
             ]
-            # Always allow no group to be set and insert as first item so
-            # that in edge cases it's selected by default
-            groups.insert(0, {"value": None, "label": ""})
             limit_groups = [
                 {"value": limit_group, "label": limit_group}
                 for limit_group in server_info.limit_groups
