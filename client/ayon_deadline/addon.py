@@ -11,6 +11,7 @@ from ayon_core.addon import AYONAddon, IPluginPaths
 from .version import __version__
 from .constants import AYON_PLUGIN_VERSION
 from .lib import (
+    DeadlineConnectionInfo,
     DeadlineServerInfo,
     get_deadline_workers,
     get_deadline_groups,
@@ -78,7 +79,10 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         """
         server_info = self._server_info_by_name.get(server_name)
         if server_info is None:
-            server_url, auth, _ = self.get_deadline_server_info(server_name)
+            con_info = self.get_deadline_server_connection_info(
+                server_name
+            )
+            server_url, auth = con_info.url, con_info.auth
             pools = get_deadline_pools(server_url, auth)
             groups = get_deadline_groups(server_url, auth)
             limit_groups = get_deadline_limit_groups(server_url, auth)
@@ -106,11 +110,13 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             Optional[Dict[str, Any]]: Job info from Deadline.
 
         """
-        server_url, auth, verify = self.get_deadline_server_info(server_name)
+        con_info = self.get_deadline_server_connection_info(
+            server_name
+        )
         response = requests.get(
-            f"{server_url}/api/jobs?JobID={job_id}",
-            auth=auth,
-            verify=verify
+            f"{con_info.url}/api/jobs?JobID={job_id}",
+            auth=con_info.auth,
+            verify=con_info.verify
         )
         response.raise_for_status()
         data = response.json()
@@ -146,13 +152,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             "PluginInfo": plugin_info,
             "AuxFiles": aux_files or [],
         }
-        server_url, auth, verify = self.get_deadline_server_info(server_name)
+        con_info = self.get_deadline_server_connection_info(
+            server_name
+        )
         response = requests.post(
-            f"{server_url}/api/jobs",
+            f"{con_info.url}/api/jobs",
             json=payload,
             timeout=10,
-            auth=auth,
-            verify=verify
+            auth=con_info.auth,
+            verify=con_info.verify
         )
         response.raise_for_status()
         payload["response"] = response.json()
@@ -195,15 +203,26 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             server_name, plugin_info, job_info, aux_files
         )
 
-    def get_deadline_server_info(
+    def get_deadline_server_connection_info(
         self, server_name: str
-    ) -> Tuple[str, Optional[Tuple[str, str]], bool]:
+    ) -> DeadlineConnectionInfo:
+        """Get Deadline server info.
+
+        Args:
+            server_name (str): Deadline Server name from project Settings.
+
+        Returns:
+            DeadlineConnectionInfo: Server connection information with
+                server url, auth and verify ssl flag.
+
+        """
         dl_server_info = self.deadline_servers_info[server_name]
         auth = self._get_server_user_auth(dl_server_info)
-        return (
+        return DeadlineConnectionInfo(
+            server_name,
             dl_server_info["value"],
             auth,
-            not dl_server_info["not_verify_ssl"]
+            not dl_server_info["not_verify_ssl"],
         )
 
     def _get_server_user_auth(

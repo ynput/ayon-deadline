@@ -32,6 +32,15 @@ JOB_ENV_DATA_KEY: str = "farmJobEnv"
 
 
 @dataclass
+class DeadlineConnectionInfo:
+    """Connection information for Deadline server."""
+    name: str
+    url: str
+    auth: Tuple[str, str]
+    verify: bool
+
+
+@dataclass
 class DeadlineServerInfo:
     pools: List[str]
     limit_groups: List[str]
