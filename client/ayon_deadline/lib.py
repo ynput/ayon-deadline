@@ -585,9 +585,9 @@ class DeadlineJobInfo:
 
         """
         output = {}
-        for field in fields(self):
+        for field_item in fields(self):
             self._fill_serialize_value(
-                field.name, getattr(self, field.name), output
+                field_item.name, getattr(self, field_item.name), output
             )
         return output
 
