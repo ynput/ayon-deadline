@@ -61,7 +61,7 @@ class CollectJobInfoItem(BaseSettingsModel):
 
     #########################################
 
-    chunk_size: int = SettingsField(999999, title="Frames per Task")
+    chunk_size: int = SettingsField(999, title="Frames per Task")
     priority: int = SettingsField(50, title="Priority")
     group: str = SettingsField("", title="Group")
     limit_groups: list[str] = SettingsField(
@@ -363,7 +363,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
                 "primary_pool",
                 "secondary_pool"
               ],
-              "chunk_size": 999999,
+              "chunk_size": 999,
               "department": "",
               "host_names": [],
               "task_names": [],
