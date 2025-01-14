@@ -7,6 +7,7 @@ import requests
 import ayon_api
 
 from ayon_core.addon import AYONAddon, IPluginPaths
+from ayon_core.lib import CacheItem
 
 from .version import __version__
 from .constants import AYON_PLUGIN_VERSION
@@ -49,6 +50,8 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         self._server_info_by_name: Dict[str, DeadlineServerInfo] = {}
 
+        self._local_settings_cache = CacheItem(lifetime=60)
+
     def get_plugin_paths(self):
         """Deadline plugin paths."""
         # Note: We are not returning `publish` key because we have overridden
@@ -67,11 +70,17 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             paths.append(os.path.join(publish_dir, host_name))
         return paths
 
-    def get_server_info_by_name(self, server_name: str) -> DeadlineServerInfo:
+    def get_server_info_by_name(
+        self,
+        server_name: str,
+        local_settings: Optional[Dict[str, Any]] = None,
+    ) -> DeadlineServerInfo:
         """Returns Deadline server info by name.
 
         Args:
             server_name (str): Deadline Server name from Project Settings.
+            local_settings (Optional[Dict[str, Any]]): Deadline local
+                settings.
 
         Returns:
             DeadlineServerInfo: Deadline server info.
@@ -80,7 +89,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         server_info = self._server_info_by_name.get(server_name)
         if server_info is None:
             con_info = self.get_deadline_server_connection_info(
-                server_name
+                server_name, local_settings
             )
             server_url, auth = con_info.url, con_info.auth
             pools = get_deadline_pools(server_url, auth)
@@ -98,20 +107,25 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         return server_info
 
     def get_job_info(
-        self, server_name: str, job_id: str
+        self,
+        server_name: str,
+        job_id: str,
+        local_settings: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Get job info from Deadline.
 
         Args:
             server_name (str): Deadline Server name from project Settings.
             job_id (str): Deadline job id.
+            local_settings (Optional[Dict[str, Any]]): Deadline local
+                settings.
 
         Returns:
             Optional[Dict[str, Any]]: Job info from Deadline.
 
         """
         con_info = self.get_deadline_server_connection_info(
-            server_name
+            server_name, local_settings
         )
         response = requests.get(
             f"{con_info.url}/api/jobs?JobID={job_id}",
@@ -130,6 +144,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         plugin_info: Dict[str, Any],
         job_info: "Union[DeadlineJobInfo, Dict[str, Any]]",
         aux_files: Optional[List[str]] = None,
+        local_settings: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Submit job to Deadline.
 
@@ -138,6 +153,8 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             plugin_info (dict): Plugin info data.
             job_info (Union[DeadlineJobInfo, Dict[str, Any]]): Job info data.
             aux_files (Optional[List[str]]): List of auxiliary files.
+            local_settings (Optional[Dict[str, Any]]): Deadline local
+                settings.
 
         Returns:
             Dict[str, Any]: Job payload, with 'response' key containing
@@ -153,7 +170,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             "AuxFiles": aux_files or [],
         }
         con_info = self.get_deadline_server_connection_info(
-            server_name
+            server_name, local_settings
         )
         response = requests.post(
             f"{con_info.url}/api/jobs",
@@ -172,7 +189,8 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         args: "Union[List[str], str]",
         job_info: "Union[DeadlineJobInfo, Dict[str, Any]]",
         aux_files: Optional[List[str]] = None,
-        single_frame_only: bool = True
+        single_frame_only: bool = True,
+        local_settings: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Submit job to Deadline using Ayon plugin.
 
@@ -182,6 +200,8 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             job_info (Union[DeadlineJobInfo, Dict[str, Any]]): Job info data.
             aux_files (Optional[List[str]]): List of auxiliary files.
             single_frame_only (bool): Submit job for single frame only.
+            local_settings (Optional[Dict[str, Any]]): Deadline local
+                settings.
 
         Returns:
             Dict[str, Any]: Job payload, with 'job_id' key.
@@ -204,12 +224,16 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         )
 
     def get_deadline_server_connection_info(
-        self, server_name: str
+        self,
+        server_name: str,
+        local_settings: Optional[Dict[str, Any]] = None,
     ) -> DeadlineConnectionInfo:
         """Get Deadline server info.
 
         Args:
             server_name (str): Deadline Server name from project Settings.
+            local_settings (Optional[Dict[str, Any]]): Deadline local
+                settings.
 
         Returns:
             DeadlineConnectionInfo: Server connection information with
@@ -217,7 +241,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         """
         dl_server_info = self.deadline_servers_info[server_name]
-        auth = self._get_server_user_auth(dl_server_info)
+        auth = self._get_server_user_auth(dl_server_info, local_settings)
         return DeadlineConnectionInfo(
             server_name,
             dl_server_info["value"],
@@ -226,18 +250,27 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         )
 
     def _get_server_user_auth(
-        self, server_info: Dict[str, Any]
+        self,
+        server_info: Dict[str, Any],
+        local_settings: Optional[Dict[str, Any]] = None,
     ) -> Optional[Tuple[str, str]]:
         server_name = server_info["name"]
 
         require_authentication = server_info["require_authentication"]
         if require_authentication:
-            # TODO import 'get_addon_site_settings' when available
-            #   in public 'ayon_api'
             con = ayon_api.get_server_api_connection()
-            local_settings = con.get_addon_site_settings(self.name, self.version)
-            local_settings = local_settings["local_settings"]
-            for server_info in local_settings:
+            if local_settings is None:
+                # TODO import 'get_addon_site_settings' when available
+                #   in public 'ayon_api'
+                if not self._local_settings_cache.is_valid:
+                    self._local_settings_cache.update_data(
+                        con.get_addon_site_settings(
+                            self.name, self.version
+                        )
+                    )
+                local_settings = self._local_settings_cache.get_data()
+
+            for server_info in local_settings["local_settings"]:
                 if server_name != server_info["server_name"]:
                     continue
 
