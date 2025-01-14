@@ -271,7 +271,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         require_authentication = server_info["require_authentication"]
         if require_authentication:
             if local_settings is None:
-                local_setting = self._get_local_settings()
+                local_settings = self._get_local_settings()
 
             for server_info in local_settings["local_settings"]:
                 if server_name != server_info["server_name"]:
