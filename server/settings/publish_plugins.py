@@ -365,12 +365,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           ],
           "chunk_size": 1,
           "department": "",
-          "host_names": [
-            "maya",
-            "houdini",
-            "3dsmax",
-            "blender"
-          ],
+          "host_names": [],
           "task_names": [],
           "task_types": [],
           "limit_groups": [],
@@ -392,7 +387,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "priority": 50,
           "job_delay": "",
           "overrides": [],
-          "chunk_size": 9,
+          "chunk_size": 10,
           "department": "",
           "host_names": [
             "nuke",
