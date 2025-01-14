@@ -30,7 +30,7 @@ from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
 
-from ayon_core.lib import is_in_tests
+from ayon_core.lib import is_in_tests, NumberDef, BoolDef
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_maya.api.lib_rendersettings import RenderSettings
@@ -101,8 +101,26 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     targets = ["local"]
     settings_category = "deadline"
 
+    strict_error_checking = False
+
     tile_assembler_plugin = "DraftTileAssembler"
     tile_priority = 50
+
+    @classmethod
+    def get_attribute_defs(cls):
+        return [
+            NumberDef(
+                "tile_priority",
+                label="Tile Assembler Priority",
+                decimals=0,
+                default=cls.tile_priority
+            ),
+            BoolDef(
+                "strict_error_checking",
+                label="Strict Error Checking",
+                default=cls.strict_error_checking
+            ),
+        ]
 
     def get_job_info(self, job_info=None):
         instance = self._instance
