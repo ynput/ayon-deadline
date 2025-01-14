@@ -249,6 +249,18 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             not dl_server_info["not_verify_ssl"],
         )
 
+    def _get_local_settings(self) -> Dict[str, Any]:
+        if not self._local_settings_cache.is_valid:
+            # TODO import 'get_addon_site_settings' when available
+            #   in public 'ayon_api'
+            con = ayon_api.get_server_api_connection()
+            self._local_settings_cache.update_data(
+                con.get_addon_site_settings(
+                    self.name, self.version
+                )
+            )
+        return self._local_settings_cache.get_data()
+
     def _get_server_user_auth(
         self,
         server_info: Dict[str, Any],
@@ -258,17 +270,8 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
 
         require_authentication = server_info["require_authentication"]
         if require_authentication:
-            con = ayon_api.get_server_api_connection()
             if local_settings is None:
-                # TODO import 'get_addon_site_settings' when available
-                #   in public 'ayon_api'
-                if not self._local_settings_cache.is_valid:
-                    self._local_settings_cache.update_data(
-                        con.get_addon_site_settings(
-                            self.name, self.version
-                        )
-                    )
-                local_settings = self._local_settings_cache.get_data()
+                local_setting = self._get_local_settings()
 
             for server_info in local_settings["local_settings"]:
                 if server_name != server_info["server_name"]:
