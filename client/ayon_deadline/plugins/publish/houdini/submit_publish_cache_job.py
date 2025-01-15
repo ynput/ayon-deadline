@@ -122,7 +122,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         args = [
             "--headless",
             'publish',
-            '"{}"'.format(rootless_metadata_path),
+            rootless_metadata_path,
             "--targets", "deadline",
             "--targets", "farm"
         ]
