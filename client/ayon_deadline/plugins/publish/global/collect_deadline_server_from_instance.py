@@ -39,6 +39,7 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
+        # NOTE: Remove when nothing sets 'deadline' to 'None'
         if not instance.data.get("deadline"):
             # reset if key is None or not available
             instance.data["deadline"] = {}
