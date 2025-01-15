@@ -4,7 +4,7 @@
 This module is taking care of submitting job from Maya to Deadline. It
 creates job and set correct environments. Its behavior is controlled by
 ``DEADLINE_REST_URL`` environment variable - pointing to Deadline Web Service
-and :data:`AYONDeadlineJobInfo.UsePublished` property telling Deadline to
+and :data:`PublishDeadlineJobInfo.use_published` property telling Deadline to
 use published scene workfile or not.
 
 If ``vrscene`` or ``assscene`` are detected in families, it will first
@@ -30,7 +30,7 @@ from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
 
-from ayon_core.lib import is_in_tests
+from ayon_core.lib import is_in_tests, NumberDef, BoolDef
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_maya.api.lib_rendersettings import RenderSettings
@@ -101,8 +101,26 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     targets = ["local"]
     settings_category = "deadline"
 
+    strict_error_checking = False
+
     tile_assembler_plugin = "DraftTileAssembler"
     tile_priority = 50
+
+    @classmethod
+    def get_attribute_defs(cls):
+        return [
+            NumberDef(
+                "tile_priority",
+                label="Tile Assembler Priority",
+                decimals=0,
+                default=cls.tile_priority
+            ),
+            BoolDef(
+                "strict_error_checking",
+                label="Strict Error Checking",
+                default=cls.strict_error_checking
+            ),
+        ]
 
     def get_job_info(self, job_info=None):
         instance = self._instance
@@ -172,8 +190,8 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         output_dir = os.path.dirname(first_file)
         instance.data["outputDir"] = output_dir
 
-        # Patch workfile (only when UsePublished is enabled)
-        if self.job_info.UsePublished:
+        # Patch workfile (only when 'use_published' is enabled)
+        if self.job_info.use_published:
             self._patch_workfile()
 
         # Gather needed data ------------------------------------------------
@@ -214,7 +232,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         # Add export job as dependency --------------------------------------
         if export_job:
             job_info, _ = payload
-            job_info.JobDependencies = export_job
+            job_info.JobDependencies.append(export_job)
 
         if instance.data.get("tileRendering"):
             # Prepare tiles data
@@ -368,7 +386,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
             frame_assembly_job_info.ExtraInfo[0] = file_hash
             frame_assembly_job_info.ExtraInfo[1] = file
-            frame_assembly_job_info.JobDependencies = tile_job_id
+            frame_assembly_job_info.JobDependencies.append(tile_job_id)
             frame_assembly_job_info.Frames = frame
 
             # write assembly job config files
@@ -450,8 +468,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     def _get_maya_payload(self, data):
 
         job_info = copy.deepcopy(self.job_info)
-
-        if not is_in_tests() and self.job_info.UseAssetDependencies:
+        if not is_in_tests() and self.job_info.use_asset_dependencies:
             # Asset dependency to wait for at least the scene file to sync.
             job_info.AssetDependency += self.scene_path
 

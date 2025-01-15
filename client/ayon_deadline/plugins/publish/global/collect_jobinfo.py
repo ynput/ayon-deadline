@@ -15,7 +15,7 @@ from ayon_core.addon import AddonsManager
 
 from ayon_deadline.lib import (
     FARM_FAMILIES,
-    AYONDeadlineJobInfo,
+    PublishDeadlineJobInfo,
     DeadlineWebserviceError,
 )
 
@@ -50,20 +50,22 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         attr_values = self._get_jobinfo_defaults(instance)
 
         attr_values.update(self.get_attr_values_from_data(instance.data))
-        job_info = AYONDeadlineJobInfo.from_dict(attr_values)
+        job_info = PublishDeadlineJobInfo.from_attribute_values(attr_values)
 
         self._handle_machine_list(attr_values, job_info)
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
-        instance.data["deadline"]["job_info"] = job_info
-
         # pass through explicitly key and values for PluginInfo
         plugin_info_data = None
         if attr_values["additional_plugin_info"]:
-            plugin_info_data = (
-                json.loads(attr_values["additional_plugin_info"]))
-        instance.data["deadline"]["plugin_info_data"] = plugin_info_data
+            plugin_info_data = json.loads(
+                attr_values["additional_plugin_info"]
+            )
+
+        deadline_info = instance.data["deadline"]
+        deadline_info["job_info"] = job_info
+        deadline_info["plugin_info_data"] = plugin_info_data
 
         self._add_deadline_families(instance)
 
@@ -122,31 +124,25 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         limit_groups = []
         machines = []
         try:
+            server_info = deadline_addon.get_server_info_by_name(
+                deadline_server_name
+            )
             pools = [
                 {"value": pool, "label": pool}
-                for pool in deadline_addon.get_pools_by_server_name(
-                    deadline_server_name
-                )
+                for pool in server_info.pools
             ]
+            # Groups always includes the default 'none' group
             groups = [
                 {"value": group, "label": group}
-                for group in deadline_addon.get_groups_by_server_name(
-                    deadline_server_name
-                )
+                for group in server_info.groups
             ]
             limit_groups = [
                 {"value": limit_group, "label": limit_group}
-                for limit_group in (
-                    deadline_addon.get_limit_groups_by_server_name(
-                        deadline_server_name
-                    )
-                )
+                for limit_group in server_info.limit_groups
             ]
             machines = [
                 {"value": machine, "label": machine}
-                for machine in deadline_addon.get_machines_by_server_name(
-                    deadline_server_name
-                )
+                for machine in server_info.machines
             ]
         except DeadlineWebserviceError:
             cls.log.warning(f"Unable to connect to {deadline_server_name}")
@@ -216,8 +212,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 tooltip="Explicit frames to be rendered. (1, 3-4)"
             )
         )
-
-        defs.extend(cls._host_specific_attr_defs(create_context, instance))
 
         defs.append(
             UISeparatorDef("deadline_defs_end")
@@ -386,21 +380,3 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             }
         )
         return profile or {}
-
-    @classmethod
-    def _host_specific_attr_defs(cls, create_context, instance):
-        host_name = create_context.host_name
-        if host_name == "maya":
-            return [
-                NumberDef(
-                    "tile_priority",
-                    label="Tile Assembler Priority",
-                    decimals=0,
-                ),
-                BoolDef(
-                    "strict_error_checking",
-                    label="Strict Error Checking",
-                ),
-            ]
-
-        return []

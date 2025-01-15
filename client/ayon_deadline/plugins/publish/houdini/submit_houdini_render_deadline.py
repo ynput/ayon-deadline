@@ -225,7 +225,7 @@ class HoudiniSubmitDeadline(
 
         # Add dependencies if given
         if dependency_job_ids:
-            job_info.JobDependencies = ",".join(dependency_job_ids)
+            job_info.JobDependencies = dependency_job_ids
 
         return job_info
 
@@ -346,7 +346,8 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
     label = "Submit Render to Deadline (USD)"
     families = ["usdrender"]
 
-    # Do not use published workfile paths for USD Render ROP because the
-    # Export Job doesn't seem to occur using the published path either, so
-    # output paths then do not match the actual rendered paths
-    use_published = False
+    def from_published_scene(self, replace_in_path=True):
+        # Do not use published workfile paths for USD Render ROP because the
+        # Export Job doesn't seem to occur using the published path either, so
+        # output paths then do not match the actual rendered paths
+        return

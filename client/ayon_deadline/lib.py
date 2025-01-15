@@ -1,12 +1,16 @@
-import os
-import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, fields
 from functools import partial
-from typing import Optional, List, Tuple, Any, Dict
+import typing
+from typing import Optional, List, Tuple, Any, Dict, Iterable
+from enum import Enum
 
 import requests
 
 from ayon_core.lib import Logger
+
+if typing.TYPE_CHECKING:
+    from typing import Union, Self
+
 
 # describes list of product typed used for plugin filtering for farm publishing
 FARM_FAMILIES = [
@@ -22,36 +26,57 @@ FARM_FAMILIES = [
 
 # Constant defining where we store job environment variables on instance or
 # context data
+# DEPRECATED: Use `FARM_JOB_ENV_DATA_KEY` from `ayon_core.pipeline.publish`
+#     This variable is NOT USED anywhere in deadline addon.
 JOB_ENV_DATA_KEY: str = "farmJobEnv"
 
 
-def get_ayon_render_job_envs() -> "dict[str, str]":
-    """Get required env vars for valid render job submission."""
-    return {
-        "AYON_LOG_NO_COLORS": "1",
-        "AYON_RENDER_JOB": "1",
-        "AYON_BUNDLE_NAME": os.environ["AYON_BUNDLE_NAME"]
-    }
+@dataclass
+class DeadlineConnectionInfo:
+    """Connection information for Deadline server."""
+    name: str
+    url: str
+    auth: Tuple[str, str]
+    verify: bool
 
 
-def get_instance_job_envs(instance) -> "dict[str, str]":
-    """Add all job environments as specified on the instance and context.
+@dataclass
+class DeadlineServerInfo:
+    pools: List[str]
+    limit_groups: List[str]
+    groups: List[str]
+    machines: List[str]
 
-    Any instance `job_env` vars will override the context `job_env` vars.
+
+class DeadlineWebserviceError(Exception):
     """
-    env = {}
-    for job_env in [
-        instance.context.data.get(JOB_ENV_DATA_KEY, {}),
-        instance.data.get(JOB_ENV_DATA_KEY, {})
-    ]:
-        if job_env:
-            env.update(job_env)
+    Exception to throw when connection to Deadline server fails.
+    """
 
-    # Return the dict sorted just for readability in future logs
-    if env:
-        env = dict(sorted(env.items()))
 
-    return env
+class JobType(str, Enum):
+    UNDEFINED = "undefined"
+    RENDER = "render"
+    PUBLISH = "publish"
+    REMOTE = "remote"
+
+    def get_job_env(self) -> Dict[str, str]:
+        return {
+            "AYON_PUBLISH_JOB": str(int(self == JobType.PUBLISH)),
+            "AYON_RENDER_JOB": str(int(self == JobType.RENDER)),
+            "AYON_REMOTE_PUBLISH": str(int(self == JobType.REMOTE)),
+        }
+
+    @classmethod
+    def get(
+        cls, value: Any, default: Optional[Any] = None
+    ) -> "JobType":
+        try:
+            return cls(value)
+        except ValueError:
+            if default is None:
+                return cls.UNDEFINED
+            return default
 
 
 def get_deadline_pools(
@@ -74,9 +99,8 @@ def get_deadline_pools(
         RuntimeError: If deadline webservice is unreachable.
 
     """
-    endpoint = "{}/api/pools?NamesOnly=true".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="pools")
+    endpoint = f"{webservice_url}/api/pools?NamesOnly=true"
+    return _get_deadline_info(endpoint, auth, log, "pools")
 
 
 def get_deadline_groups(
@@ -99,9 +123,8 @@ def get_deadline_groups(
         RuntimeError: If deadline webservice_url is unreachable.
 
     """
-    endpoint = "{}/api/groups".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="groups")
+    endpoint = f"{webservice_url}/api/groups"
+    return _get_deadline_info(endpoint, auth, log, "groups")
 
 
 def get_deadline_limit_groups(
@@ -124,9 +147,8 @@ def get_deadline_limit_groups(
         RuntimeError: If deadline webservice_url is unreachable.
 
     """
-    endpoint = "{}/api/limitgroups?NamesOnly=true".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="limitgroups")
+    endpoint = f"{webservice_url}/api/limitgroups?NamesOnly=true"
+    return _get_deadline_info(endpoint, auth, log, "limitgroups")
 
 def get_deadline_workers(
     webservice_url: str,
@@ -148,16 +170,15 @@ def get_deadline_workers(
         RuntimeError: If deadline webservice_url is unreachable.
 
     """
-    endpoint = "{}/api/slaves?NamesOnly=true".format(webservice_url)
-    return _get_deadline_info(
-        endpoint, auth, log, item_type="workers")
+    endpoint = f"{webservice_url}/api/slaves?NamesOnly=true"
+    return _get_deadline_info(endpoint, auth, log, "workers")
 
 
 def _get_deadline_info(
     endpoint,
-    auth=None,
-    log=None,
-    item_type=None
+    auth,
+    log,
+    item_type
 ):
     from .abstract_submit_deadline import requests_get
 
@@ -170,7 +191,7 @@ def _get_deadline_info(
             kwargs["auth"] = auth
         response = requests_get(endpoint, **kwargs)
     except requests.exceptions.ConnectionError as exc:
-        msg = 'Cannot connect to DL web service {}'.format(endpoint)
+        msg = f"Cannot connect to DL web service {endpoint}"
         log.error(msg)
         raise DeadlineWebserviceError(msg) from exc
     if not response.ok:
@@ -180,10 +201,32 @@ def _get_deadline_info(
     return sorted(response.json(), key=lambda value: (value != "none", value))
 
 
-class DeadlineWebserviceError(Exception):
+# ------------------------------------------------------------
+# NOTE It is pipeline related logic from here, probably
+#   should be moved to './pipeline' and used from there.
+#   - This file is imported in `ayon_deadline/addon.py` which should not
+#     have any pipeline logic.
+def get_instance_job_envs(instance) -> "dict[str, str]":
+    """Add all job environments as specified on the instance and context.
+
+    Any instance `job_env` vars will override the context `job_env` vars.
     """
-    Exception to throw when connection to Deadline server fails.
-    """
+    # Avoid import from 'ayon_core.pipeline'
+    from ayon_core.pipeline.publish import FARM_JOB_ENV_DATA_KEY
+
+    env = {}
+    for job_env in [
+        instance.context.data.get(FARM_JOB_ENV_DATA_KEY, {}),
+        instance.data.get(FARM_JOB_ENV_DATA_KEY, {})
+    ]:
+        if job_env:
+            env.update(job_env)
+
+    # Return the dict sorted just for readability in future logs
+    if env:
+        env = dict(sorted(env.items()))
+
+    return env
 
 
 class DeadlineKeyValueVar(dict):
@@ -206,20 +249,17 @@ class DeadlineKeyValueVar(dict):
 
 
     """
-    def __init__(self, key):
-        super(DeadlineKeyValueVar, self).__init__()
-        self.__key = key
+    def __init__(self, key: str):
+        super().__init__()
+        if not key.endswith("{}"):
+            key += "{}"
+        self._key = key
 
     def serialize(self):
-        key = self.__key
-
         # Allow custom location for index in serialized string
-        if "{}" not in key:
-            key = key + "{}"
-
         return {
-            key.format(index): "{}={}".format(var_key, var_value)
-            for index, (var_key, var_value) in enumerate(sorted(self.items()))
+            self._key.format(idx): f"{key}={value}"
+            for idx, (key, value) in enumerate(sorted(self.items()))
         }
 
 
@@ -231,23 +271,20 @@ class DeadlineIndexedVar(dict):
         Set: var[1] = "my_value"
         Append: var += "value"
 
-    Note: Iterating the instance is not guarantueed to be the order of the
+    Note: Iterating the instance is not guaranteed to be the order of the
           indices. To do so iterate with `sorted()`
 
     """
-    def __init__(self, key):
-        super(DeadlineIndexedVar, self).__init__()
-        self.__key = key
-
-    def serialize(self):
-        key = self.__key
-
-        # Allow custom location for index in serialized string
+    def __init__(self, key: str):
+        super().__init__()
         if "{}" not in key:
-            key = key + "{}"
+            key += "{}"
+        self._key = key
 
+    def serialize(self) -> Dict[str, str]:
         return {
-            key.format(index): value for index, value in sorted(self.items())
+            self._key.format(index): value
+            for index, value in sorted(self.items())
         }
 
     def next_available_index(self):
@@ -257,23 +294,42 @@ class DeadlineIndexedVar(dict):
             i += 1
         return i
 
-    def update(self, data):
+    def add(self, value: str):
+        if value not in self.values():
+            self.append(value)
+
+    def append(self, value: str):
+        index = self.next_available_index()
+        self[index] = value
+
+    def extend(self, values: Iterable[str]):
+        for value in values:
+            self.append(value)
+
+    def update(self, data: Dict[int, str]):
         # Force the integer key check
         for key, value in data.items():
             self.__setitem__(key, value)
 
-    def __iadd__(self, other):
-        index = self.next_available_index()
-        self[index] = other
+    def __iadd__(self, value: str):
+        self.append(value)
         return self
 
     def __setitem__(self, key, value):
         if not isinstance(key, int):
-            raise TypeError("Key must be an integer: {}".format(key))
+            raise TypeError(f"Key must be an 'int', got {type(key)} ({key}).")
 
         if key < 0:
-            raise ValueError("Negative index can't be set: {}".format(key))
+            raise ValueError(f"Negative index can't be set: {key}")
         dict.__setitem__(self, key, value)
+
+
+def _partial_key_value(key: str):
+    return partial(DeadlineKeyValueVar, key)
+
+
+def _partial_indexed(key: str):
+    return partial(DeadlineIndexedVar, key)
 
 
 @dataclass
@@ -294,8 +350,8 @@ class DeadlineJobInfo:
     Comment: Optional[str] = field(default=None)  # default: empty
     Department: Optional[str] = field(default=None)  # default: empty
     BatchName: Optional[str] = field(default=None)  # default: empty
-    UserName: str = field(default=None)
-    MachineName: str = field(default=None)
+    UserName: Optional[str] = field(default=None)
+    MachineName: Optional[str] = field(default=None)
     Pool: Optional[str] = field(default=None)  # default: "none"
     SecondaryPool: Optional[str] = field(default=None)
     Group: Optional[str] = field(default=None)  # default: "none"
@@ -311,7 +367,7 @@ class DeadlineJobInfo:
     Sequential: Optional[bool] = field(default=None)  # default: false
     SuppressEvents: Optional[bool] = field(default=None)  # default: false
     Protected: Optional[bool] = field(default=None)  # default: false
-    InitialStatus: str = field(default="Active")
+    InitialStatus: "InitialStatus" = field(default="Active")
     NetworkRoot: Optional[str] = field(default=None)
 
     # Timeouts
@@ -359,7 +415,7 @@ class DeadlineJobInfo:
     LimitGroups: Optional[List[str]] = field(default_factory=list)  # Default: blank
 
     # Dependencies
-    JobDependencies: Optional[str] = field(default=None)  # Default: blank
+    JobDependencies: List[str] = field(default_factory=list)  # Default: blank
     JobDependencyPercentage: Optional[int] = field(default=None)  # Default: -1
     IsFrameDependent: Optional[bool] = field(default=None)  # Default: false
     FrameDependencyOffsetStart: Optional[int] = field(default=None)  # Default: 0
@@ -418,33 +474,32 @@ class DeadlineJobInfo:
         default=None)  # Default blank (comma-separated list)
 
     # Environment
-    EnvironmentKeyValue: Any = field(
-        default_factory=partial(DeadlineKeyValueVar, "EnvironmentKeyValue"))
+    EnvironmentKeyValue: DeadlineKeyValueVar = field(
+        default_factory=_partial_key_value("EnvironmentKeyValue"))
     IncludeEnvironment: Optional[bool] = field(default=False)  # Default: false
     UseJobEnvironmentOnly: Optional[bool] = field(default=False)  # Default: false
     CustomPluginDirectory: Optional[str] = field(default=None)  # Default blank
 
     # Job Extra Info
-    ExtraInfo: Any = field(
-        default_factory=partial(DeadlineIndexedVar, "ExtraInfo"))
-    ExtraInfoKeyValue: Any = field(
-        default_factory=partial(DeadlineKeyValueVar, "ExtraInfoKeyValue"))
+    ExtraInfo: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("ExtraInfo"))
+    ExtraInfoKeyValue: DeadlineKeyValueVar = field(
+        default_factory=_partial_key_value("ExtraInfoKeyValue"))
 
-    OverrideTaskExtraInfoNames: Optional[bool] = field(
-        default=False)  # Default false
+    OverrideTaskExtraInfoNames: Optional[bool] = field(default=False)  # Default false
 
-    TaskExtraInfoName: Any = field(
-        default_factory=partial(DeadlineIndexedVar, "TaskExtraInfoName"))
+    TaskExtraInfoName: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("TaskExtraInfoName"))
 
-    OutputFilename: Any = field(
-        default_factory=partial(DeadlineIndexedVar, "OutputFilename"))
-    OutputFilenameTile: str = field(
-        default_factory=partial(DeadlineIndexedVar, "OutputFilename{}Tile"))
-    OutputDirectory: str = field(
-        default_factory=partial(DeadlineIndexedVar, "OutputDirectory"))
+    OutputFilename: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("OutputFilename"))
+    OutputFilenameTile: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("OutputFilename{}Tile"))
+    OutputDirectory: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("OutputDirectory"))
 
-    AssetDependency: str = field(
-        default_factory=partial(DeadlineIndexedVar, "AssetDependency"))
+    AssetDependency: DeadlineIndexedVar = field(
+        default_factory=_partial_indexed("AssetDependency"))
 
     TileJob: bool = field(default=False)
     TileJobFrame: int = field(default=0)
@@ -456,15 +511,80 @@ class DeadlineJobInfo:
     MaintenanceJobStartFrame: int = field(default=0)
     MaintenanceJobEndFrame: int = field(default=0)
 
+    def __post_init__(self):
+        for attr_name in (
+            "JobDependencies",
+            "Whitelist",
+            "Blacklist",
+            "LimitGroups",
+        ):
+            value = getattr(self, attr_name)
+            if value is None:
+                continue
+            if not isinstance(value, list):
+                setattr(self, attr_name, value)
 
-@dataclass
-class AYONDeadlineJobInfo(DeadlineJobInfo):
-    """Contains additional AYON variables from Settings for internal logic."""
+        for attr_name in (
+            "ExtraInfo",
+            "TaskExtraInfoName",
+            "OutputFilename",
+            "OutputFilenameTile",
+            "OutputDirectory",
+            "AssetDependency",
+        ):
+            value = getattr(self, attr_name)
+            if value is None:
+                continue
+            if not isinstance(value, DeadlineIndexedVar):
+                setattr(self, attr_name, value)
 
-    # AYON custom fields used for Settings
-    UsePublished: Optional[bool] = field(default=None)
-    UseAssetDependencies: Optional[bool] = field(default=None)
-    UseWorkfileDependency: Optional[bool] = field(default=None)
+        for attr_name in (
+            "ExtraInfoKeyValue",
+            "EnvironmentKeyValue",
+        ):
+            value = getattr(self, attr_name)
+            if value is None:
+                continue
+            if not isinstance(value, DeadlineKeyValueVar):
+                setattr(self, attr_name, value)
+
+    def __setattr__(self, key, value):
+        if value is None:
+            super().__setattr__(key, value)
+            return
+
+        if key in (
+            "JobDependencies",
+            "Whitelist",
+            "Blacklist",
+            "LimitGroups",
+        ):
+            if isinstance(value, str):
+                value = value.split(",")
+
+        elif key in (
+            "ExtraInfo",
+            "TaskExtraInfoName",
+            "OutputFilename",
+            "OutputFilenameTile",
+            "OutputDirectory",
+            "AssetDependency",
+        ):
+            if not isinstance(value, DeadlineIndexedVar):
+                new_value = DeadlineIndexedVar(key)
+                new_value.update(value)
+                value = new_value
+
+        elif key in (
+            "ExtraInfoKeyValue",
+            "EnvironmentKeyValue",
+        ):
+            if not isinstance(value, DeadlineKeyValueVar):
+                new_value = DeadlineKeyValueVar(key)
+                new_value.update(value)
+                value = new_value
+
+        super().__setattr__(key, value)
 
     def serialize(self):
         """Return all data serialized as dictionary.
@@ -472,46 +592,39 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         Returns:
             OrderedDict: all serialized data.
 
-    """
-        def filter_data(a, v):
-            if isinstance(v, (DeadlineIndexedVar, DeadlineKeyValueVar)):
-                return False
-            if v is None:
-                return False
-            return True
+        """
+        output = {}
+        for field_item in fields(self):
+            self._fill_serialize_value(
+                field_item.name, getattr(self, field_item.name), output
+            )
+        return output
 
-        serialized = asdict(self)
-        serialized = {
-            k: v for k, v in serialized.items()
-            if filter_data(k, v)
-        }
+    def _fill_serialize_value(
+        self, key: str, value: Any, output: Dict[str, Any]
+    ) -> Any:
+        if isinstance(value, (DeadlineIndexedVar, DeadlineKeyValueVar)):
+            output.update(value.serialize())
+        elif isinstance(value, list):
+            output[key] = ",".join(value)
+        elif value is not None:
+            output[key] = value
 
-        # Custom serialize these attributes
-        for attribute in [
-            self.EnvironmentKeyValue,
-            self.ExtraInfo,
-            self.ExtraInfoKeyValue,
-            self.TaskExtraInfoName,
-            self.OutputFilename,
-            self.OutputFilenameTile,
-            self.OutputDirectory,
-            self.AssetDependency
-        ]:
-            serialized.update(attribute.serialize())
 
-        for attribute_key in [
-            "LimitGroups",
-            "Whitelist",
-            "Blacklist",
-        ]:
-            serialized[attribute_key] = ",".join(serialized[attribute_key])
+@dataclass
+class PublishDeadlineJobInfo(DeadlineJobInfo):
+    """Contains additional AYON variables from Settings for internal logic."""
 
-        return serialized
+    # AYON custom fields used for Settings
+    use_published: Optional[bool] = field(default=None)
+    use_asset_dependencies: Optional[bool] = field(default=None)
+    use_workfile_dependency: Optional[bool] = field(default=None)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'AYONDeadlineJobInfo':
-
-        implemented_field_values = {
+    def from_attribute_values(
+        cls, data: Dict[str, Any]
+    ) -> "Self":
+        return cls(**{
             "ChunkSize": data["chunk_size"],
             "Priority": data["priority"],
             "MachineLimit": data["machine_limit"],
@@ -522,17 +635,16 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
             "SecondaryPool": cls._sanitize(data["secondary_pool"]),
 
             # fields needed for logic, values unavailable during collection
-            "UsePublished": data["use_published"],
-            "UseAssetDependencies": data["use_asset_dependencies"],
-            "UseWorkfileDependency": data["use_workfile_dependency"]
-        }
-
-        return cls(**implemented_field_values)
+            "use_published": data["use_published"],
+            "use_asset_dependencies": data["use_asset_dependencies"],
+            "use_workfile_dependency": data["use_workfile_dependency"],
+        })
 
     def add_render_job_env_var(self):
         """Add required env vars for valid render job submission."""
-        for key, value in get_ayon_render_job_envs().items():
-            self.EnvironmentKeyValue[key] = value
+        self.EnvironmentKeyValue.update(
+            JobType.RENDER.get_job_env()
+        )
 
     def add_instance_job_env_vars(self, instance):
         """Add all job environments as specified on the instance and context
@@ -542,12 +654,18 @@ class AYONDeadlineJobInfo(DeadlineJobInfo):
         for key, value in get_instance_job_envs(instance).items():
             self.EnvironmentKeyValue[key] = value
 
-    def to_json(self) -> str:
-        """Serialize the dataclass instance to a JSON string."""
-        return json.dumps(asdict(self))
+    def _fill_serialize_value(
+        self, key: str, value: Any, output: Dict[str, Any]
+    ):
+        if key not in (
+            "use_published",
+            "use_asset_dependencies",
+            "use_workfile_dependency",
+        ):
+            super()._fill_serialize_value(key, value, output)
 
     @staticmethod
-    def _sanitize(value) -> str:
+    def _sanitize(value) -> "Union[str, List[str], None]":
         if isinstance(value, str):
             if value == "none":
                 return None
