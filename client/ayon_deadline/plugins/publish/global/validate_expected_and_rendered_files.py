@@ -1,11 +1,10 @@
 import os
-import requests
 from collections.abc import Iterable
 
 import pyblish.api
 import clique
 
-from ayon_deadline.abstract_submit_deadline import requests_get
+from ayon_core.pipeline import PublishValidationError
 
 
 class ValidateExpectedFiles(pyblish.api.InstancePlugin):
@@ -200,31 +199,15 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             (dict): Job info from Deadline
 
         """
-        deadline_url = instance.data["deadline"]["url"]
-        assert deadline_url, "Requires Deadline Webservice URL"
+        server_name = instance.data["deadline"]["serverName"]
+        if not server_name:
+            raise PublishValidationError(
+                "Deadline server name is not filled."
+            )
 
-        url = "{}/api/jobs?JobID={}".format(deadline_url, job_id)
-        try:
-            kwargs = {}
-            auth = instance.data["deadline"]["auth"]
-            if auth:
-                kwargs["auth"] = auth
-            response = requests_get(url, **kwargs)
-        except requests.exceptions.ConnectionError:
-            self.log.error("Deadline is not accessible at "
-                           "{}".format(deadline_url))
-            return {}
-
-        if not response.ok:
-            self.log.error("Submission failed!")
-            self.log.error(response.status_code)
-            self.log.error(response.content)
-            raise RuntimeError(response.text)
-
-        json_content = response.json()
-        if json_content:
-            return json_content.pop()
-        return {}
+        addons_manager = instance.context.data["ayonAddonsManager"]
+        deadline_addon = addons_manager["deadline"]
+        return deadline_addon.get_job_info(server_name, job_id)
 
     def _get_existing_files(self, staging_dir):
         """Returns set of existing file names from 'staging_dir'"""

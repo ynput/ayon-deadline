@@ -23,11 +23,7 @@ class CollectDefaultDeadlineServer(pyblish.api.ContextPlugin):
     targets = ["local"]
 
     def process(self, context):
-        try:
-            deadline_addon = context.data["ayonAddonsManager"]["deadline"]
-        except AttributeError:
-            self.log.error("Cannot get AYON Deadline addon.")
-            raise AssertionError("AYON Deadline addon not found.")
+        deadline_addon = context.data["ayonAddonsManager"]["deadline"]
 
         deadline_settings = context.data["project_settings"]["deadline"]
         deadline_server_name = deadline_settings["deadline_server"]
@@ -44,6 +40,7 @@ class CollectDefaultDeadlineServer(pyblish.api.ContextPlugin):
             default_dl_server_info = deadline_addon.deadline_servers_info[key]
             deadline_url = default_dl_server_info["value"]
 
-        context.data["deadline"] = {}
-        context.data["deadline"]["defaultUrl"] = (
-            deadline_url.strip().rstrip("/"))
+        context.data["deadline"] = {
+            "defaultUrl": deadline_url.strip().rstrip("/"),
+            "defaultServerName": deadline_server_name,
+        }
