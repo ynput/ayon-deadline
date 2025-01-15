@@ -40,6 +40,7 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             return
 
         if not instance.data.get("deadline"):
+            # reset if key is None or not available
             instance.data["deadline"] = {}
         deadline_info = instance.data["deadline"]
 
