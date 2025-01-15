@@ -5,6 +5,7 @@ from pathlib import Path
 from collections import OrderedDict
 from zipfile import ZipFile, is_zipfile
 import re
+import shutil
 
 import attr
 import pyblish.api
@@ -222,6 +223,10 @@ class HarmonySubmitDeadline(
     Renders are submitted to a Deadline Web Service as
     supplied via the environment variable ``DEADLINE_REST_URL``.
 
+    Harmony workfile is `.zip` file that needs to be unzipped for Deadline
+    first (DL expects unzipped folder). In case of use of published workfile,
+    `.zip` file is copied to `work/../renders` and unzipped there.
+
     Note:
         If Deadline configuration is not detected, this plugin will
         be disabled.
@@ -251,7 +256,8 @@ class HarmonySubmitDeadline(
     def _unzip_scene_file(self, published_scene: Path) -> Path:
         """Unzip scene zip file to its directory.
 
-        Unzip scene file (if it is zip file) to its current directory and
+        Unzip scene file (if it is zip file) to work area if dir if available,
+        if not to its current directory and
         return path to xstage file there. Xstage file is determined by its
         name.
 
@@ -268,6 +274,19 @@ class HarmonySubmitDeadline(
             self.log.error("Published scene is not in zip.")
             self.log.error(published_scene)
             raise AssertionError("invalid scene format")
+
+        # TODO eventually replace with registered_host().work_root or similar
+        workdir = os.environ.get("AYON_WORKDIR")
+        if workdir and os.path.exists(workdir):
+            renders_path = os.path.join(workdir, "renders", "harmony")
+            os.makedirs(renders_path, exist_ok=True)
+
+            self.log.info(f"Copying '{published_scene}' -> '{renders_path}'")
+            shutil.copy(published_scene.as_posix(), renders_path)
+            published_scene = Path(
+                os.path.join(renders_path), published_scene.name)
+            (self._instance.context.data["cleanupFullPaths"].
+             append(published_scene))
 
         xstage_path = (
             published_scene.parent
@@ -319,6 +338,9 @@ class HarmonySubmitDeadline(
 
         # for submit_publish job to create .json file in
         self._instance.data["outputDir"] = render_path
+        # to let DL Explore Output
+        # TODO update this when #79 is fixed
+        self.job_info.OutputDirectory[0] = render_path.as_posix()
         new_expected_files = []
         render_path_str = str(render_path.as_posix())
         for file in self._instance.data["expectedFiles"]:
