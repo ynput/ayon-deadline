@@ -108,7 +108,7 @@ class AbstractSubmitDeadline(
             context.data["currentFile"],
             job_info.use_published
         )
-        self.job_info = self._append_job_output(
+        self._append_job_output(
             instance,
             self.job_info
         )
@@ -170,8 +170,6 @@ class AbstractSubmitDeadline(
         first_file = next(iter_expected_files(instance.data["expectedFiles"]))
         job_info.OutputDirectory += os.path.dirname(first_file)
         job_info.OutputFilename += os.path.basename(first_file)
-
-        return job_info
 
     def process_submission(self):
         """Process data for submission.
