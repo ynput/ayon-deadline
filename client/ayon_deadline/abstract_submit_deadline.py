@@ -108,7 +108,7 @@ class AbstractSubmitDeadline(
             context.data["currentFile"],
             job_info.use_published
         )
-        self.job_info = self._set_job_output(
+        self.job_info = self._append_job_output(
             instance,
             self.job_info
         )
@@ -161,7 +161,7 @@ class AbstractSubmitDeadline(
         self.scene_path = file_path
         self.log.info("Using {} for render/export.".format(file_path))
 
-    def _set_job_output(self, instance, job_info):
+    def _append_job_output(self, instance, job_info):
         """Set output part to Job info
 
         'expectedFiles' might be remapped after `_set_scene_path`
