@@ -108,6 +108,10 @@ class AbstractSubmitDeadline(
             context.data["currentFile"],
             job_info.use_published
         )
+        self.job_info = self._set_job_output(
+            instance,
+            self.job_info
+        )
         self.plugin_info = self.get_plugin_info()
 
         self.aux_files = self.get_aux_files()
@@ -157,6 +161,18 @@ class AbstractSubmitDeadline(
         self.scene_path = file_path
         self.log.info("Using {} for render/export.".format(file_path))
 
+    def _set_job_output(self, instance, job_info):
+        """Set output part to Job info
+
+        'expectedFiles' might be remapped after `_set_scene_path`
+        Used in JobOutput > Explore output
+        """
+        first_file = next(iter_expected_files(instance.data["expectedFiles"]))
+        job_info.OutputDirectory += os.path.dirname(first_file)
+        job_info.OutputFilename += os.path.basename(first_file)
+
+        return job_info
+
     def process_submission(self):
         """Process data for submission.
 
@@ -194,11 +210,6 @@ class AbstractSubmitDeadline(
             job_info.Pool = job_info.Pool
         if job_info.SecondaryPool != "none":
             job_info.SecondaryPool = job_info.SecondaryPool
-
-        exp = instance.data.get("expectedFiles")
-        for filepath in iter_expected_files(exp):
-            job_info.OutputDirectory += os.path.dirname(filepath)
-            job_info.OutputFilename += os.path.basename(filepath)
 
         # Adding file dependencies.
         if not is_in_tests() and job_info.use_asset_dependencies:
