@@ -110,10 +110,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             if saver_instance is instance:
                 continue
 
-            exp = instance.data.get("expectedFiles")
-            for filepath in iter_expected_files(exp):
-                job_info.OutputDirectory += os.path.dirname(filepath)
-                job_info.OutputFilename += os.path.basename(filepath)
+            job_info = self._set_job_output(instance, job_info)
 
         return job_info
 
