@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 from copy import deepcopy
 from typing import Optional
+import clique
 
 import requests
 import pyblish.api
@@ -167,9 +168,19 @@ class AbstractSubmitDeadline(
         'expectedFiles' might be remapped after `_set_scene_path`
         Used in JobOutput > Explore output
         """
-        first_file = next(iter_expected_files(instance.data["expectedFiles"]))
-        job_info.OutputDirectory += os.path.dirname(first_file)
-        job_info.OutputFilename += os.path.basename(first_file)
+        collections, remainder = clique.assemble(
+            iter_expected_files(instance.data["expectedFiles"]),
+            assume_padded_when_ambiguous=True)
+        paths = []
+        for collection in collections:
+            padding = "#" * collection.padding
+            path = collection.format(f"{{head}}{padding}{{tail}}")
+            paths.append(path)
+        paths.extend(remainder)
+
+        for path in paths:
+            job_info.OutputDirectory += os.path.dirname(path)
+            job_info.OutputFilename += os.path.basename(path)
 
     def process_submission(self):
         """Process data for submission.
