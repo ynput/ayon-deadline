@@ -1,9 +1,8 @@
-import os
 from dataclasses import dataclass, field, asdict
+
 import pyblish.api
 
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
-from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_deadline import abstract_submit_deadline
 
 
