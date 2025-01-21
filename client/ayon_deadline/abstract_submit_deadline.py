@@ -157,16 +157,6 @@ class AbstractSubmitDeadline(
         self.scene_path = file_path
         self.log.info("Using {} for render/export.".format(file_path))
 
-    def __append_job_output_paths(self, instance, job_info):
-        """Set output part to Job info
-
-        'expectedFiles' might be remapped after `_set_scene_path`
-        Used in JobOutput > Explore output
-        """
-        first_file = next(iter_expected_files(instance.data["expectedFiles"]))
-        job_info.OutputDirectory += os.path.dirname(first_file)
-        # job_info.OutputFilename += os.path.basename(first_file)
-
     def process_submission(self):
         """Process data for submission.
 
