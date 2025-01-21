@@ -20,6 +20,11 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
         "FTRACK_API_USER",
         "FTRACK_SERVER",
 
+        # kitsu addon
+        "KITSU_SERVER",
+        "KITSU_LOGIN",
+        "KITSU_PWD",
+
         # Shotgrid / Flow addon
         "OPENPYPE_SG_USER",
 

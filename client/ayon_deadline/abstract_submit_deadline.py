@@ -352,7 +352,7 @@ class AbstractSubmitDeadline(
         try:
             result = response.json()
         except JSONDecodeError:
-            msg = "Broken response {}. ".format(response)
+            msg = f"Broken response {response.text}. "
             msg += "Try restarting the Deadline Webservice."
             self.log.warning(msg, exc_info=True)
             raise KnownPublishError("Broken response from DL")
