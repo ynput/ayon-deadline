@@ -165,7 +165,8 @@ class AbstractSubmitDeadline(
     def _append_job_output_paths(self, instance, job_info):
         """Set output part to Job info
 
-        'expectedFiles' might be remapped after `_set_scene_path`
+        Note: 'expectedFiles' might be remapped after `_set_scene_path`
+            due to remapping workfile to published workfile.
         Used in JobOutput > Explore output
         """
         collections, remainder = clique.assemble(
