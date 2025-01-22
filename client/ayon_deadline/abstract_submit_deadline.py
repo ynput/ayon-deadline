@@ -170,7 +170,8 @@ class AbstractSubmitDeadline(
         """
         collections, remainder = clique.assemble(
             iter_expected_files(instance.data["expectedFiles"]),
-            assume_padded_when_ambiguous=True)
+            assume_padded_when_ambiguous=True,
+            patterns=[clique.PATTERNS["frames"]])
         paths = []
         for collection in collections:
             padding = "#" * collection.padding
