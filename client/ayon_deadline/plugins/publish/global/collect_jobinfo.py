@@ -293,13 +293,13 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             EnumDef(
                 "primary_pool",
                 label="Primary pool",
-                default=default_values.get("primary_pool"),
+                default=default_values.get("primary_pool", "none"),
                 items=cls.pool_enum_values,
             ),
             EnumDef(
                 "secondary_pool",
                 label="Secondary pool",
-                default=default_values.get("secondary_pool"),
+                default=default_values.get("secondary_pool", "none"),
                 items=cls.pool_enum_values,
             ),
             EnumDef(
