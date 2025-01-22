@@ -1,9 +1,8 @@
-import os
 from dataclasses import dataclass, field, asdict
+
 import pyblish.api
 
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
-from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_deadline import abstract_submit_deadline
 
 
@@ -110,10 +109,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             if saver_instance is instance:
                 continue
 
-            exp = instance.data.get("expectedFiles")
-            for filepath in iter_expected_files(exp):
-                job_info.OutputDirectory += os.path.dirname(filepath)
-                job_info.OutputFilename += os.path.basename(filepath)
+            self._append_job_output_paths(instance, job_info)
 
         return job_info
 

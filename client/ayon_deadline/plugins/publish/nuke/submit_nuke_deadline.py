@@ -73,6 +73,11 @@ class NukeSubmitDeadline(
         self._set_scene_path(
             context.data["currentFile"], job_info.use_published)
 
+        self._append_job_output_paths(
+            instance,
+            self.job_info
+        )
+
         self.plugin_info = self.get_plugin_info(
             scene_path=self.scene_path,
             render_path=render_path,

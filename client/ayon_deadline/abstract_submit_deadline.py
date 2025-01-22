@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 from copy import deepcopy
 from typing import Optional
+import clique
 
 import requests
 import pyblish.api
@@ -108,6 +109,10 @@ class AbstractSubmitDeadline(
             context.data["currentFile"],
             job_info.use_published
         )
+        self._append_job_output_paths(
+            instance,
+            self.job_info
+        )
         self.plugin_info = self.get_plugin_info()
 
         self.aux_files = self.get_aux_files()
@@ -157,6 +162,28 @@ class AbstractSubmitDeadline(
         self.scene_path = file_path
         self.log.info("Using {} for render/export.".format(file_path))
 
+    def _append_job_output_paths(self, instance, job_info):
+        """Set output part to Job info
+
+        Note: 'expectedFiles' might be remapped after `_set_scene_path`
+            due to remapping workfile to published workfile.
+        Used in JobOutput > Explore output
+        """
+        collections, remainder = clique.assemble(
+            iter_expected_files(instance.data["expectedFiles"]),
+            assume_padded_when_ambiguous=True,
+            patterns=[clique.PATTERNS["frames"]])
+        paths = []
+        for collection in collections:
+            padding = "#" * collection.padding
+            path = collection.format(f"{{head}}{padding}{{tail}}")
+            paths.append(path)
+        paths.extend(remainder)
+
+        for path in paths:
+            job_info.OutputDirectory += os.path.dirname(path)
+            job_info.OutputFilename += os.path.basename(path)
+
     def process_submission(self):
         """Process data for submission.
 
@@ -194,11 +221,6 @@ class AbstractSubmitDeadline(
             job_info.Pool = job_info.Pool
         if job_info.SecondaryPool != "none":
             job_info.SecondaryPool = job_info.SecondaryPool
-
-        exp = instance.data.get("expectedFiles")
-        for filepath in iter_expected_files(exp):
-            job_info.OutputDirectory += os.path.dirname(filepath)
-            job_info.OutputFilename += os.path.basename(filepath)
 
         # Adding file dependencies.
         if not is_in_tests() and job_info.use_asset_dependencies:
