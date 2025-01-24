@@ -220,7 +220,11 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             "SingleFrameOnly": "True" if single_frame_only else "False",
         }
         return self.submit_job(
-            server_name, plugin_info, job_info, aux_files
+            server_name,
+            plugin_info,
+            job_info,
+            aux_files,
+            local_settings=local_settings
         )
 
     def get_deadline_server_connection_info(
