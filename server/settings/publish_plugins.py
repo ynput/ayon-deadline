@@ -270,19 +270,19 @@ class AOVFilterSubmodel(BaseSettingsModel):
 class ProcessCacheJobFarmModel(BaseSettingsModel):
     """Process submitted job on farm."""
 
-    deadline_department: str = SettingsField(title="Department")
-    deadline_pool: str = SettingsField(title="Pool")
-    deadline_group: str = SettingsField(title="Group")
     deadline_priority: int = SettingsField(title="Priority")
+    deadline_group: str = SettingsField(title="Group")
+    deadline_pool: str = SettingsField(title="Pool")
+    deadline_department: str = SettingsField(title="Department")
 
 
 class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
     """Process submitted job on farm."""
 
-    deadline_department: str = SettingsField(title="Department")
-    deadline_pool: str = SettingsField(title="Pool")
-    deadline_group: str = SettingsField(title="Group")
     deadline_priority: int = SettingsField(title="Priority")
+    deadline_group: str = SettingsField(title="Group")
+    deadline_pool: str = SettingsField(title="Pool")
+    deadline_department: str = SettingsField(title="Department")
     skip_integration_repre_list: list[str] = SettingsField(
         default_factory=list,
         title="Skip integration of representation with ext"
@@ -454,16 +454,16 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "use_gpu": True
     },
     "ProcessSubmittedCacheJobOnFarm": {
-        "deadline_department": "",
-        "deadline_pool": "",
+        "deadline_priority": 50,
         "deadline_group": "",
-        "deadline_priority": 50
+        "deadline_pool": "",
+        "deadline_department": "",
     },
     "ProcessSubmittedJobOnFarm": {
-        "deadline_department": "",
-        "deadline_pool": "",
-        "deadline_group": "",
         "deadline_priority": 50,
+        "deadline_group": "",
+        "deadline_pool": "",
+        "deadline_department": "",
         "skip_integration_repre_list": [],
         "families_transfer": ["render3d", "render2d", "slate"],
         "aov_filter": [
