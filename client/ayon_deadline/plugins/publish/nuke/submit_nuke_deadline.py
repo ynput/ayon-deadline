@@ -107,7 +107,7 @@ class NukeSubmitDeadline(
                 # frames_farm instance doesn't have render submission
                 if response_data.get("_id"):
                     self.job_info.BatchName = response_data["Props"]["Batch"]
-                    self.job_info.JobDependency0 = response_data["_id"]
+                    self.job_info.JobDependencies.append(response_data["_id"])
 
                 render_path = baking_script["bakeRenderPath"]
                 scene_path = baking_script["bakeScriptPath"]
