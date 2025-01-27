@@ -431,6 +431,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if audio_file and os.path.isfile(audio_file):
             publish_job.update({"audio": audio_file})
 
+        self.log.debug(f"Writing metadata json to '{metadata_path}'")
         with open(metadata_path, "w") as f:
             json.dump(publish_job, f, indent=4, sort_keys=True)
 
