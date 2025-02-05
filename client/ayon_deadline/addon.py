@@ -91,11 +91,11 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             con_info = self.get_deadline_server_connection_info(
                 server_name, local_settings
             )
-            server_url, auth = con_info.url, con_info.auth
-            pools = get_deadline_pools(server_url, auth)
-            groups = get_deadline_groups(server_url, auth)
-            limit_groups = get_deadline_limit_groups(server_url, auth)
-            machines = get_deadline_workers(server_url, auth)
+            server_url, auth, verify = con_info.url, con_info.auth, con_info.verify
+            pools = get_deadline_pools(server_url, auth, verify=verify)
+            groups = get_deadline_groups(server_url, auth, verify=verify)
+            limit_groups = get_deadline_limit_groups(server_url, auth, verify=verify)
+            machines = get_deadline_workers(server_url, auth, verify=verify)
             server_info = DeadlineServerInfo(
                 pools=pools,
                 limit_groups=limit_groups,

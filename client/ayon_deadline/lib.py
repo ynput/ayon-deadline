@@ -82,7 +82,8 @@ class JobType(str, Enum):
 def get_deadline_pools(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None
+    log: Optional[Logger] = None,
+    verify: Optional[bool] = None,
 ) -> List[str]:
     """Get pools from Deadline API.
 
@@ -91,7 +92,8 @@ def get_deadline_pools(
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
         log (Optional[Logger]): Logger to log errors to, if provided.
-
+        verify(Optional[bool]): Whether to verify the TLS certificate
+            of the Deadline Web Service.
     Returns:
         List[str]: Limit Groups.
 
@@ -100,13 +102,14 @@ def get_deadline_pools(
 
     """
     endpoint = f"{webservice_url}/api/pools?NamesOnly=true"
-    return _get_deadline_info(endpoint, auth, log, "pools")
+    return _get_deadline_info(endpoint, auth, log, verify, "pools")
 
 
 def get_deadline_groups(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None
+    log: Optional[Logger] = None,
+    verify: Optional[bool] = None,
 ) -> List[str]:
     """Get Groups from Deadline API.
 
@@ -115,7 +118,8 @@ def get_deadline_groups(
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
         log (Optional[Logger]): Logger to log errors to, if provided.
-
+        verify(Optional[bool]): Whether to verify the TLS certificate
+            of the Deadline Web Service.
     Returns:
         List[str]: Limit Groups.
 
@@ -124,13 +128,14 @@ def get_deadline_groups(
 
     """
     endpoint = f"{webservice_url}/api/groups"
-    return _get_deadline_info(endpoint, auth, log, "groups")
+    return _get_deadline_info(endpoint, auth, log, verify, "groups")
 
 
 def get_deadline_limit_groups(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None
+    log: Optional[Logger] = None,
+    verify: Optional[bool] = None,
 ) -> List[str]:
     """Get Limit Groups from Deadline API.
 
@@ -139,7 +144,8 @@ def get_deadline_limit_groups(
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
         log (Optional[Logger]): Logger to log errors to, if provided.
-
+        verify(Optional[bool]): Whether to verify the TLS certificate
+            of the Deadline Web Service.
     Returns:
         List[str]: Limit Groups.
 
@@ -148,12 +154,13 @@ def get_deadline_limit_groups(
 
     """
     endpoint = f"{webservice_url}/api/limitgroups?NamesOnly=true"
-    return _get_deadline_info(endpoint, auth, log, "limitgroups")
+    return _get_deadline_info(endpoint, auth, log, verify, "limitgroups")
 
 def get_deadline_workers(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None
+    log: Optional[Logger] = None,
+    verify: Optional[bool] = None,
 ) -> List[str]:
     """Get Workers (eg.machine names) from Deadline API.
 
@@ -162,7 +169,8 @@ def get_deadline_workers(
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
         log (Optional[Logger]): Logger to log errors to, if provided.
-
+        verify(Optional[bool]): Whether to verify the TLS certificate
+            of the Deadline Web Service.
     Returns:
         List[str]: Limit Groups.
 
@@ -171,14 +179,15 @@ def get_deadline_workers(
 
     """
     endpoint = f"{webservice_url}/api/slaves?NamesOnly=true"
-    return _get_deadline_info(endpoint, auth, log, "workers")
+    return _get_deadline_info(endpoint, auth, log, verify, "workers")
 
 
 def _get_deadline_info(
-    endpoint,
-    auth,
-    log,
-    item_type
+    endpoint: str,
+    auth: Optional[Tuple[str, str]],
+    log: Optional[Logger],
+    verify: Optional[bool],
+    item_type: str,
 ):
     from .abstract_submit_deadline import requests_get
 
@@ -187,6 +196,8 @@ def _get_deadline_info(
 
     try:
         kwargs = {}
+        if verify is not None:
+            kwargs["verify"] = verify
         if auth:
             kwargs["auth"] = auth
         response = requests_get(endpoint, **kwargs)
