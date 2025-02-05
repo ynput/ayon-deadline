@@ -176,7 +176,6 @@ class AbstractSubmitDeadline(
             due to remapping workfile to published workfile.
         Used in JobOutput > Explore output
         """
-        self.log.info(f"paths::{instance.data['expectedFiles']}")
         collections, remainder = clique.assemble(
             iter_expected_files(instance.data["expectedFiles"]),
             assume_padded_when_ambiguous=True,
@@ -187,7 +186,7 @@ class AbstractSubmitDeadline(
             path = collection.format(f"{{head}}{padding}{{tail}}")
             paths.append(path)
         paths.extend(remainder)
-        self.log.info(f"paths::{paths}")
+
         for path in paths:
             job_info.OutputDirectory += os.path.dirname(path)
             job_info.OutputFilename += os.path.basename(path)
