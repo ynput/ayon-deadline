@@ -82,8 +82,8 @@ class JobType(str, Enum):
 def get_deadline_pools(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None,
     verify: Optional[bool] = None,
+    log: Optional[Logger] = None,
 ) -> List[str]:
     """Get pools from Deadline API.
 
@@ -91,9 +91,9 @@ def get_deadline_pools(
         webservice_url (str): Server url.
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
-        log (Optional[Logger]): Logger to log errors to, if provided.
         verify(Optional[bool]): Whether to verify the TLS certificate
             of the Deadline Web Service.
+        log (Optional[Logger]): Logger to log errors to, if provided.
     Returns:
         List[str]: Limit Groups.
 
@@ -102,14 +102,14 @@ def get_deadline_pools(
 
     """
     endpoint = f"{webservice_url}/api/pools?NamesOnly=true"
-    return _get_deadline_info(endpoint, auth, log, verify, "pools")
+    return _get_deadline_info(endpoint, auth, verify, "pools", log)
 
 
 def get_deadline_groups(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None,
     verify: Optional[bool] = None,
+    log: Optional[Logger] = None,
 ) -> List[str]:
     """Get Groups from Deadline API.
 
@@ -117,9 +117,9 @@ def get_deadline_groups(
         webservice_url (str): Server url.
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
-        log (Optional[Logger]): Logger to log errors to, if provided.
         verify(Optional[bool]): Whether to verify the TLS certificate
             of the Deadline Web Service.
+        log (Optional[Logger]): Logger to log errors to, if provided.
     Returns:
         List[str]: Limit Groups.
 
@@ -128,14 +128,14 @@ def get_deadline_groups(
 
     """
     endpoint = f"{webservice_url}/api/groups"
-    return _get_deadline_info(endpoint, auth, log, verify, "groups")
+    return _get_deadline_info(endpoint, auth, verify, "groups", log)
 
 
 def get_deadline_limit_groups(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None,
     verify: Optional[bool] = None,
+    log: Optional[Logger] = None,
 ) -> List[str]:
     """Get Limit Groups from Deadline API.
 
@@ -143,9 +143,9 @@ def get_deadline_limit_groups(
         webservice_url (str): Server url.
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
-        log (Optional[Logger]): Logger to log errors to, if provided.
         verify(Optional[bool]): Whether to verify the TLS certificate
             of the Deadline Web Service.
+        log (Optional[Logger]): Logger to log errors to, if provided.
     Returns:
         List[str]: Limit Groups.
 
@@ -154,13 +154,13 @@ def get_deadline_limit_groups(
 
     """
     endpoint = f"{webservice_url}/api/limitgroups?NamesOnly=true"
-    return _get_deadline_info(endpoint, auth, log, verify, "limitgroups")
+    return _get_deadline_info(endpoint, auth, verify, "limitgroups", log)
 
 def get_deadline_workers(
     webservice_url: str,
     auth: Optional[Tuple[str, str]] = None,
-    log: Optional[Logger] = None,
     verify: Optional[bool] = None,
+    log: Optional[Logger] = None,
 ) -> List[str]:
     """Get Workers (eg.machine names) from Deadline API.
 
@@ -168,9 +168,9 @@ def get_deadline_workers(
         webservice_url (str): Server url.
         auth (Optional[Tuple[str, str]]): Tuple containing username,
             password
-        log (Optional[Logger]): Logger to log errors to, if provided.
         verify(Optional[bool]): Whether to verify the TLS certificate
             of the Deadline Web Service.
+        log (Optional[Logger]): Logger to log errors to, if provided.
     Returns:
         List[str]: Limit Groups.
 
@@ -179,15 +179,15 @@ def get_deadline_workers(
 
     """
     endpoint = f"{webservice_url}/api/slaves?NamesOnly=true"
-    return _get_deadline_info(endpoint, auth, log, verify, "workers")
+    return _get_deadline_info(endpoint, auth, verify, "workers", log)
 
 
 def _get_deadline_info(
     endpoint: str,
     auth: Optional[Tuple[str, str]],
-    log: Optional[Logger],
     verify: Optional[bool],
     item_type: str,
+    log: Optional[Logger],
 ):
     from .abstract_submit_deadline import requests_get
 

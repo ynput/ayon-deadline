@@ -39,7 +39,7 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
             deadline_addon,
             deadline_url,
             instance.data["deadline"].get("auth"),
-            verify=instance.data["deadline"]["verify"]
+            instance.data["deadline"]["verify"]
         )
 
         invalid_pools = {}
