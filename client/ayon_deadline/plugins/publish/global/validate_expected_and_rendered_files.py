@@ -5,7 +5,7 @@ import pyblish.api
 import clique
 
 from ayon_core.pipeline import PublishValidationError
-from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 
 
 class ValidateExpectedFiles(pyblish.api.InstancePlugin):
