@@ -107,7 +107,8 @@ class AbstractSubmitDeadline(
 
         self._set_scene_path(
             context.data["currentFile"],
-            job_info.use_published
+            job_info.use_published,
+            instance.data.get("stagingDir_is_custom", False)
         )
         self._append_job_output_paths(
             instance,
@@ -144,12 +145,18 @@ class AbstractSubmitDeadline(
             instance.data["deadline"]["job_info"] = deepcopy(render_job_info)
             self.log.info("Render job id: %s", render_job_id)
 
-    def _set_scene_path(self, current_file, use_published):
+    def _set_scene_path(
+        self,
+        current_file,
+        use_published,
+        has_custom_staging_dir
+    ):
         """Points which workfile should be rendered"""
         file_path = None
         if use_published:
             if not self.import_reference:  # TODO remove or implement
-                file_path = self.from_published_scene()
+                file_path = self.from_published_scene(
+                    replace_in_path=not has_custom_staging_dir)
             else:
                 self.log.info(
                     "use the scene with imported reference for rendering")
