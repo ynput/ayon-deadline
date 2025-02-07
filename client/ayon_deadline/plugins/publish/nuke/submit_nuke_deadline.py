@@ -71,7 +71,10 @@ class NukeSubmitDeadline(
         self.job_info = self.get_job_info(job_info=job_info)
 
         self._set_scene_path(
-            context.data["currentFile"], job_info.use_published)
+            context.data["currentFile"],
+            job_info.use_published,
+            instance.data.get("stagingDir_is_custom", False)
+        )
 
         self._append_job_output_paths(
             instance,
