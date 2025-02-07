@@ -583,9 +583,11 @@ def inject_ayon_environment(deadlinePlugin):
             "AYON_BUNDLE_NAME": ayon_bundle_name,
         }
 
-        automatic_tests = job.GetJobEnvironmentKeyValue("AYON_IN_TESTS")
-        if automatic_tests:
-            environment["AYON_IN_TESTS"] = automatic_tests
+        for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
+            value = job.GetJobEnvironmentKeyValue(key)
+            if value:
+                environment[key] = value
+
         for env, val in environment.items():
             # Add the env var for the Render Plugin that is about to render
             deadlinePlugin.SetEnvironmentVariable(env, val)
