@@ -202,6 +202,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         # TODO remove when AYON launcher respects environment variable
         #   'AYON_DEFAULT_SETTINGS_VARIANT'
         settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
+        # NOTE is removed from ayon-core, but still required by
+        #   GlobalPreLoadJob.py
+        environment["AYON_DEFAULT_SETTINGS_VARIANT"] = settings_variant
         if settings_variant == "staging":
             args.append("--use-staging")
         elif settings_variant != "production":
