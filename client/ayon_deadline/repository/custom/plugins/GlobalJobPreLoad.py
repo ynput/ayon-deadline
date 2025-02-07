@@ -558,8 +558,12 @@ def inject_ayon_environment(deadlinePlugin):
         ]
 
         # staging requires passing argument
-        # TODO could be switched to env var after https://github.com/ynput/ayon-launcher/issues/123
-        settings_variant = job.GetJobEnvironmentKeyValue("AYON_DEFAULT_SETTINGS_VARIANT")  # noqa
+        # TODO could be removed when PR in ayon-core starts to fill
+        #  'AYON_USE_STAGING' (https://github.com/ynput/ayon-core/pull/1130)
+        #  - add requirement for "core>=1.1.1" to 'package.py' when removed
+        settings_variant = job.GetJobEnvironmentKeyValue(
+            "AYON_DEFAULT_SETTINGS_VARIANT"
+        )
         if settings_variant == "staging":
             args.append("--use-staging")
 
