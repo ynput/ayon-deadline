@@ -187,11 +187,9 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
         collections, remainder = clique.assemble(
             files, minimum_items=1, patterns=patterns)
         if collections:
-            self.log.info(f"collections::{collections}")
             return collections[0]
         else:
             # No sequence detected, we assume single frame
-            self.log.info(f"remainder::{remainder}")
             return remainder[0]
 
     def _get_job_info(self, instance, job_id):
