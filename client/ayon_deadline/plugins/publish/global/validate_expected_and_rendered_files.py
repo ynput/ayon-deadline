@@ -5,7 +5,7 @@ import pyblish.api
 import clique
 
 from ayon_core.pipeline import PublishValidationError
-from ayon_core.lib.transcoding import VIDEO_EXTENSIONS
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 
 
 class ValidateExpectedFiles(pyblish.api.InstancePlugin):
@@ -42,8 +42,8 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             staging_dir = repre["stagingDir"]
             existing_files = self._get_existing_files(staging_dir)
 
-            is_video = f'.{repre["ext"]}' in VIDEO_EXTENSIONS
-            if self.allow_user_override and not is_video:
+            is_image = f'.{repre["ext"]}' in IMAGE_EXTENSIONS
+            if self.allow_user_override and is_image:
                 expected_files = self._recalculate_expected_files(
                     expected_files, frame_list, repre)
 
