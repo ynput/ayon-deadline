@@ -153,7 +153,7 @@ class UnrealSubmitDeadline(
                 break
         return change_list_version
 
-    def update_perforce_data(
+    def _update_perforce_data(
         self,
         scene_path,
         workspace_dir,
