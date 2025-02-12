@@ -42,7 +42,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             staging_dir = repre["stagingDir"]
             existing_files = self._get_existing_files(staging_dir)
 
-            is_image = self._is_image(repre, expected_files)
+            is_image = f'.{repre["ext"]}' in IMAGE_EXTENSIONS
             if self.allow_user_override and is_image:
                 expected_files = self._recalculate_expected_files(
                     expected_files, frame_list, repre)
@@ -60,14 +60,6 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
                         sorted(existing_files)
                     )
                 )
-
-    def _is_image(self, repre, expected_files):
-        ext = repre.get("ext")  # repre.ext might not be required
-        if not ext:
-            _, ext = os.path.splitext(expected_files[0])
-            ext = ext.lstrip(".")
-
-        return f'.{ext}' in IMAGE_EXTENSIONS
 
     def _recalculate_expected_files(self, expected_files, frame_list, repre):
         # We always check for user override because the user might have
