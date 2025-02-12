@@ -494,7 +494,6 @@ def inject_ayon_environment(deadlinePlugin):
         # Deadline Repository AYON Plug-in settings, in the format of
         # `SERVER:PORT@APIKEY` per line.
         elif job_ayon_server_url and job_ayon_server_url != ayon_server_url:
-            ayon_server_url = job_ayon_server_url
             api_key = get_ayon_api_key_from_additional_servers(
                 config, job_ayon_server_url)
             if api_key:
@@ -508,6 +507,7 @@ def inject_ayon_environment(deadlinePlugin):
                     " Falling back to default API key configured in"
                     " Deadline repository for the AYON plug-in."
                 )
+            ayon_server_url = job_ayon_server_url
 
         if not all([ayon_server_url, ayon_api_key]):
             raise RuntimeError((
