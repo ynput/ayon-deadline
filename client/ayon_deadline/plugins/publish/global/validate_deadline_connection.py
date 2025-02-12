@@ -24,7 +24,10 @@ class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
         deadline_url = instance.data["deadline"]["url"]
         assert deadline_url, "Requires Deadline Webservice URL"
 
-        kwargs = {}
+        kwargs = {
+            "verify": instance.data["deadline"]["verify"]
+        }
+
         if instance.data["deadline"]["require_authentication"]:
             auth = instance.data["deadline"]["auth"]
             kwargs["auth"] = auth

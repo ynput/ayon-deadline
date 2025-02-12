@@ -75,7 +75,7 @@ class AfterEffectsSubmitDeadline(
 
         return asdict(deadline_plugin_info)
 
-    def from_published_scene(self):
+    def from_published_scene(self, replace_in_path=True):
         """ Do not overwrite expected files.
 
             Use published is set to True, so rendering will be triggered
