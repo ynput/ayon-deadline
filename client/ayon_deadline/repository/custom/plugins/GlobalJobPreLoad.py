@@ -464,13 +464,13 @@ def inject_ayon_environment(deadlinePlugin):
 
         if not exe:
             raise RuntimeError((
-               "Ayon executable was not found in the semicolon "
+               "AYON executable was not found in the semicolon "
                "separated list \"{}\"."
                "The path to the render executable can be configured"
                " from the Plugin Configuration in the Deadline Monitor."
             ).format(exe_list))
 
-        print("--- Ayon executable: {}".format(exe))
+        print("--- AYON executable: {}".format(exe))
 
         ayon_bundle_name = job.GetJobEnvironmentKeyValue("AYON_BUNDLE_NAME")
         if not ayon_bundle_name:
@@ -512,7 +512,7 @@ def inject_ayon_environment(deadlinePlugin):
         if not all([ayon_server_url, ayon_api_key]):
             raise RuntimeError((
                 "Missing required values for server url and api key. "
-                "Please fill in Ayon Deadline plugin or provide by "
+                "Please fill in AYON Deadline plugin or provide by "
                 "AYON_SERVER_URL and AYON_API_KEY"
             ))
 
@@ -660,7 +660,7 @@ def get_ayon_executable():
     if not exe_list:
         raise RuntimeError(
             "Path to AYON executable not configured."
-            "Please set it in Ayon Deadline Plugin."
+            "Please set it in AYON Deadline Plugin."
         )
 
     # clean '\ ' for MacOS pasting

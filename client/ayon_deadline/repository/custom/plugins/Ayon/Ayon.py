@@ -30,7 +30,7 @@ def CleanupDeadlinePlugin(deadlinePlugin):
 
 class AyonDeadlinePlugin(DeadlinePlugin):
     """
-        Standalone plugin for publishing from Ayon
+        Standalone plugin for publishing from AYON
 
         Calls Ayonexecutable 'ayon_console' from first correctly found
         file based on plugin configuration. Uses 'publish' command and passes
@@ -68,9 +68,9 @@ class AyonDeadlinePlugin(DeadlinePlugin):
     def RenderExecutable(self):
         job = self.GetJob()
 
-        # set required env vars for Ayon
+        # set required env vars for AYON
         # cannot be in InitializeProcess as it is too soon
-        config = RepositoryUtils.GetPluginConfig("Ayon")
+        config = RepositoryUtils.GetPluginConfig("Ayon")  # plugin name stays
         ayon_server_url = (
                 job.GetJobEnvironmentKeyValue("AYON_SERVER_URL") or
                 config.GetConfigEntryWithDefault("AyonServerUrl", "")
@@ -104,7 +104,7 @@ class AyonDeadlinePlugin(DeadlinePlugin):
 
         if exe == "":
             self.FailRender(
-                "Ayon executable was not found in the semicolon separated "
+                "AYON executable was not found in the semicolon separated "
                 "list: \"{}\". The path to the render executable can be "
                 "configured from the Plugin Configuration in the Deadline "
                 "Monitor.".format(exe_list)
