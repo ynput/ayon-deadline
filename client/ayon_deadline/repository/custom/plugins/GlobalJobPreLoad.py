@@ -500,12 +500,12 @@ def inject_ayon_environment(deadlinePlugin):
                 ayon_api_key = api_key
             else:
                 print(
-                    "AYON Server URL submitted with job"
-                    f" '{job_ayon_server_url}' is not the Deadline AYON"
-                    f" Plug-in default server URL '{ayon_server_url}' but"
-                    " has no API key defined in Additional Server URLs."
-                    " Falling back to default API key configured in"
-                    " Deadline repository for the AYON plug-in."
+                    "AYON Server URL submitted with job "
+                    f"'{job_ayon_server_url}' has no API key defined "
+                    "in `Additional AYON Servers` in AYON Deadline plugin " 
+                    "configuration in Deadline repository. "
+                    "Falling back to `Ayon API key` set in `Ayon Credentials`"
+                    " section of AYON plugin configuration."
                 )
             ayon_server_url = job_ayon_server_url
 
