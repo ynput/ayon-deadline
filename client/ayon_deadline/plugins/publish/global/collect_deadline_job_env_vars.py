@@ -30,6 +30,10 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
 
         # Not sure how this is usefull for farm, scared to remove
         "PYBLISHPLUGINPATH",
+
+        # NOTE still required by GlobalPreLoadJob.py, but might not be set by
+        #   ayon-core anymore
+        "AYON_DEFAULT_SETTINGS_VARIANT",
     ]
 
     def process(self, context):
