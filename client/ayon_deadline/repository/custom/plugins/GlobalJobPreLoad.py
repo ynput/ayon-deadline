@@ -502,7 +502,7 @@ def inject_ayon_environment(deadlinePlugin):
                 print(
                     "AYON Server URL submitted with job "
                     f"'{job_ayon_server_url}' has no API key defined "
-                    "in AYON Deadline plugin configuration," 
+                    "in AYON Deadline plugin configuration,"
                     " `Additional AYON Servers` section."
                     " Use Deadline monitor to modify the values."
                     "Falling back to `Ayon API key` set in `Ayon Credentials`"
