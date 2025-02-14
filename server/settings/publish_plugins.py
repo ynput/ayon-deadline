@@ -40,6 +40,7 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
+        {"value": "publish_job_suspended", "label": "Publish Job Suspended"},
     ]
 
 
@@ -100,6 +101,11 @@ class CollectJobInfoItem(BaseSettingsModel):
     job_delay: str = SettingsField(
         "", title="Delay job",
         placeholder="dd:hh:mm:ss"
+    )
+    publish_job_suspended: bool = SettingsField(
+        False,
+        title="Publish Job Suspended",
+        description="Publish job could wait to be manually triggered after quality check"
     )
     use_published: bool = SettingsField(True, title="Use Published scene")
     use_asset_dependencies: bool = SettingsField(
@@ -355,13 +361,15 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "group": "",
           "priority": 50,
           "job_delay": "",
+          "publish_job_suspended": False,
           "overrides": [
             "department",
             "chunk_size",
             "group",
             "priority",
             "primary_pool",
-            "secondary_pool"
+            "secondary_pool",
+            "publish_job_suspended"
           ],
           "chunk_size": 1,
           "department": "",
@@ -386,13 +394,15 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "group": "",
           "priority": 50,
           "job_delay": "",
+          "publish_job_suspended": False,
           "overrides": [
             "department",
             "chunk_size",
             "group",
             "priority",
             "primary_pool",
-            "secondary_pool"
+            "secondary_pool",
+            "publish_job_suspended"
           ],
           "chunk_size": 10,
           "department": "",
