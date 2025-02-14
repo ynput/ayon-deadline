@@ -248,7 +248,7 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         auth = self._get_server_user_auth(dl_server_info, local_settings)
         return DeadlineConnectionInfo(
             server_name,
-            dl_server_info["value"],
+            dl_server_info["value"].rstrip("/"),
             auth,
             not dl_server_info["not_verify_ssl"],
         )
