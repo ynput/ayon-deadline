@@ -182,8 +182,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             or instance.data.get("priority", 50)
         )
 
-        instance_settings = self.get_attr_values_from_data(instance.data)
-        initial_status = instance_settings.get("publishJobState", "Active")
+        job_info = instance.data["deadline"]["job_info"]
+        initial_status = (
+            "Suspended"
+            if job_info.publish_job_suspended
+            else "Active"
+        )
 
         batch_name = self._get_batch_name(instance, render_job)
         username = self._get_username(instance, render_job)

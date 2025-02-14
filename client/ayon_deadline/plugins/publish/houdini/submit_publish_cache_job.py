@@ -116,8 +116,12 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
-        instance_settings = self.get_attr_values_from_data(instance.data)
-        initial_status = instance_settings.get("publishJobState", "Active")
+        job_info = instance.data["deadline"]["job_info"]
+        initial_status = (
+            "Suspended"
+            if job_info.publish_job_suspended
+            else "Active"
+        )
 
         args = [
             "--headless",
@@ -395,12 +399,3 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             "publish", template_name, "directory"
         )
         return render_dir_template.format_strict(template_data)
-
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            EnumDef("publishJobState",
-                    label="Publish Job State",
-                    items=["Active", "Suspended"],
-                    default="Active")
-        ]
