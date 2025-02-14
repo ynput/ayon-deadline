@@ -185,7 +185,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         job_info = instance.data["deadline"]["job_info"]
         initial_status = (
             "Suspended"
-            if job_info.publish_job_suspended
+            if job_info.suspend_publish_job
             else "Active"
         )
 

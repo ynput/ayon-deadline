@@ -322,9 +322,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 placeholder="00:00:00:00"
             ),
             BoolDef(
-                "publish_job_suspended",
-                label="Publish Job Suspended",
-                default=default_values.get("publish_job_suspended")
+                "suspend_publish_job",
+                label="Suspend Publish Job",
+                default=default_values.get("suspend_publish_job")
             )
         ]
 
