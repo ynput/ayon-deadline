@@ -505,7 +505,7 @@ def inject_ayon_environment(deadlinePlugin):
                     "in AYON Deadline plugin configuration,"
                     " `Additional AYON Servers` section."
                     " Use Deadline monitor to modify the values."
-                    "Falling back to `Ayon API key` set in `Ayon Credentials`"
+                    "Falling back to `AYON API key` set in `AYON Credentials`"
                     " section of AYON plugin configuration."
                 )
             ayon_server_url = job_ayon_server_url
