@@ -77,9 +77,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             in the output filename to be picked up for image sequence
             publishing.
 
-        - publishJobState (str, Optional): "Active" or "Suspended"
-            This defaults to "Suspended"
-
         - expectedFiles (list or dict): explained below
 
     """
@@ -512,12 +509,3 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "publish", template_name, "directory"
         )
         return render_dir_template.format_strict(template_data)
-
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            EnumDef("publishJobState",
-                    label="Publish Job State",
-                    items=["Active", "Suspended"],
-                    default="Active")
-        ]
