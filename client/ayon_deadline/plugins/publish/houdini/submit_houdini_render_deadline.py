@@ -1,6 +1,5 @@
 import os
-import attr
-import getpass
+from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
 import pyblish.api
@@ -12,66 +11,65 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
 
 
-@attr.s
-class DeadlinePluginInfo():
-    SceneFile = attr.ib(default=None)
-    OutputDriver = attr.ib(default=None)
-    Version = attr.ib(default=None)
-    IgnoreInputs = attr.ib(default=True)
+@dataclass
+class DeadlinePluginInfo:
+    SceneFile: str = field(default=None)
+    OutputDriver: str = field(default=None)
+    Version: str = field(default=None)
+    IgnoreInputs: bool = field(default=True)
 
 
-@attr.s
-class ArnoldRenderDeadlinePluginInfo():
-    InputFile = attr.ib(default=None)
-    Verbose = attr.ib(default=4)
+@dataclass
+class ArnoldRenderDeadlinePluginInfo:
+    InputFile: str = field(default=None)
+    Verbose: int = field(default=4)
 
 
-@attr.s
-class MantraRenderDeadlinePluginInfo():
-    SceneFile = attr.ib(default=None)
-    Version = attr.ib(default=None)
+@dataclass
+class MantraRenderDeadlinePluginInfo:
+    SceneFile: str = field(default=None)
+    Version: str = field(default=None)
 
 
-@attr.s
-class VrayRenderPluginInfo():
-    InputFilename = attr.ib(default=None)
-    SeparateFilesPerFrame = attr.ib(default=True)
+@dataclass
+class VrayRenderPluginInfo:
+    InputFilename: str = field(default=None)
+    SeparateFilesPerFrame: bool = field(default=True)
 
 
-@attr.s
-class RedshiftRenderPluginInfo():
-    SceneFile = attr.ib(default=None)
+@dataclass
+class RedshiftRenderPluginInfo:
+    SceneFile: str = field(default=None)
     # Use "1" as the default Redshift version just because it
     # default fallback version in Deadline's Redshift plugin
     # if no version was specified
-    Version = attr.ib(default="1")
+    Version: str = field(default="1")
 
 
-@attr.s
-class HuskStandalonePluginInfo():
+@dataclass
+class HuskStandalonePluginInfo:
     """Requires Deadline Husk Standalone Plugin.
     See Deadline Plug-in:
         https://github.com/BigRoy/HuskStandaloneSubmitter
     Also see Husk options here:
         https://www.sidefx.com/docs/houdini/ref/utils/husk.html
     """
-    SceneFile = attr.ib()
+    SceneFile: str = field()
     # TODO: Below parameters are only supported by custom version of the plugin
-    Renderer = attr.ib(default=None)
-    RenderSettings = attr.ib(default="/Render/rendersettings")
-    Purpose = attr.ib(default="geometry,render")
-    Complexity = attr.ib(default="veryhigh")
-    Snapshot = attr.ib(default=-1)
-    LogLevel = attr.ib(default="2")
-    PreRender = attr.ib(default="")
-    PreFrame = attr.ib(default="")
-    PostFrame = attr.ib(default="")
-    PostRender = attr.ib(default="")
-    RestartDelegate = attr.ib(default="")
-    Version = attr.ib(default="")
+    Renderer: str = field(default=None)
+    RenderSettings: str = field(default="/Render/rendersettings")
+    Purpose: str = field(default="geometry,render")
+    Complexity: str = field(default="veryhigh")
+    Snapshot: int = field(default=-1)
+    LogLevel: str = field(default="2")
+    PreRender: str = field(default="")
+    PreFrame: str = field(default="")
+    PostFrame: str = field(default="")
+    PostRender: str = field(default="")
+    RestartDelegate: str = field(default="")
+    Version: str = field(default="")
 
 
 class HoudiniSubmitDeadline(
@@ -100,7 +98,6 @@ class HoudiniSubmitDeadline(
                 "vray_rop"]
     targets = ["local"]
     settings_category = "deadline"
-    use_published = True
 
     # presets
     export_priority = 50
@@ -108,47 +105,10 @@ class HoudiniSubmitDeadline(
     export_group = ""
     export_limits = ""
     export_machine_limit = 0
-    priority = 50
-    chunk_size = 1
-    group = ""
-    limits = ""
-    machine_limit = 0
 
     @classmethod
     def get_attribute_defs(cls):
         return [
-            NumberDef(
-                "priority",
-                label="Priority",
-                default=cls.priority,
-                decimals=0
-            ),
-            NumberDef(
-                "chunk",
-                label="Frames Per Task",
-                default=cls.chunk_size,
-                decimals=0,
-                minimum=1,
-                maximum=1000
-            ),
-            TextDef(
-                "group",
-                default=cls.group,
-                label="Group Name"
-            ),
-            TextDef(
-                "limits",
-                default=cls.limits,
-                label="Limit Groups",
-                placeholder="value1,value2",
-                tooltip="Enter a comma separated list of limit groups."
-            ),
-            NumberDef(
-                "machine_limit",
-                default=cls.machine_limit,
-                label="Machine Limit",
-                tooltip="maximum number of machines for this job."
-            ),
             NumberDef(
                 "export_priority",
                 label="Export Priority",
@@ -183,12 +143,10 @@ class HoudiniSubmitDeadline(
             ),
         ]
 
-    def get_job_info(self, dependency_job_ids=None):
+    def get_job_info(self, dependency_job_ids=None, job_info=None):
 
         instance = self._instance
         context = instance.context
-
-        attribute_values = self.get_attr_values_from_data(instance.data)
 
         # Whether Deadline render submission is being split in two
         # (extract + render)
@@ -214,16 +172,12 @@ class HoudiniSubmitDeadline(
             plugin = "Houdini"
             if split_render_job:
                 job_type = "[EXPORT IFD]"
-
-        job_info = DeadlineJobInfo(Plugin=plugin)
+        job_info.Plugin = plugin
 
         filepath = context.data["currentFile"]
         filename = os.path.basename(filepath)
         job_info.Name = "{} - {} {}".format(filename, instance.name, job_type)
         job_info.BatchName = filename
-
-        job_info.UserName = context.data.get(
-            "deadlineUser", getpass.getuser())
 
         if is_in_tests():
             job_info.BatchName += datetime.now().strftime("%d%m%Y%H%M%S")
@@ -244,9 +198,7 @@ class HoudiniSubmitDeadline(
             job_info.IsFrameDependent = bool(instance.data.get(
                 "splitRenderFrameDependent", True))
 
-        job_info.Pool = instance.data.get("primaryPool")
-        job_info.SecondaryPool = instance.data.get("secondaryPool")
-
+        attribute_values = self.get_attr_values_from_data(instance.data)
         if split_render_job and is_export_job:
             job_info.Priority = attribute_values.get(
                 "export_priority", self.export_priority
@@ -263,36 +215,8 @@ class HoudiniSubmitDeadline(
             job_info.MachineLimit = attribute_values.get(
                 "export_machine_limit", self.export_machine_limit
             )
-        else:
-            job_info.Priority = attribute_values.get(
-                "priority", self.priority
-            )
-            job_info.ChunkSize = attribute_values.get(
-                "chunk", self.chunk_size
-            )
-            job_info.Group = attribute_values.get(
-                "group", self.group
-            )
-            job_info.LimitGroups = attribute_values.get(
-                "limits", self.limits
-            )
-            job_info.MachineLimit = attribute_values.get(
-                "machine_limit", self.machine_limit
-            )
 
-        # Apply render globals, like e.g. data from collect machine list
-        render_globals = instance.data.get("renderGlobals", {})
-        if render_globals:
-            self.log.debug("Applying 'renderGlobals' to job info: %s",
-                           render_globals)
-            job_info.update(render_globals)
-
-        job_info.Comment = context.data.get("comment")
-
-        # Set job environment variables
-        job_info.add_instance_job_env_vars(self._instance)
-        job_info.add_render_job_env_var()
-
+        # TODO change to expectedFiles??
         for i, filepath in enumerate(instance.data["files"]):
             dirname = os.path.dirname(filepath)
             fname = os.path.basename(filepath)
@@ -301,7 +225,7 @@ class HoudiniSubmitDeadline(
 
         # Add dependencies if given
         if dependency_job_ids:
-            job_info.JobDependencies = ",".join(dependency_job_ids)
+            job_info.JobDependencies = dependency_job_ids
 
         return job_info
 
@@ -368,7 +292,7 @@ class HoudiniSubmitDeadline(
                 IgnoreInputs=True
             )
 
-        return attr.asdict(plugin_info)
+        return asdict(plugin_info)
 
     def process(self, instance):
         if not instance.data["farm"]:
@@ -422,7 +346,8 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
     label = "Submit Render to Deadline (USD)"
     families = ["usdrender"]
 
-    # Do not use published workfile paths for USD Render ROP because the
-    # Export Job doesn't seem to occur using the published path either, so
-    # output paths then do not match the actual rendered paths
-    use_published = False
+    def from_published_scene(self, replace_in_path=True):
+        # Do not use published workfile paths for USD Render ROP because the
+        # Export Job doesn't seem to occur using the published path either, so
+        # output paths then do not match the actual rendered paths
+        return

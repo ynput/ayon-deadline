@@ -5,14 +5,12 @@ from pathlib import Path
 from collections import OrderedDict
 from zipfile import ZipFile, is_zipfile
 import re
-from datetime import datetime
+import shutil
 
 import attr
 import pyblish.api
 
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import DeadlineJobInfo
-from ayon_core.lib import is_in_tests
 
 
 class _ZipFile(ZipFile):
@@ -225,6 +223,10 @@ class HarmonySubmitDeadline(
     Renders are submitted to a Deadline Web Service as
     supplied via the environment variable ``DEADLINE_REST_URL``.
 
+    Harmony workfile is `.zip` file that needs to be unzipped for Deadline
+    first (DL expects unzipped folder). In case of use of published workfile,
+    `.zip` file is copied to `work/../renders` and unzipped there.
+
     Note:
         If Deadline configuration is not detected, this plugin will
         be disabled.
@@ -242,47 +244,20 @@ class HarmonySubmitDeadline(
     targets = ["local"]
     settings_category = "deadline"
 
-    optional = True
-    use_published = False
-    priority = 50
-    chunk_size = 1000000
-    group = "none"
-    department = ""
-
-    def get_job_info(self):
-        job_info = DeadlineJobInfo("Harmony")
-        job_info.Name = self._instance.data["name"]
+    def get_job_info(self, job_info=None):
         job_info.Plugin = "HarmonyAYON"
         job_info.Frames = "{}-{}".format(
             self._instance.data["frameStartHandle"],
             self._instance.data["frameEndHandle"]
         )
-        # for now, get those from presets. Later on it should be
-        # configurable in Harmony UI directly.
-        job_info.Priority = self.priority
-        job_info.Pool = self._instance.data.get("primaryPool")
-        job_info.SecondaryPool = self._instance.data.get("secondaryPool")
-        job_info.ChunkSize = self.chunk_size
-        batch_name = os.path.basename(self._instance.data["source"])
-        if is_in_tests():
-            batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
-        job_info.BatchName = batch_name
-        job_info.Department = self.department
-        job_info.Group = self.group
-
-        # Set job environment variables
-        job_info.add_render_job_env_var()
-        job_info.add_instance_job_env_vars(self._instance)
-
-        # to recognize render jobs
-        job_info.add_render_job_env_var()
 
         return job_info
 
     def _unzip_scene_file(self, published_scene: Path) -> Path:
         """Unzip scene zip file to its directory.
 
-        Unzip scene file (if it is zip file) to its current directory and
+        Unzip scene file (if it is zip file) to work area if dir if available,
+        if not to its current directory and
         return path to xstage file there. Xstage file is determined by its
         name.
 
@@ -299,6 +274,19 @@ class HarmonySubmitDeadline(
             self.log.error("Published scene is not in zip.")
             self.log.error(published_scene)
             raise AssertionError("invalid scene format")
+
+        # TODO eventually replace with registered_host().work_root or similar
+        workdir = os.environ.get("AYON_WORKDIR")
+        if workdir and os.path.exists(workdir):
+            renders_path = os.path.join(workdir, "renders", "harmony")
+            os.makedirs(renders_path, exist_ok=True)
+
+            self.log.info(f"Copying '{published_scene}' -> '{renders_path}'")
+            shutil.copy(published_scene.as_posix(), renders_path)
+            published_scene = Path(
+                os.path.join(renders_path), published_scene.name)
+            (self._instance.context.data["cleanupFullPaths"].
+             append(published_scene))
 
         xstage_path = (
             published_scene.parent
@@ -350,6 +338,9 @@ class HarmonySubmitDeadline(
 
         # for submit_publish job to create .json file in
         self._instance.data["outputDir"] = render_path
+        # to let DL Explore Output
+        # TODO update this when #79 is fixed
+        self.job_info.OutputDirectory[0] = render_path.as_posix()
         new_expected_files = []
         render_path_str = str(render_path.as_posix())
         for file in self._instance.data["expectedFiles"]:
@@ -375,8 +366,8 @@ class HarmonySubmitDeadline(
         )
 
         leading_zeros = str(self._instance.data["leadingZeros"])
-        pattern = f"[0]{leading_zeros}1\\.[a-zA-Z]{3}"
-        render_prefix = re.sub(pattern, '',
+        frames_and_ext_pattern = f"0{{{leading_zeros}}}[1-9]\\.[a-zA-Z]{{3}}"
+        render_prefix = re.sub(frames_and_ext_pattern, "",
                                self._instance.data["expectedFiles"][0])
         harmony_plugin_info.set_output(
             self._instance.data["setMembers"][0],

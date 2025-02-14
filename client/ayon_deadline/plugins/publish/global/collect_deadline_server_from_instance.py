@@ -1,12 +1,25 @@
 # -*- coding: utf-8 -*-
-"""Collect Deadline servers from instance.
+"""Collect Deadline server information from instance.
 
-This is resolving index of server lists stored in `deadlineServers` instance
-attribute or using default server if that attribute doesn't exists.
+This module collects Deadline Webservice name and URL for instance.
+Based on data stored on instance a deadline information is stored to instance
+data.
+
+For maya this is resolving index of server lists stored in `deadlineServers`
+instance attribute or using default server if that attribute doesn't exists.
+That happens for backwards compatibility and should be removed in future
+releases.
+
+TODOS:
+- Remove backwards compatibility for `deadlineServers` attribute.
+- Remove backwards compatibility for `deadlineUrl` attribute.
+- Don't store deadline url, but use server name instead.
 
 """
+from typing import Optional, Tuple
+
 import pyblish.api
-from ayon_core.pipeline.publish import KnownPublishError
+from ayon_core.pipeline.publish import KnownPublishError, PublishError
 
 from ayon_deadline.lib import FARM_FAMILIES
 
@@ -26,25 +39,79 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
+        # NOTE: Remove when nothing sets 'deadline' to 'None'
         if not instance.data.get("deadline"):
+            # reset if key is None or not available
             instance.data["deadline"] = {}
+        deadline_info = instance.data["deadline"]
 
-        # todo: separate logic should be removed, all hosts should have same
-        host_name = instance.context.data["hostName"]
+        context = instance.context
+        host_name = context.data["hostName"]
+        # TODO: Host specific logic should be avoided
+        #   - all hosts should have same data structure on instances
+        server_name = None
         if host_name == "maya":
-            deadline_url = self._collect_deadline_url(instance)
+            deadline_url, server_name = self._collect_maya_deadline_server(
+                instance
+            )
         else:
-            deadline_url = (instance.data.get("deadlineUrl") or  # backwards
-                            instance.data.get("deadline", {}).get("url"))
-        if deadline_url:
-            instance.data["deadline"]["url"] = deadline_url.strip().rstrip("/")
-        else:
-            instance.data["deadline"]["url"] = instance.context.data["deadline"]["defaultUrl"]  # noqa
-        self.log.debug(
-            "Using {} for submission".format(instance.data["deadline"]["url"]))
+            # TODO remove backwards compatibility
+            deadline_url = instance.data.get("deadlineUrl")
+            if not deadline_url:
+                deadline_url = deadline_info.get("url")
+                server_name = deadline_info.get("serverName")
 
-    def _collect_deadline_url(self, render_instance):
-        # type: (pyblish.api.Instance) -> str
+        if not deadline_url:
+            context_deadline_info = context.data["deadline"]
+            deadline_url = context_deadline_info["defaultUrl"]
+            server_name = context_deadline_info["defaultServerName"]
+
+        if not server_name:
+            server_name = self._find_server_name(instance, deadline_url)
+
+        if not server_name:
+            raise PublishError(
+                f"Collected deadline URL '{deadline_url}' does not match any"
+                f" existing deadline servers configured in Studio Settings."
+            )
+
+        deadline_url = deadline_url.strip().rstrip("/")
+        deadline_info["url"] = deadline_url
+        # TODO prefer server name over url
+        deadline_info["serverName"] = server_name
+
+        self.log.debug(
+            f"Server '{server_name}' ({deadline_url})"
+            " will be used for submission."
+        )
+
+    def _find_server_name(
+        self, instance: pyblish.api.Instance,
+        deadline_url: str,
+    ) -> Optional[str]:
+        """Find server name from project settings based on url.
+
+        Args:
+            instance (pyblish.api.Instance): Instance object.
+            deadline_url (str): Deadline Webservice URL.
+
+        Returns:
+            Optional[str]: Deadline server name.
+
+        """
+        deadline_url = deadline_url.strip().rstrip("/")
+
+        deadline_settings = (
+            instance.context.data["project_settings"]["deadline"]
+        )
+        for server_info in deadline_settings["deadline_servers_info"]:
+            if server_info["value"].strip().rstrip("/") == deadline_url:
+                return server_info["name"]
+        return None
+
+    def _collect_maya_deadline_server(
+        self, render_instance: pyblish.api.Instance
+    ) -> Tuple[str, str]:
         """Get Deadline Webservice URL from render instance.
 
         This will get all configured Deadline Webservice URLs and create
@@ -57,23 +124,24 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
                 by Creator in Maya.
 
         Returns:
-            str: Selected Deadline Webservice URL.
+            tuple[str, str]: Selected Deadline Webservice URL.
 
         """
-        # Not all hosts can import this module.
         from maya import cmds
+
         deadline_settings = (
             render_instance.context.data
             ["project_settings"]
             ["deadline"]
         )
-        default_server_url = (render_instance.context.data["deadline"]
-                                                          ["defaultUrl"])
         # QUESTION How and where is this is set? Should be removed?
         instance_server = render_instance.data.get("deadlineServers")
         if not instance_server:
+            context_deadline_info = render_instance.context.data["deadline"]
+            default_server_url = context_deadline_info["defaultUrl"]
+            default_server_name = context_deadline_info["defaultServerName"]
             self.log.debug("Using default server.")
-            return default_server_url
+            return default_server_url, default_server_name
 
         # Get instance server as sting.
         if isinstance(instance_server, int):
@@ -86,22 +154,17 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             url_item["name"]: url_item["value"]
             for url_item in deadline_settings["deadline_servers_info"]
         }
-        project_servers = (
-            render_instance.context.data
-            ["project_settings"]
-            ["deadline"]
-            ["deadline_servers"]
-        )
+        project_servers = deadline_settings["deadline_servers"]
         if not project_servers:
             self.log.debug("Not project servers found. Using default servers.")
-            return default_servers[instance_server]
+            return default_servers[instance_server], instance_server
 
+        # TODO create validation plugin for this check
         project_enabled_servers = {
             k: default_servers[k]
             for k in project_servers
             if k in default_servers
         }
-
         if instance_server not in project_enabled_servers:
             msg = (
                 "\"{}\" server on instance is not enabled in project settings."
@@ -112,4 +175,4 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
             raise KnownPublishError(msg)
 
         self.log.debug("Using project approved server.")
-        return project_enabled_servers[instance_server]
+        return project_enabled_servers[instance_server], instance_server

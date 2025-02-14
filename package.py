@@ -1,10 +1,11 @@
 name = "deadline"
 title = "Deadline"
-version = "0.4.0"
+version = "0.5.4+dev"
 
 client_dir = "ayon_deadline"
 
 ayon_required_addons = {
-    "core": ">0.3.2",
+    "core": ">1.0.9",
+    "applications": ">=1.0.0",
 }
 ayon_compatible_addons = {}

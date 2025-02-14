@@ -1,6 +1,6 @@
 import pyblish.api
 
-from ayon_deadline.lib import JOB_ENV_DATA_KEY
+from ayon_core.pipeline.publish import FARM_JOB_ENV_DATA_KEY
 
 try:
     from ayon_usd import get_usd_pinning_envs
@@ -41,7 +41,7 @@ class CollectUSDPinningEnvVars(pyblish.api.InstancePlugin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
-        job_env = instance.data.setdefault(JOB_ENV_DATA_KEY, {})
+        job_env = instance.data.setdefault(FARM_JOB_ENV_DATA_KEY, {})
         usd_pinning_envs: dict = get_usd_pinning_envs(instance)
 
         # Log the job envs that are set

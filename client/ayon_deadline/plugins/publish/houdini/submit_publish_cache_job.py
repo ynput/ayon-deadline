@@ -9,7 +9,7 @@ import ayon_api
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.lib import EnumDef, is_in_tests
+from ayon_core.lib import EnumDef
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance_cache,
@@ -18,7 +18,13 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     prepare_cache_representations,
     create_metadata_path
 )
-from ayon_deadline.abstract_submit_deadline import requests_post
+
+from ayon_deadline import DeadlineAddon
+from ayon_deadline.lib import (
+    JobType,
+    DeadlineJobInfo,
+    get_instance_job_envs,
+)
 
 
 class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
@@ -61,28 +67,14 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
     families = ["publish.hou"]
 
-    environ_keys = [
-        "FTRACK_API_USER",
-        "FTRACK_API_KEY",
-        "FTRACK_SERVER",
-        "AYON_APP_NAME",
-        "AYON_USERNAME",
-        "AYON_SG_USERNAME",
-        "KITSU_LOGIN",
-        "KITSU_PWD"
-    ]
-
     # custom deadline attributes
     deadline_department = ""
     deadline_pool = ""
-    deadline_pool_secondary = ""
     deadline_group = ""
     deadline_priority = None
 
     # regex for finding frame number in string
     R_FRAME_NUMBER = re.compile(r'.+\.(?P<frame>[0-9]+)\..+')
-
-    plugin_pype_version = "3.0"
 
     def _submit_deadline_post_job(self, instance, job):
         """Submit publish job to Deadline.
@@ -94,7 +86,8 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         product_name = data["productName"]
         job_name = "Publish - {}".format(product_name)
 
-        anatomy = instance.context.data['anatomy']
+        context = instance.context
+        anatomy = context.data["anatomy"]
 
         # instance.data.get("productName") != instances[0]["productName"]
         # 'Main' vs 'renderMain'
@@ -108,7 +101,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             deepcopy(instance.data["anatomyData"]),
             instance.data.get("folderEntity"),
             instance.data["productName"],
-            instance.context,
+            context,
             instance.data["productType"],
             override_version
         )
@@ -118,26 +111,8 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         metadata_path, rootless_metadata_path = \
             create_metadata_path(instance, anatomy)
 
-        environment = {
-            "AYON_PROJECT_NAME": instance.context.data["projectName"],
-            "AYON_FOLDER_PATH": instance.context.data["folderPath"],
-            "AYON_TASK_NAME": instance.context.data["task"],
-            "AYON_USERNAME": instance.context.data["user"],
-            "AYON_LOG_NO_COLORS": "1",
-            "AYON_IN_TESTS": str(int(is_in_tests())),
-            "AYON_PUBLISH_JOB": "1",
-            "AYON_RENDER_JOB": "0",
-            "AYON_REMOTE_PUBLISH": "0",
-            "AYON_BUNDLE_NAME": os.environ["AYON_BUNDLE_NAME"],
-            "AYON_DEFAULT_SETTINGS_VARIANT": (
-                os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
-            ),
-        }
-
-        # add environments from self.environ_keys
-        for env_key in self.environ_keys:
-            if os.getenv(env_key):
-                environment[env_key] = os.environ[env_key]
+        environment = get_instance_job_envs(instance)
+        environment.update(JobType.PUBLISH.get_job_env())
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
@@ -147,71 +122,42 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         args = [
             "--headless",
             'publish',
-            '"{}"'.format(rootless_metadata_path),
+            rootless_metadata_path,
             "--targets", "deadline",
             "--targets", "farm"
         ]
 
-        # Generate the payload for Deadline submission
-        secondary_pool = (
-            self.deadline_pool_secondary or instance.data.get("secondaryPool")
-        )
-        payload = {
-            "JobInfo": {
-                "Plugin": "Ayon",
-                "BatchName": job["Props"]["Batch"],
-                "Name": job_name,
-                "UserName": job["Props"]["User"],
-                "Comment": instance.context.data.get("comment", ""),
-
-                "Department": self.deadline_department,
-                "ChunkSize": 1,
-                "Priority": priority,
-                "InitialStatus": initial_status,
-
-                "Group": self.deadline_group,
-                "Pool": self.deadline_pool or instance.data.get("primaryPool"),
-                "SecondaryPool": secondary_pool,
-                # ensure the outputdirectory with correct slashes
-                "OutputDirectory0": output_dir.replace("\\", "/")
-            },
-            "PluginInfo": {
-                "Version": self.plugin_pype_version,
-                "Arguments": " ".join(args),
-                "SingleFrameOnly": "True",
-            },
-            # Mandatory for Deadline, may be empty
-            "AuxFiles": [],
-        }
-
+        dependency_ids = []
         if job.get("_id"):
-            payload["JobInfo"]["JobDependency0"] = job["_id"]
+            dependency_ids.append(job["_id"])
 
-        for index, (key_, value_) in enumerate(environment.items()):
-            payload["JobInfo"].update(
-                {
-                    "EnvironmentKeyValue%d"
-                    % index: "{key}={value}".format(
-                        key=key_, value=value_
-                    )
-                }
-            )
-        # remove secondary pool
-        payload["JobInfo"].pop("SecondaryPool", None)
+        server_name = instance.data["deadline"]["serverName"]
 
         self.log.debug("Submitting Deadline publish job ...")
+        deadline_addon: DeadlineAddon = (
+            context.data["ayonAddonsManager"]["deadline"]
+        )
 
-        url = "{}/api/jobs".format(self.deadline_url)
-        auth = instance.data["deadline"]["auth"]
-        verify = instance.data["deadline"]["verify"]
-        response = requests_post(
-            url, json=payload, timeout=10, auth=auth, verify=verify)
-        if not response.ok:
-            raise Exception(response.text)
+        job_info = DeadlineJobInfo(
+            Name=job_name,
+            BatchName=job["Props"]["Batch"],
+            Department=self.deadline_department,
+            Priority=priority,
+            InitialStatus=initial_status,
+            Group=self.deadline_group,
+            Pool=self.deadline_pool or None,
+            JobDependencies=dependency_ids,
+            UserName=job["Props"]["User"],
+            Comment=context.data.get("comment"),
+        )
+        job_info.OutputDirectory.append(
+            output_dir.replace("\\", "/")
+        )
+        job_info.EnvironmentKeyValue.update(environment)
 
-        deadline_publish_job_id = response.json()["_id"]
-
-        return deadline_publish_job_id
+        return deadline_addon.submit_ayon_plugin_job(
+            server_name, args, job_info
+        )["response"]["_id"]
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None
@@ -348,6 +294,7 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
                 if "deadline" not in inst:
                     inst["deadline"] = {}
                 inst["deadline"] = instance.data["deadline"]
+                inst["deadline"].pop("job_info")
 
         # publish job file
         publish_job = {

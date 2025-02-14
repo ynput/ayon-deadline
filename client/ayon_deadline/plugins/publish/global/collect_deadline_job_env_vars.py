@@ -2,51 +2,50 @@ import os
 
 import pyblish.api
 
-from ayon_deadline.lib import FARM_FAMILIES, JOB_ENV_DATA_KEY
+from ayon_core.pipeline.publish import FARM_JOB_ENV_DATA_KEY
 
 
 class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
     """Collect set of environment variables to submit with deadline jobs"""
     order = pyblish.api.CollectorOrder
     label = "Deadline Farm Environment Variables"
-    families = FARM_FAMILIES
     targets = ["local"]
 
     ENV_KEYS = [
-        # AYON
-        "AYON_BUNDLE_NAME",
-        "AYON_DEFAULT_SETTINGS_VARIANT",
-        "AYON_PROJECT_NAME",
-        "AYON_FOLDER_PATH",
-        "AYON_TASK_NAME",
+        # applications addon
         "AYON_APP_NAME",
-        "AYON_WORKDIR",
-        "AYON_APP_NAME",
-        "AYON_LOG_NO_COLORS",
-        "AYON_IN_TESTS",
-        "IS_TEST",  # backwards compatibility
 
-        # Ftrack
+        # ftrack addon
         "FTRACK_API_KEY",
         "FTRACK_API_USER",
         "FTRACK_SERVER",
+
+        # kitsu addon
+        "KITSU_SERVER",
+        "KITSU_LOGIN",
+        "KITSU_PWD",
+
+        # Shotgrid / Flow addon
+        "OPENPYPE_SG_USER",
+
+        # Not sure how this is usefull for farm, scared to remove
         "PYBLISHPLUGINPATH",
 
-        # Shotgrid
-        "OPENPYPE_SG_USER",
+        # NOTE still required by GlobalPreLoadJob.py, but might not be set by
+        #   ayon-core anymore
+        "AYON_DEFAULT_SETTINGS_VARIANT",
     ]
 
     def process(self, context):
-
-        env = {}
+        env = context.data.setdefault(FARM_JOB_ENV_DATA_KEY, {})
         for key in self.ENV_KEYS:
+            # Skip already set keys
+            if key in env:
+                continue
             value = os.getenv(key)
             if value:
                 self.log.debug(f"Setting job env: {key}: {value}")
                 env[key] = value
-
-        # Transfer some environment variables from current context
-        context.data.setdefault(JOB_ENV_DATA_KEY, {}).update(env)
 
 
 class CollectAYONServerToFarmJob(CollectDeadlineJobEnvVars):

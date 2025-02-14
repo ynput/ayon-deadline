@@ -4,6 +4,7 @@ from ayon_core.pipeline import (
     PublishXmlValidationError,
     OptionalPyblishPluginMixin
 )
+from ayon_deadline.lib import FARM_FAMILIES, get_deadline_pools
 
 
 class ValidateDeadlinePools(OptionalPyblishPluginMixin,
@@ -16,17 +17,12 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
 
     label = "Validate Deadline Pools"
     order = pyblish.api.ValidatorOrder
-    families = ["rendering",
-                "render.farm",
-                "render.frames_farm",
-                "renderFarm",
-                "renderlayer",
-                "maxrender",
-                "publish.hou"]
+    families = FARM_FAMILIES
     optional = True
+    targets = ["local"]
 
     # cache
-    pools_per_url = {}
+    pools_by_url = {}
 
     def process(self, instance):
         if not self.is_active(instance.data):
@@ -42,15 +38,17 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
         pools = self.get_pools(
             deadline_addon,
             deadline_url,
-            instance.data["deadline"].get("auth")
+            instance.data["deadline"].get("auth"),
+            instance.data["deadline"]["verify"]
         )
 
         invalid_pools = {}
-        primary_pool = instance.data.get("primaryPool")
+        job_info = instance.data["deadline"]["job_info"]
+        primary_pool = job_info.Pool
         if primary_pool and primary_pool not in pools:
             invalid_pools["primary"] = primary_pool
 
-        secondary_pool = instance.data.get("secondaryPool")
+        secondary_pool = job_info.SecondaryPool
         if secondary_pool and secondary_pool not in pools:
             invalid_pools["secondary"] = secondary_pool
 
@@ -66,19 +64,19 @@ class ValidateDeadlinePools(OptionalPyblishPluginMixin,
                 formatting_data={"pools_str": ", ".join(pools)}
             )
 
-    def get_pools(self, deadline_addon, deadline_url, auth):
-        if deadline_url not in self.pools_per_url:
+    def get_pools(self, deadline_addon, deadline_url, auth, verify):
+        if deadline_url not in self.pools_by_url:
             self.log.debug(
                 "Querying available pools for Deadline url: {}".format(
                     deadline_url)
             )
-            pools = deadline_addon.get_deadline_pools(
-                deadline_url, auth=auth, log=self.log
+            pools = get_deadline_pools(
+                deadline_url, auth=auth, log=self.log, verify=verify
             )
             # some DL return "none" as a pool name
             if "none" not in pools:
                 pools.append("none")
             self.log.info("Available pools: {}".format(pools))
-            self.pools_per_url[deadline_url] = pools
+            self.pools_by_url[deadline_url] = pools
 
-        return self.pools_per_url[deadline_url]
+        return self.pools_by_url[deadline_url]

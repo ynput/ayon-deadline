@@ -1,11 +1,11 @@
 import os
-import requests
 from collections.abc import Iterable
 
 import pyblish.api
 import clique
 
-from ayon_deadline.abstract_submit_deadline import requests_get
+from ayon_core.pipeline import PublishValidationError
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 
 
 class ValidateExpectedFiles(pyblish.api.InstancePlugin):
@@ -42,34 +42,10 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             staging_dir = repre["stagingDir"]
             existing_files = self._get_existing_files(staging_dir)
 
-            if self.allow_user_override:
-                # We always check for user override because the user might have
-                # also overridden the Job frame list to be longer than the
-                # originally submitted frame range
-                # todo: We should first check if Job frame range was overridden
-                #       at all so we don't unnecessarily override anything
-                collection_or_filename = self._get_collection(expected_files)
-                job_expected_files = self._get_job_expected_files(
-                    collection_or_filename, frame_list)
-
-                job_files_diff = job_expected_files.difference(expected_files)
-                if job_files_diff:
-                    self.log.debug(
-                        "Detected difference in expected output files from "
-                        "Deadline job. Assuming an updated frame list by the "
-                        "user. Difference: {}".format(sorted(job_files_diff))
-                    )
-
-                    # Update the representation expected files
-                    self.log.info("Update range from actual job range "
-                                  "to frame list: {}".format(frame_list))
-                    # single item files must be string not list
-                    repre["files"] = (sorted(job_expected_files)
-                                      if len(job_expected_files) > 1 else
-                                      list(job_expected_files)[0])
-
-                    # Update the expected files
-                    expected_files = job_expected_files
+            is_image = f'.{repre["ext"]}' in IMAGE_EXTENSIONS
+            if self.allow_user_override and is_image:
+                expected_files = self._recalculate_expected_files(
+                    expected_files, frame_list, repre)
 
             # We don't use set.difference because we do allow other existing
             # files to be in the folder that we might not want to use.
@@ -84,6 +60,36 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
                         sorted(existing_files)
                     )
                 )
+
+    def _recalculate_expected_files(self, expected_files, frame_list, repre):
+        # We always check for user override because the user might have
+        # also overridden the Job frame list to be longer than the
+        # originally submitted frame range
+        # todo: We should first check if Job frame range was overridden
+        #       at all so we don't unnecessarily override anything
+        collection_or_filename = self._get_collection(expected_files)
+        job_expected_files = self._get_job_expected_files(
+            collection_or_filename, frame_list)
+
+        job_files_diff = job_expected_files.difference(expected_files)
+        if job_files_diff:
+            self.log.debug(
+                "Detected difference in expected output files from "
+                "Deadline job. Assuming an updated frame list by the "
+                "user. Difference: {}".format(sorted(job_files_diff))
+            )
+
+            # Update the representation expected files
+            self.log.info("Update range from actual job range "
+                          "to frame list: {}".format(frame_list))
+            # single item files must be string not list
+            repre["files"] = (sorted(job_expected_files)
+                              if len(job_expected_files) > 1 else
+                              list(job_expected_files)[0])
+
+            # Update the expected files
+            expected_files = job_expected_files
+        return expected_files
 
     def _get_dependent_job_ids(self, instance):
         """Returns list of dependent job ids from instance metadata.json
@@ -200,31 +206,15 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             (dict): Job info from Deadline
 
         """
-        deadline_url = instance.data["deadline"]["url"]
-        assert deadline_url, "Requires Deadline Webservice URL"
+        server_name = instance.data["deadline"]["serverName"]
+        if not server_name:
+            raise PublishValidationError(
+                "Deadline server name is not filled."
+            )
 
-        url = "{}/api/jobs?JobID={}".format(deadline_url, job_id)
-        try:
-            kwargs = {}
-            auth = instance.data["deadline"]["auth"]
-            if auth:
-                kwargs["auth"] = auth
-            response = requests_get(url, **kwargs)
-        except requests.exceptions.ConnectionError:
-            self.log.error("Deadline is not accessible at "
-                           "{}".format(deadline_url))
-            return {}
-
-        if not response.ok:
-            self.log.error("Submission failed!")
-            self.log.error(response.status_code)
-            self.log.error(response.content)
-            raise RuntimeError(response.text)
-
-        json_content = response.json()
-        if json_content:
-            return json_content.pop()
-        return {}
+        addons_manager = instance.context.data["ayonAddonsManager"]
+        deadline_addon = addons_manager["deadline"]
+        return deadline_addon.get_job_info(server_name, job_id)
 
     def _get_existing_files(self, staging_dir):
         """Returns set of existing file names from 'staging_dir'"""
