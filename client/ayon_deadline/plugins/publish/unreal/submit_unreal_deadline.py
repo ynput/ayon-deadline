@@ -86,7 +86,7 @@ class UnrealSubmitDeadline(
         cmd_args = [
             f'-execcmds="py {pre_render_script.as_posix()}"',
             f'-PublishedMRQManifest="{work_mrq}"',
-            "-log", "-unattended", "-stdout", "-allowstdoutlogverbosity", "-MRQInstance"
+            "-MRQInstance"
         ]
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
