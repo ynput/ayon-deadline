@@ -116,13 +116,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
-        job_info = instance.data["deadline"]["job_info"]
-        initial_status = (
-            "Suspended"
-            if job_info.suspend_publish_job
-            else "Active"
-        )
-
         args = [
             "--headless",
             'publish',
@@ -142,12 +135,13 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             context.data["ayonAddonsManager"]["deadline"]
         )
 
+        job_info = instance.data["deadline"]["job_info"]
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=job["Props"]["Batch"],
             Department=self.deadline_department,
             Priority=priority,
-            InitialStatus=initial_status,
+            InitialStatus=job_info.publish_job_state,
             Group=self.deadline_group,
             Pool=self.deadline_pool or None,
             JobDependencies=dependency_ids,

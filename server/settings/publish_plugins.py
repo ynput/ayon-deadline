@@ -40,7 +40,15 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
-        {"value": "suspend_publish_job", "label": "Suspend Publish Job"},
+        {"value": "publish_job_state ", "label": "Publish Job State"},
+    ]
+
+
+def publish_job_state_enum():
+    """Enum for initial state of publish job"""
+    return [
+        {"value": "active", "label": "Active"},
+        {"value": "suspended", "label": "Suspended"},
     ]
 
 
@@ -102,10 +110,11 @@ class CollectJobInfoItem(BaseSettingsModel):
         "", title="Delay job",
         placeholder="dd:hh:mm:ss"
     )
-    suspend_publish_job: bool = SettingsField(
-        False,
-        title="Suspend Publish Job",
-        description="Publish job could wait to be manually triggered after quality check"
+    publish_job_state : str = SettingsField(
+        enum_resolver=publish_job_state_enum,
+        title="Publish Job State",
+        description="Publish job could wait to be manually enabled from "
+                    "Suspended state after quality check"
     )
     use_published: bool = SettingsField(True, title="Use Published scene")
     use_asset_dependencies: bool = SettingsField(
@@ -361,7 +370,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "group": "",
           "priority": 50,
           "job_delay": "",
-          "suspend_publish_job": False,
+          "publish_job_state": "active",
           "overrides": [
             "department",
             "chunk_size",
@@ -369,7 +378,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
             "priority",
             "primary_pool",
             "secondary_pool",
-            "suspend_publish_job"
+            "publish_job_state"
           ],
           "chunk_size": 1,
           "department": "",
@@ -394,7 +403,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "group": "",
           "priority": 50,
           "job_delay": "",
-          "suspend_publish_job": False,
+          "publish_job_state": "active",
           "overrides": [
             "department",
             "chunk_size",
@@ -402,7 +411,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
             "priority",
             "primary_pool",
             "secondary_pool",
-            "suspend_publish_job"
+            "publish_job_state"
           ],
           "chunk_size": 10,
           "department": "",
