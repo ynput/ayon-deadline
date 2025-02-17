@@ -9,30 +9,30 @@ Description=Not configurable
 
 [AyonExecutable]
 Type=multilinemultifilename
-Label=Ayon Executable
-Category=Ayon Executables
+Label=AYON Executable
+Category=AYON Executables
 CategoryOrder=1
 Index=0
 Default=
-Description=The path to the Ayon executable. Enter alternative paths on separate lines.
+Description=The path to the AYON executable. Enter alternative paths on separate lines.
 
 [AyonServerUrl]
 Type=string
-Label=Ayon Server Url
-Category=Ayon Credentials
+Label=AYON Server Url
+Category=AYON Credentials
 CategoryOrder=2
 Index=0
 Default=
-Description=Url to Ayon server
+Description=Url to AYON server
 
 [AyonApiKey]
 Type=password
-Label=Ayon API key
-Category=Ayon Credentials
+Label=AYON API key
+Category=AYON Credentials
 CategoryOrder=2
 Index=0
 Default=
-Description=API key for service account on Ayon Server
+Description=API key for service account on AYON Server
 
 [AyonAdditionalServerUrls]
 Type=multilinestring
