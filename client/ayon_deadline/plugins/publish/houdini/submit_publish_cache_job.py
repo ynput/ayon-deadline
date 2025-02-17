@@ -9,7 +9,6 @@ import ayon_api
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.lib import EnumDef
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance_cache,
@@ -116,9 +115,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
-        instance_settings = self.get_attr_values_from_data(instance.data)
-        initial_status = instance_settings.get("publishJobState", "Active")
-
         args = [
             "--headless",
             'publish',
@@ -138,12 +134,13 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             context.data["ayonAddonsManager"]["deadline"]
         )
 
+        job_info = instance.data["deadline"]["job_info"]
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=job["Props"]["Batch"],
             Department=self.deadline_department,
             Priority=priority,
-            InitialStatus=initial_status,
+            InitialStatus=job_info.publish_job_state,
             Group=self.deadline_group,
             Pool=self.deadline_pool or None,
             JobDependencies=dependency_ids,
@@ -395,12 +392,3 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             "publish", template_name, "directory"
         )
         return render_dir_template.format_strict(template_data)
-
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            EnumDef("publishJobState",
-                    label="Publish Job State",
-                    items=["Active", "Suspended"],
-                    default="Active")
-        ]

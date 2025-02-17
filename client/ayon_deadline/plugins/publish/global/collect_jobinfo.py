@@ -320,6 +320,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 default=default_values.get("job_delay"),
                 tooltip="Delay job by specified timecode. Format: dd:hh:mm:ss",
                 placeholder="00:00:00:00"
+            ),
+            EnumDef(
+                "publish_job_state",
+                label="Publish Job State",
+                default=default_values.get("publish_job_state"),
+                items=[
+                    {"value": "active", "label": "Active"},
+                    {"value": "suspended", "label": "Suspended"}
+                ]
             )
         ]
 
