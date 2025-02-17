@@ -100,7 +100,6 @@ class NukeSubmitDeadline(
             render_path = instance.data["path"]
             instance.data["outputDir"] = os.path.dirname(
                 render_path).replace("\\", "/")
-            instance.data["publishJobState"] = "Suspended"
 
         if instance.data.get("bakingNukeScripts"):
             for baking_script in instance.data["bakingNukeScripts"]:
