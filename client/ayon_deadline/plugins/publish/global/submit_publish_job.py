@@ -11,7 +11,6 @@ import ayon_api
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.lib import EnumDef
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
