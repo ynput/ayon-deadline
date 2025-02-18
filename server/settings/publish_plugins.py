@@ -111,6 +111,7 @@ class CollectJobInfoItem(BaseSettingsModel):
         placeholder="dd:hh:mm:ss"
     )
     publish_job_state : str = SettingsField(
+        "active",
         enum_resolver=publish_job_state_enum,
         title="Publish Job State",
         description="Publish job could wait to be manually enabled from "
