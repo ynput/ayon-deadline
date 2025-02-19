@@ -12,6 +12,7 @@ import pyblish.api
 
 from ayon_core.pipeline import publish
 from ayon_core.lib import EnumDef
+from ayon_core.lib.path_templates import TemplateUnsolved
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
@@ -20,6 +21,7 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     prepare_representations,
     create_metadata_path
 )
+
 from ayon_deadline import DeadlineAddon
 from ayon_deadline.lib import (
     JobType,
@@ -226,9 +228,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             UserName=username,
             Comment=context.data.get("comment"),
         )
-        job_info.OutputDirectory.append(
-            output_dir.replace("\\", "/")
-        )
+        if output_dir:
+            job_info.OutputDirectory.append(output_dir)
+
         job_info.EnvironmentKeyValue.update(environment)
         return deadline_addon.submit_ayon_plugin_job(
             server_name,
@@ -435,9 +437,16 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         with open(metadata_path, "w") as f:
             json.dump(publish_job, f, indent=4, sort_keys=True)
 
-    def _get_publish_folder(self, anatomy, template_data,
-                            folder_entity, product_name, context,
-                            product_type, version=None):
+    def _get_publish_folder(
+        self,
+        anatomy,
+        template_data,
+        folder_entity,
+        product_name,
+        context,
+        product_type,
+        version=None
+    ):
         """
             Extracted logic to pre-calculate real publish folder, which is
             calculated in IntegrateNew inside of Deadline process.
@@ -460,11 +469,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             version (int): override version from instance if exists
 
         Returns:
-            (string): publish folder where rendered and published files will
+            Optional[str]: publish folder where rendered and published files will
                 be stored
                 based on 'publish' template
-        """
 
+        """
         project_name = context.data["projectName"]
         host_name = context.data["hostName"]
         if not version:
@@ -507,11 +516,23 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "name": product_name,
             "type": product_type,
         }
+        output = None
+        try:
+            render_dir_template = anatomy.get_template_item(
+                "publish", template_name, "directory"
+            )
+            output = (
+                render_dir_template
+                .format_strict(template_data)
+                .replace("\\", "/")
+            )
 
-        render_dir_template = anatomy.get_template_item(
-            "publish", template_name, "directory"
-        )
-        return render_dir_template.format_strict(template_data)
+        except TemplateUnsolved:
+            self.log.error(
+                "Publish directory template is unsolved for: "
+                f"{template_name} in anatomy. Output directory won't be set."
+            )
+        return output
 
     @classmethod
     def get_attribute_defs(cls):
