@@ -11,8 +11,8 @@ import ayon_api
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.lib import EnumDef
 from ayon_core.lib.path_templates import TemplateUnsolved
+
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
@@ -78,9 +78,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         - ext (str, Optional): The extension (including `.`) that is required
             in the output filename to be picked up for image sequence
             publishing.
-
-        - publishJobState (str, Optional): "Active" or "Suspended"
-            This defaults to "Suspended"
 
         - expectedFiles (list or dict): explained below
 
@@ -187,9 +184,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             or instance.data.get("priority", 50)
         )
 
-        instance_settings = self.get_attr_values_from_data(instance.data)
-        initial_status = instance_settings.get("publishJobState", "Active")
-
         batch_name = self._get_batch_name(instance, render_job)
         username = self._get_username(instance, render_job)
         dependency_ids = self._get_dependency_ids(instance, render_job)
@@ -216,12 +210,13 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             context.data["ayonAddonsManager"]["deadline"]
         )
 
+        job_info = instance.data["deadline"]["job_info"]
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=batch_name,
             Department=self.deadline_department,
             Priority=priority,
-            InitialStatus=initial_status,
+            InitialStatus=job_info.publish_job_state,
             Group=self.deadline_group,
             Pool=self.deadline_pool or None,
             JobDependencies=dependency_ids,
@@ -533,12 +528,3 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 f"{template_name} in anatomy. Output directory won't be set."
             )
         return output
-
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            EnumDef("publishJobState",
-                    label="Publish Job State",
-                    items=["Active", "Suspended"],
-                    default="Active")
-        ]
