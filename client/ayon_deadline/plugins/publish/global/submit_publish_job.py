@@ -511,12 +511,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "name": product_name,
             "type": product_type,
         }
-        output = None
+
+        render_dir_template = anatomy.get_template_item(
+            "publish", template_name, "directory"
+        )
         try:
-            render_dir_template = anatomy.get_template_item(
-                "publish", template_name, "directory"
-            )
-            output = (
+            return (
                 render_dir_template
                 .format_strict(template_data)
                 .replace("\\", "/")
@@ -527,4 +527,3 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Publish directory template is unsolved for: "
                 f"{template_name} in anatomy. Output directory won't be set."
             )
-        return output
