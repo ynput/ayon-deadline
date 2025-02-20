@@ -643,6 +643,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
             "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data.get("frames", ""),
             "Group": cls._sanitize(data["group"]),
+            "LimitGroups": cls._sanitize(data["limit_groups"]),
             "Pool": cls._sanitize(data["primary_pool"]),
             "SecondaryPool": cls._sanitize(data["secondary_pool"]),
 
