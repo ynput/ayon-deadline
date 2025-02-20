@@ -108,8 +108,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if machine_list:
             if attr_values["machine_list_deny"]:
                 job_info.Blacklist = machine_list
+                job_info.Whitelist = None
             else:
                 job_info.Whitelist = machine_list
+                job_info.Blacklist = None
 
     def _handle_job_delay(self, attr_values, job_info):
         job_delay = attr_values["job_delay"]
