@@ -69,7 +69,7 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         verify = self._instance.data["deadline"]["verify"]
         return self.submit(payload, auth=auth, verify=verify)
 
-    def from_published_scene(self):
+    def from_published_scene(self, replace_in_path=True):
         """
         This is needed to set the correct path for the json metadata. Because
         the rendering path is set in the blend file during the collection,
