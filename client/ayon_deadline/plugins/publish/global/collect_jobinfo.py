@@ -115,6 +115,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     def _handle_job_delay(self, attr_values, job_info):
         job_delay = attr_values["job_delay"]
+        if not job_delay:
+            return
         try:
             parts = job_delay.split(':')
             if len(parts) != 4:
