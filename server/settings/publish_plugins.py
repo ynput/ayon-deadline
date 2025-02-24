@@ -9,11 +9,11 @@ from ayon_server.settings import (
 
 
 class LimitGroupsSubmodel(BaseSettingsModel):
-    _layout = "expanded"
-    name: str = SettingsField(title="Name")
+    _layout = "compact"
+    name: str = SettingsField(title="Group Name")
     value: list[str] = SettingsField(
         default_factory=list,
-        title="Limit Groups"
+        title="Node Classes"
     )
 
 
@@ -247,7 +247,9 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
         default_factory=list,
         title="Node based Limit Groups",
-        description="Provide list of node types to get particular limit"
+        description=
+            "Provide list of Nuke node classes to get particular limit group. "
+            "Example: 'OFX.absoft.neatvideo5_v5'"
     )
 
 
