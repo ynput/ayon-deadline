@@ -129,7 +129,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             _ = datetime.strptime(formatted_time_string, "%H:%M:%S").time()
             job_info.JobDelay = job_delay
         except ValueError:
-            self.job.warning(
+            self.log.warning(
                 f"Job delay '{job_delay}' doesn't match to "
                 "'dd:hh:mm:ss' format"
             )
