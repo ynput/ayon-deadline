@@ -414,12 +414,18 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "fps": instance_skeleton_data["fps"],
             "source": instance_skeleton_data["source"],
             "user": instance.context.data["user"],
-            "version": instance.context.data["version"],  # workfile version
             "intent": instance.context.data.get("intent"),
             "comment": instance.context.data.get("comment"),
             "job": render_job or None,
             "instances": instances
         }
+        collected_version = (
+            instance.data.get("version")   # instance override version
+            or instance.context.data.get("version")   # workfile version
+        )
+        if collected_version:
+            publish_job["version"] = collected_version
+
         if deadline_publish_job_id:
             publish_job["deadline_publish_job_id"] = deadline_publish_job_id
 
