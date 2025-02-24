@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from datetime import datetime
 
 import pyblish.api
 from ayon_core.lib import (
@@ -53,6 +54,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         job_info = PublishDeadlineJobInfo.from_attribute_values(attr_values)
 
         self._handle_machine_list(attr_values, job_info)
+        self._handle_job_delay(attr_values, job_info)
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
@@ -106,8 +108,35 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if machine_list:
             if attr_values["machine_list_deny"]:
                 job_info.Blacklist = machine_list
+                job_info.Whitelist = None
             else:
                 job_info.Whitelist = machine_list
+                job_info.Blacklist = None
+
+    def _handle_job_delay(self, attr_values, job_info):
+        job_delay = attr_values["job_delay"]
+        if not job_delay:
+            return
+        try:
+            parts = job_delay.split(':')
+            if len(parts) != 4:
+                raise ValueError("Invalid format: requires dd:hh:mm:ss")
+
+            _days = int(parts[0])
+            hours = int(parts[1])
+            minutes = int(parts[2])
+            seconds = int(parts[3])
+
+            formatted_time_string = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            _ = datetime.strptime(formatted_time_string, "%H:%M:%S").time()
+            job_info.JobDelay = job_delay
+            job_info.ScheduledType = "Once"
+        except ValueError:
+            self.log.warning(
+                f"Job delay '{job_delay}' doesn't match to "
+                "'dd:hh:mm:ss' format"
+            )
+            job_info.JobDelay = None
 
     @classmethod
     def apply_settings(cls, project_settings):
