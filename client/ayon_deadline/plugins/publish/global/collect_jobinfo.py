@@ -130,6 +130,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             formatted_time_string = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
             _ = datetime.strptime(formatted_time_string, "%H:%M:%S").time()
             job_info.JobDelay = job_delay
+            job_info.ScheduledType = "Once"
         except ValueError:
             self.log.warning(
                 f"Job delay '{job_delay}' doesn't match to "
