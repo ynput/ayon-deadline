@@ -9,7 +9,10 @@ from ayon_core.lib import (
     TextDef,
     UISeparatorDef
 )
-from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.pipeline.publish import (
+    AYONPyblishPluginMixin,
+    KnownPublishError
+)
 from ayon_core.lib.profiles_filtering import filter_profiles
 from ayon_core.addon import AddonsManager
 
@@ -48,6 +51,12 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             return
 
         attr_values = self._get_jobinfo_defaults(instance)
+        if not attr_values:
+            raise KnownPublishError(
+                "No profile selected for defaults. Ask Admin to "
+                "fill generic profiles at "
+                "ayon+settings://deadline/publish/CollectJobInfo/profiles"
+            )
 
         attr_values.update(self.get_attr_values_from_data(instance.data))
         job_info = PublishDeadlineJobInfo.from_attribute_values(attr_values)
