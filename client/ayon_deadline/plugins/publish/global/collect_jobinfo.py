@@ -11,7 +11,7 @@ from ayon_core.lib import (
 )
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin,
-    KnownPublishError
+    PublishError
 )
 from ayon_core.lib.profiles_filtering import filter_profiles
 from ayon_core.addon import AddonsManager
