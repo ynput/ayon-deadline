@@ -52,7 +52,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         attr_values = self._get_jobinfo_defaults(instance)
         if not attr_values:
-            raise KnownPublishError(
+            raise PublishError(
                 "No profile selected for defaults. Ask Admin to "
                 "fill generic profiles at "
                 "ayon+settings://deadline/publish/CollectJobInfo/profiles"
