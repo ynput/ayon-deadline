@@ -9,11 +9,11 @@ from ayon_server.settings import (
 
 
 class LimitGroupsSubmodel(BaseSettingsModel):
-    _layout = "expanded"
-    name: str = SettingsField(title="Name")
+    _layout = "compact"
+    name: str = SettingsField(title="Group Name")
     value: list[str] = SettingsField(
         default_factory=list,
-        title="Limit Groups"
+        title="Node Classes"
     )
 
 
@@ -40,6 +40,15 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
+        {"value": "publish_job_state", "label": "Publish Job State"},
+    ]
+
+
+def publish_job_state_enum():
+    """Enum for initial state of publish job"""
+    return [
+        {"value": "active", "label": "Active"},
+        {"value": "suspended", "label": "Suspended"},
     ]
 
 
@@ -100,6 +109,13 @@ class CollectJobInfoItem(BaseSettingsModel):
     job_delay: str = SettingsField(
         "", title="Delay job",
         placeholder="dd:hh:mm:ss"
+    )
+    publish_job_state : str = SettingsField(
+        "active",
+        enum_resolver=publish_job_state_enum,
+        title="Publish Job State",
+        description="Publish job could wait to be manually enabled from "
+                    "Suspended state after quality check"
     )
     use_published: bool = SettingsField(True, title="Use Published scene")
     use_asset_dependencies: bool = SettingsField(
@@ -231,7 +247,9 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
         default_factory=list,
         title="Node based Limit Groups",
-        description="Provide list of node types to get particular limit"
+        description=
+            "Provide list of Nuke node classes to get particular limit group. "
+            "Example: 'OFX.absoft.neatvideo5_v5'"
     )
 
 
@@ -355,13 +373,15 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "group": "",
           "priority": 50,
           "job_delay": "",
+          "publish_job_state": "active",
           "overrides": [
             "department",
             "chunk_size",
             "group",
             "priority",
             "primary_pool",
-            "secondary_pool"
+            "secondary_pool",
+            "publish_job_state"
           ],
           "chunk_size": 1,
           "department": "",
@@ -386,13 +406,15 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "group": "",
           "priority": 50,
           "job_delay": "",
+          "publish_job_state": "active",
           "overrides": [
             "department",
             "chunk_size",
             "group",
             "priority",
             "primary_pool",
-            "secondary_pool"
+            "secondary_pool",
+            "publish_job_state"
           ],
           "chunk_size": 10,
           "department": "",

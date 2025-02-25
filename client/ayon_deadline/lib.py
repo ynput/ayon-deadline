@@ -627,6 +627,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
     """Contains additional AYON variables from Settings for internal logic."""
 
     # AYON custom fields used for Settings
+    publish_job_state : Optional[str] = field(default=None)
     use_published: Optional[bool] = field(default=None)
     use_asset_dependencies: Optional[bool] = field(default=None)
     use_workfile_dependency: Optional[bool] = field(default=None)
@@ -642,10 +643,12 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
             "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data.get("frames", ""),
             "Group": cls._sanitize(data["group"]),
+            "LimitGroups": cls._sanitize(data["limit_groups"]),
             "Pool": cls._sanitize(data["primary_pool"]),
             "SecondaryPool": cls._sanitize(data["secondary_pool"]),
 
             # fields needed for logic, values unavailable during collection
+            "publish_job_state": data["publish_job_state"],
             "use_published": data["use_published"],
             "use_asset_dependencies": data["use_asset_dependencies"],
             "use_workfile_dependency": data["use_workfile_dependency"],
@@ -669,6 +672,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
         self, key: str, value: Any, output: Dict[str, Any]
     ):
         if key not in (
+            "publish_job_state",
             "use_published",
             "use_asset_dependencies",
             "use_workfile_dependency",
