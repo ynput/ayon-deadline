@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass, field, asdict
+import getpass
 import pyblish.api
 from datetime import datetime
 from pathlib import Path
@@ -44,9 +45,14 @@ class UnrealSubmitDeadline(
 
     def get_job_info(self, job_info=None):
         instance = self._instance
+        context = self._instance.context
 
         job_info.BatchName = self._get_batch_name()
         job_info.Plugin = "UnrealEngine5"
+        job_info.Name = instance.data["name"]
+        job_info.Plugin = "UnrealEngine5"
+        job_info.UserName = context.data.get(
+            "deadlineUser", getpass.getuser())
 
         if instance.data["frameEnd"] > instance.data["frameStart"]:
             # Deadline requires integers in frame range
@@ -75,15 +81,13 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
-        cmd_args = [f"{master_level} -game ",
-                    f"-MoviePipelineConfig={render_queue_path}"]
-        cmd_args.extend([
-            "-windowed",
-            "-Log",
-            "-StdOut",
-            "-allowStdOutLogVerbosity"
-            "-Unattended"
-        ])
+        pre_render_script = Path(abstract_submit_deadline.__file__).parent / "plugins" / "publish" / "Unreal" / "Scripts" / "RemoteRenderPreLaunch.py"
+        work_mrq = self._instance.data["work_mrq"]
+        cmd_args = [
+            f'-execcmds="py {pre_render_script.as_posix()}"',
+            f'-PublishedMRQManifest="{work_mrq}"',
+            "-MRQInstance"
+        ]
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
@@ -126,7 +130,7 @@ class UnrealSubmitDeadline(
         if collected_version_control:
             change = (collected_version_control["change_info"]
                                                ["change"])
-            batch_name = f"{batch_name}_{change}"
+            batch_name = f"{batch_name} - CL {change}"
         return batch_name
 
     def _get_version_control(self):
