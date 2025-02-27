@@ -230,7 +230,7 @@ class AbstractSubmitDeadline(
             job_info.SecondaryPool = job_info.SecondaryPool
 
         if job_info.Frames:
-            instance.data["explicit_frames"] = True
+            instance.data["hasExplicitFrames"] = True
 
         # Adding file dependencies.
         if not is_in_tests() and job_info.use_asset_dependencies:
