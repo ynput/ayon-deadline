@@ -246,12 +246,14 @@ class HarmonySubmitDeadline(
 
     def get_job_info(self, job_info=None):
         job_info.Plugin = "HarmonyAYON"
-        job_info.Frames = "{}-{}".format(
-            self._instance.data["frameStartHandle"],
-            self._instance.data["frameEndHandle"]
-        )
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            job_info.Frames = "{}-{}".format(
+                self._instance.data["frameStartHandle"],
+                self._instance.data["frameEndHandle"]
+            )
 
-        return job_info
+            return job_info
 
     def _unzip_scene_file(self, published_scene: Path) -> Path:
         """Unzip scene zip file to its directory.
