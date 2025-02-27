@@ -32,6 +32,7 @@ from ayon_core.pipeline import (
 
 from ayon_core.lib import is_in_tests, NumberDef, BoolDef
 from ayon_core.pipeline.farm.tools import iter_expected_files
+from ayon_core.pipeline.farm.pyblish_functions import get_real_frames_to_render
 
 from ayon_maya.api.lib_rendersettings import RenderSettings
 from ayon_maya.api.lib import get_attr_in_layer
@@ -601,7 +602,8 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             {"<Scene>": scene_filename_no_ext,
              "<Layer>": layer})
 
-        start_frame = int(self._instance.data["frameStartHandle"])
+
+        start_frame = get_real_frames_to_render(self.job_info.Frames)[0]
         workspace = self._instance.context.data["workspace"]
         filename_zero = "{}_{:04d}.vrscene".format(output_path, start_frame)
         filepath_zero = os.path.join(workspace, filename_zero)
@@ -653,11 +655,14 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                         ))
 
     def _job_info_label(self, label):
+        frames = get_real_frames_to_render(self.job_info.Frames)
+        start_frame = frames[0]
+        end_frame = frames[-1]
         return "{label} {job.Name} [{start}-{end}]".format(
             label=label,
             job=self.job_info,
-            start=int(self._instance.data["frameStartHandle"]),
-            end=int(self._instance.data["frameEndHandle"]),
+            start=start_frame,
+            end=end_frame,
         )
 
 def _format_tiles(
