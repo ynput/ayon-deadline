@@ -253,7 +253,7 @@ class HarmonySubmitDeadline(
                 self._instance.data["frameEndHandle"]
             )
 
-            return job_info
+        return job_info
 
     def _unzip_scene_file(self, published_scene: Path) -> Path:
         """Unzip scene zip file to its directory.
