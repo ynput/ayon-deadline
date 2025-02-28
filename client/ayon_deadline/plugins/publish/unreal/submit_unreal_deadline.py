@@ -4,6 +4,8 @@ import pyblish.api
 from datetime import datetime
 from pathlib import Path
 
+import unreal
+
 from ayon_core.lib import is_in_tests
 
 import ayon_unreal
@@ -58,6 +60,11 @@ class UnrealSubmitDeadline(
                 int(round(instance.data["frameStart"])),
                 int(round(instance.data["frameEnd"])))
             job_info.Frames = frame_range
+
+        if work_mrq := self._instance.data["work_mrq"]:
+            job_info.ExtraInfoKeyValue.update(
+                {"SerializedMRQ": unreal.MoviePipelineEditorLibrary.convert_manifest_file_to_string(work_mrq)}
+            )
 
         return job_info
 
