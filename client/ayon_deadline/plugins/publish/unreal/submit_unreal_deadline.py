@@ -84,12 +84,9 @@ class UnrealSubmitDeadline(
 
         deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
-        master_level = self._instance.data["master_level"]
-        render_queue_path = self._instance.data["render_queue_path"]
         pre_render_script = Path(ayon_unreal.__file__).parent / "api" / "rendering_remote.py"
-        work_mrq = self._instance.data["work_mrq"]  # goes into plugininfo serialized
         cmd_args = [
-            f'-execcmds="py {pre_render_script.as_posix()}"',   # script that shall connect to RPC and render the passed MRQ
+            f'-execcmds="py {pre_render_script.as_posix()}"',
             "-MRQInstance"
         ]
         self.log.debug(f"cmd-args::{cmd_args}")
