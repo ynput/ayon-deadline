@@ -21,9 +21,6 @@ class DeadlinePluginInfo:
     StartupDirectory: str = field(default=None)
     CommandLineArguments: str = field(default=None)
     MultiProcess: bool = field(default=None)
-    PerforceStream: str = field(default=None)
-    PerforceChangelist: str = field(default=None)
-    PerforceGamePath: str = field(default=None)
 
 
 class UnrealSubmitDeadline(
@@ -179,7 +176,3 @@ class UnrealSubmitDeadline(
         unreal_project_hierarchy = unreal_project_hierarchy.strip("\\")
 
         deadline_plugin_info.ProjectFile = unreal_project_file_name
-
-        deadline_plugin_info.PerforceStream = stream
-        deadline_plugin_info.PerforceChangelist = change_list_id
-        deadline_plugin_info.PerforceGamePath = unreal_project_hierarchy
