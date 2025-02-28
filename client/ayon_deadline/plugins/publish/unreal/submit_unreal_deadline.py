@@ -89,21 +89,6 @@ class UnrealSubmitDeadline(
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
-        # if Perforce - triggered by active `changelist_metadata` instance!!
-        collected_version_control = self._get_version_control()
-        if collected_version_control:
-            version_control_data = self._instance.context.data[
-                "version_control"]
-            workspace_dir = version_control_data["workspace_dir"]
-            stream = version_control_data["stream"]
-            self._update_version_control_data(
-                self.scene_path,
-                workspace_dir,
-                stream,
-                collected_version_control["change_info"]["change"],
-                deadline_plugin_info,
-            )
-
         return asdict(deadline_plugin_info)
 
     def from_published_scene(self, replace_in_path=True):
@@ -139,49 +124,3 @@ class UnrealSubmitDeadline(
         """
         return "C:/Program Files/Epic Games/UE_5.4/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 
-    def _get_version_control(self):
-        """Look if changelist_metadata is published to get change list info.
-
-        Context version_control contains universal connection info, instance
-        version_control contains detail about change list.
-        """
-        change_list_version = {}
-        for inst in self._instance.context:
-            # get change info from `changelist_metadata` instance
-            change_list_version = inst.data.get("version_control")
-            if change_list_version:
-                context_version = (
-                    self._instance.context.data["version_control"])
-                change_list_version.update(context_version)
-                break
-        return change_list_version
-
-    def _update_version_control_data(
-        self,
-        scene_path,
-        workspace_dir,
-        stream,
-        change_list_id,
-        deadline_plugin_info,
-    ):
-        """Adds Perforce metadata which causes DL pre job to sync to change.
-
-        It triggers only in presence of activated `changelist_metadata` instance,
-        which materialize info about commit. Artists could return to any
-        published commit and re-render if they choose.
-        `changelist_metadata` replaces `workfile` as there are no versioned Unreal
-        projects (because of size).
-        """
-        # normalize paths, c:/ vs C:/
-        scene_path = str(Path(scene_path).resolve())
-        workspace_dir = str(Path(workspace_dir).resolve())
-
-        unreal_project_file_name = os.path.basename(scene_path)
-
-        unreal_project_hierarchy = self.scene_path.replace(workspace_dir, "")
-        unreal_project_hierarchy = (
-            unreal_project_hierarchy.replace(unreal_project_file_name, ""))
-        # relative path from workspace dir to last folder
-        unreal_project_hierarchy = unreal_project_hierarchy.strip("\\")
-
-        deadline_plugin_info.ProjectFile = unreal_project_file_name
