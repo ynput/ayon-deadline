@@ -1,9 +1,8 @@
 # Copyright Epic Games, Inc. All Rights Reserved
 
-import os
-
-import UnrealSyncUtil
 from Deadline.Scripting import *
+import UnrealSyncUtil
+import os
 from Deadline.Scripting import FileUtils
 
 
@@ -81,6 +80,7 @@ def __main__( deadlinePlugin ):
     project_path = os.path.join(projectRoot, projectFile)
     deadlinePlugin.LogInfo( "Storing UnrealUProject (\"%s\") in environment variable..." % project_path )
     deadlinePlugin.SetProcessEnvironmentVariable( "UnrealUProject", project_path )
+
 
     # Set the option if it's syncing entire stream or just game path
     perforceTools.SetSyncEntireStream( bSyncEntireStream )
