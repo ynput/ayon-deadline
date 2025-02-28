@@ -7,6 +7,8 @@ from pathlib import Path
 
 from ayon_core.lib import is_in_tests
 
+import ayon_unreal
+
 from ayon_deadline import abstract_submit_deadline
 
 
@@ -78,11 +80,10 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
-        pre_render_script = Path(abstract_submit_deadline.__file__).parent / "plugins" / "publish" / "Unreal" / "Scripts" / "RemoteRenderPreLaunch.py"
-        work_mrq = self._instance.data["work_mrq"]
+        pre_render_script = Path(ayon_unreal.__file__).parent / "api" / "rendering_remote.py"
+        work_mrq = self._instance.data["work_mrq"]  # goes into plugininfo serialized
         cmd_args = [
-            f'-execcmds="py {pre_render_script.as_posix()}"',
-            f'-PublishedMRQManifest="{work_mrq}"',
+            f'-execcmds="py {pre_render_script.as_posix()}"',   # script that shall connect to RPC and render the passed MRQ
             "-MRQInstance"
         ]
         self.log.debug(f"cmd-args::{cmd_args}")
