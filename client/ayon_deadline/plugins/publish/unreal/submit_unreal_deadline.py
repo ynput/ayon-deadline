@@ -109,11 +109,10 @@ class UnrealSubmitDeadline(
         batch_name = os.path.basename(self._instance.data["source"])
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
-        collected_version_control = self._get_version_control()
-        if collected_version_control:
-            change = (collected_version_control["change_info"]
-                                               ["change"])
-            batch_name = f"{batch_name} - CL {change}"
+
+        if p4_data := self._instance.context.data.get("perforce"):
+            batch_name += f" - CL {p4_data['changelist']}"
+
         return batch_name
 
     def _get_executable(self):
