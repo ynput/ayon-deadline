@@ -53,6 +53,7 @@ class UnrealSubmitDeadline(
         job_info.Plugin = "UnrealEngine5"
         job_info.UserName = context.data.get(
             "deadlineUser", getpass.getuser())
+        job_info.CommandLineMode = False    # enables RPC
 
         if instance.data["frameEnd"] > instance.data["frameStart"]:
             # Deadline requires integers in frame range
