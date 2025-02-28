@@ -109,7 +109,7 @@ class UnrealSubmitDeadline(
 
         For automatic tests it adds timestamp, for Perforce driven change list
         """
-        batch_name = os.path.basename(self._instance.data["source"])
+        batch_name = Path(self._instance.data["source"]).stem
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
 
