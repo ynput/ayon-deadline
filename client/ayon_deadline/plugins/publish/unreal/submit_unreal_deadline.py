@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass, field, asdict
 import getpass
 import pyblish.api
@@ -65,16 +64,15 @@ class UnrealSubmitDeadline(
     def get_plugin_info(self):
         deadline_plugin_info = DeadlinePluginInfo()
 
-        render_path = self._instance.data["expectedFiles"][0]
-        self._instance.data["outputDir"] = os.path.dirname(render_path)
+        expected_file = Path(self._instance.data["expectedFiles"][0]).resolve()
+        self._instance.data["outputDir"] = expected_file.parent.as_posix()
         self._instance.context.data["version"] = 1  #TODO
 
-        render_dir = os.path.dirname(render_path)
         file_name = self._instance.data["file_names"][0]
-        render_path = os.path.join(render_dir, file_name)
+        render_path = (expected_file.parent / file_name).resolve()
 
         deadline_plugin_info.ProjectFile = self.scene_path
-        deadline_plugin_info.Output = render_path.replace("\\", "/")
+        deadline_plugin_info.Output = render_path.as_posix()
 
         deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
