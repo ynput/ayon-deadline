@@ -1,29 +1,11 @@
 # Copyright Epic Games, Inc. All Rights Reserved
 
 import os
-import shutil
-from pathlib import Path
 
 import UnrealSyncUtil
 from Deadline.Scripting import *
 from Deadline.Scripting import FileUtils
 
-
-def copy_mrq_manifest(deadlinePlugin, projectRoot):
-    cmd_args = deadlinePlugin.GetPluginInfoEntry("CommandLineArguments")
-    cmd_args = cmd_args.split(" ")
-
-    published_manifest = None
-    for arg in cmd_args:
-        if "PublishedMRQManifest" in arg:
-            published_manifest = Path(arg.split("=")[1])
-            break
-
-    if not published_manifest:
-        raise Exception("PublishedMRQManifest not found in command line arguments.")
-    
-    local_manifest = Path(projectRoot) / "Saved" / "MovieRenderPipeline" / published_manifest.name
-    shutil.copyfile(published_manifest, local_manifest)
 
 
 # This is executed on the Slave prior to it attempting to execute a task.
@@ -99,12 +81,6 @@ def __main__( deadlinePlugin ):
     project_path = os.path.join(projectRoot, projectFile)
     deadlinePlugin.LogInfo( "Storing UnrealUProject (\"%s\") in environment variable..." % project_path )
     deadlinePlugin.SetProcessEnvironmentVariable( "UnrealUProject", project_path )
-
-    try:
-        copy_mrq_manifest(deadlinePlugin, projectRoot)
-    except Exception as e:
-        deadlinePlugin.LogWarning("Caught exception while copying MRQ manifest. " + str(e))
-        deadlinePlugin.FailRender(str(e))
 
     # Set the option if it's syncing entire stream or just game path
     perforceTools.SetSyncEntireStream( bSyncEntireStream )

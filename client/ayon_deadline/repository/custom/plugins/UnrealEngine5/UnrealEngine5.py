@@ -676,11 +676,6 @@ class UnrealEngineCmdManagedProcess(ManagedProcess):
         Handles progress reports
         """
         progress = float(self.GetRegexMatch(1))
-        # ! this is a workaround for knowing when to close the ManagedProcess
-        # ! signalled from Unreal custom MRQ executor
-        if int(progress) > 99:
-            self.ExitCode = 0
-            self.AbortRender("", ManagedProcess.AbortLevel.Success)
         self._deadline_plugin.SetProgress(progress)
 
     def _render_executable(self):
