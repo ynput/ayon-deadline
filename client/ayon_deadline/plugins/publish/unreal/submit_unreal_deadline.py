@@ -13,7 +13,7 @@ from ayon_deadline import abstract_submit_deadline
 @dataclass
 class DeadlinePluginInfo:
     ProjectFile: str = field(default=None)
-    EditorExecutableName: str = field(default=None)
+    Executable: str = field(default=None)
     EngineVersion: str = field(default=None)
     CommandLineMode: str = field(default=True)
     OutputFilePath: str = field(default=None)
@@ -74,7 +74,7 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.ProjectFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
 
-        deadline_plugin_info.EditorExecutableName = "UnrealEditor-Cmd.exe"  # parse ayon+settings://applications/applications/unreal/variants/3/environmen
+        deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
@@ -129,6 +129,14 @@ class UnrealSubmitDeadline(
                                                ["change"])
             batch_name = f"{batch_name} - CL {change}"
         return batch_name
+
+    def _get_executable(self):
+        """Returns path to Unreal executable.
+
+        Ahh... why is this so tricky?
+        gotta do that in cpp it seems
+        """
+        return "C:/Program Files/Epic Games/UE_5.4/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 
     def _get_version_control(self):
         """Look if changelist_metadata is published to get change list info.
