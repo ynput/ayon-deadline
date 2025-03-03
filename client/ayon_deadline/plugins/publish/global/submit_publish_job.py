@@ -347,7 +347,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 instance, instance_skeleton_data,
                 aov_filter,
                 self.skip_integration_repre_list,
-                do_not_add_review
+                do_not_add_review,
+                instance.data["deadline"]["job_info"].Frames
             )
         else:
             representations = prepare_representations(

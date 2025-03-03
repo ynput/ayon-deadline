@@ -28,13 +28,15 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         instance = self._instance
         job_info.Plugin = instance.data.get("blenderRenderPlugin", "Blender")
 
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}x{step}".format(
-            start=int(instance.data["frameStartHandle"]),
-            end=int(instance.data["frameEndHandle"]),
-            step=int(instance.data["byFrameStep"]),
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}x{step}".format(
+                start=int(instance.data["frameStartHandle"]),
+                end=int(instance.data["frameEndHandle"]),
+                step=int(instance.data["byFrameStep"]),
+            )
+            job_info.Frames = frames
 
         return job_info
 
