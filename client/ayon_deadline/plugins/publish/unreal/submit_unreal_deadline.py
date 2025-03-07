@@ -81,14 +81,15 @@ class UnrealSubmitDeadline(
 
         deadline_plugin_info.ProjectFile = self.scene_path
         deadline_plugin_info.Output = render_path.as_posix()
-
         deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
+
         pre_render_script = Path(ayon_unreal.__file__).parent / "api" / "rendering_remote.py"
-        cmd_args = [
-            f'-execcmds="py {pre_render_script.as_posix()}"',
-            "-MRQInstance"
-        ]
+        cmd_args = [f'-execcmds="py {pre_render_script.as_posix()}"']
+        if work_mrq := self._instance.data["work_mrq"]:
+            manifest: str = Path(work_mrq).as_posix()
+            cmd_args.append(f"-MRQManifest={manifest}")
+        cmd_args.append("-MRQInstance")
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
