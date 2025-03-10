@@ -114,8 +114,8 @@ class UnrealSubmitDeadline(
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
 
-        if p4_data := self._instance.context.data.get("perforce"):
-            batch_name += f" - CL {p4_data['changelist']}"
+        if cl_num := self._instance.context.data.get("p4_changelist"):
+            batch_name += f" - CL {cl_num}"
 
         return batch_name
 
