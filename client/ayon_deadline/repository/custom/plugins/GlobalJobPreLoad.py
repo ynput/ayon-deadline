@@ -586,6 +586,7 @@ def inject_ayon_environment(deadlinePlugin):
             "AYON_SERVER_URL": ayon_server_url,
             "AYON_API_KEY": ayon_api_key,
             "AYON_BUNDLE_NAME": ayon_bundle_name,
+            "AYON_DEADLINE_JOBID": job.JobId,
         }
 
         for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
