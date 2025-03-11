@@ -208,7 +208,9 @@ class AbstractSubmitDeadline(
 
     def get_generic_job_info(self, instance: pyblish.api.Instance):
         context: pyblish.api.Context = instance.context
-        job_info: PublishDeadlineJobInfo = instance.data["deadline"]["job_info"]
+        job_info: PublishDeadlineJobInfo = (
+            instance.data["deadline"]["job_info"]
+        )
 
         # Always use the original work file name for the Job name even when
         # rendering is done from the published Work File. The original work
@@ -221,7 +223,8 @@ class AbstractSubmitDeadline(
 
         job_info.Name = "%s - %s" % (batch_name, instance.name)
         job_info.BatchName = batch_name
-        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())  # TODO clean deadlineUser
+        # TODO clean deadlineUser
+        job_info.UserName = context.data.get("deadlineUser", getpass.getuser())
         job_info.Comment = context.data.get("comment")
 
         if job_info.Pool != "none":
