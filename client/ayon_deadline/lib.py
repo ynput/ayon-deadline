@@ -357,44 +357,64 @@ class DeadlineJobInfo:
 
     # General
     Name: str = field(default="Untitled")
-    Frames: Optional[int] = field(default=None)  # default: 0
-    Comment: Optional[str] = field(default=None)  # default: empty
-    Department: Optional[str] = field(default=None)  # default: empty
-    BatchName: Optional[str] = field(default=None)  # default: empty
+    # default: '0'
+    Frames: Optional[str] = field(default=None)
+    # default: empty
+    Comment: Optional[str] = field(default=None)
+    # default: empty
+    Department: Optional[str] = field(default=None)
+    # default: empty
+    BatchName: Optional[str] = field(default=None)
     UserName: Optional[str] = field(default=None)
     MachineName: Optional[str] = field(default=None)
-    Pool: Optional[str] = field(default=None)  # default: "none"
+    # default: "none"
+    Pool: Optional[str] = field(default=None)
     SecondaryPool: Optional[str] = field(default=None)
-    Group: Optional[str] = field(default=None)  # default: "none"
+    # default: "none"
+    Group: Optional[str] = field(default=None)
     Priority: int = field(default=None)
     ChunkSize: int = field(default=None)
     ConcurrentTasks: int = field(default=None)
-    LimitConcurrentTasksToNumberOfCpus: Optional[bool] = field(
-        default=None)  # default: "true"
+    # default: "true"
+    LimitConcurrentTasksToNumberOfCpus: Optional[bool] = field(default=None)
     OnJobComplete: str = field(default=None)
-    SynchronizeAllAuxiliaryFiles: Optional[bool] = field(
-        default=None)  # default: false
-    ForceReloadPlugin: Optional[bool] = field(default=None)  # default: false
-    Sequential: Optional[bool] = field(default=None)  # default: false
-    SuppressEvents: Optional[bool] = field(default=None)  # default: false
-    Protected: Optional[bool] = field(default=None)  # default: false
+    # default: false
+    SynchronizeAllAuxiliaryFiles: Optional[bool] = field(default=None)
+    # default: false
+    ForceReloadPlugin: Optional[bool] = field(default=None)
+    # default: false
+    Sequential: Optional[bool] = field(default=None)
+    # default: false
+    SuppressEvents: Optional[bool] = field(default=None)
+    # default: false
+    Protected: Optional[bool] = field(default=None)
     InitialStatus: "InitialStatus" = field(default="Active")
     NetworkRoot: Optional[str] = field(default=None)
 
     # Timeouts
-    MinRenderTimeSeconds: Optional[int] = field(default=None)  # Default: 0
-    MinRenderTimeMinutes: Optional[int] = field(default=None)  # Default: 0
-    TaskTimeoutSeconds: Optional[int] = field(default=None)  # Default: 0
-    TaskTimeoutMinutes: Optional[int] = field(default=None)  # Default: 0
-    StartJobTimeoutSeconds: Optional[int] = field(default=None)  # Default: 0
-    StartJobTimeoutMinutes: Optional[int] = field(default=None)  # Default: 0
-    InitializePluginTimeoutSeconds: Optional[int] = field(
-        default=None)  # Default: 0
-    OnTaskTimeout: Optional[str] = field(default=None)  # Default: Error
-    EnableTimeoutsForScriptTasks: Optional[bool] = field(
-        default=None)  # Default: false
-    EnableFrameTimeouts: Optional[bool] = field(default=None)  # Default: false
-    EnableAutoTimeout: Optional[bool] = field(default=None)  # Default: false
+    # Default: 0
+    MinRenderTimeSeconds: Optional[int] = field(default=None)
+    # Default: 0
+    MinRenderTimeMinutes: Optional[int] = field(default=None)
+    # Default: 0
+    TaskTimeoutSeconds: Optional[int] = field(default=None)
+    # Default: 0
+    TaskTimeoutMinutes: Optional[int] = field(default=None)
+    # Default: 0
+    StartJobTimeoutSeconds: Optional[int] = field(default=None)
+    # Default: 0
+    StartJobTimeoutMinutes: Optional[int] = field(default=None)
+    # Default: 0
+    InitializePluginTimeoutSeconds: Optional[int] = field(default=None)
+    # Default: 'Error'
+    # Options: 'Error', 'Notify', 'ErrorAndNotify', 'Complete'
+    OnTaskTimeout: Optional[str] = field(default=None)
+    # Default: false
+    EnableTimeoutsForScriptTasks: Optional[bool] = field(default=None)
+    # Default: false
+    EnableFrameTimeouts: Optional[bool] = field(default=None)
+    # Default: false
+    EnableAutoTimeout: Optional[bool] = field(default=None)
 
     # Interruptible
     Interruptible: Optional[bool] = field(default=None)  # Default: false
@@ -402,94 +422,119 @@ class DeadlineJobInfo:
     RemTimeThreshold: Optional[int] = field(default=None)
 
     # Notifications
-    NotificationTargets: Optional[str] = field(
-        default=None)  # Default: blank (comma-separated list of users)
-    ClearNotificationTargets: Optional[bool] = field(
-        default=None)  # Default: false
-    NotificationEmails: Optional[str] = field(
-        default=None)  # Default: blank (comma-separated list of email addresses)
+    # Default: blank (comma-separated list of users)
+    NotificationTargets: Optional[str] = field(default=None)
+    # Default: false
+    ClearNotificationTargets: Optional[bool] = field(default=None)
+    # Default: blank (comma-separated list of email addresses)
+    NotificationEmails: Optional[str] = field(default=None)
     OverrideNotificationMethod: Optional[bool] = field(
         default=None)  # Default: false
-    EmailNotification: Optional[bool] = field(default=None)  # Default: false
-    PopupNotification: Optional[bool] = field(default=None)  # Default: false
-    NotificationNote: Optional[str] = field(default=None)  # Default: blank
+    # Default: false
+    EmailNotification: Optional[bool] = field(default=None)
+    # Default: false
+    PopupNotification: Optional[bool] = field(default=None)
+    # Default: blank
+    NotificationNote: Optional[str] = field(default=None)
 
     # Machine Limit
-    MachineLimit: Optional[int] = field(default=None)  # Default: 0
-    MachineLimitProgress: Optional[float] = field(default=None)  # Default -1.0
-    Whitelist: Optional[List[str]] = field(
-        default_factory=list)  # Default blank (comma-separated list)
-    Blacklist: Optional[List[str]] = field(
-        default_factory=list)  # Default blank (comma-separated list)
+    # Default: 0
+    MachineLimit: Optional[int] = field(default=None)
+    # Default -1.0
+    MachineLimitProgress: Optional[float] = field(default=None)
+    # Default blank (comma-separated list)
+    Whitelist: Optional[List[str]] = field(default_factory=list)
+    # Default blank (comma-separated list)
+    Blacklist: Optional[List[str]] = field(default_factory=list)
 
     # Limits
-    LimitGroups: Optional[List[str]] = field(default_factory=list)  # Default: blank
+    # Default: blank
+    LimitGroups: Optional[List[str]] = field(default_factory=list)
 
     # Dependencies
-    JobDependencies: List[str] = field(default_factory=list)  # Default: blank
-    JobDependencyPercentage: Optional[int] = field(default=None)  # Default: -1
-    IsFrameDependent: Optional[bool] = field(default=None)  # Default: false
-    FrameDependencyOffsetStart: Optional[int] = field(default=None)  # Default: 0
-    FrameDependencyOffsetEnd: Optional[int] = field(default=None)  # Default: 0
-    ResumeOnCompleteDependencies: Optional[bool] = field(
-        default=True)  # Default: true
-    ResumeOnDeletedDependencies: Optional[bool] = field(
-        default=False)  # Default: false
-    ResumeOnFailedDependencies: Optional[bool] = field(
-        default=False)  # Default: false
-    RequiredAssets: Optional[str] = field(
-        default=None)  # Default: blank (comma-separated list)
-    ScriptDependencies: Optional[str] = field(
-        default=None)  # Default: blank (comma-separated list)
+    # Default: blank
+    JobDependencies: List[str] = field(default_factory=list)
+    # Default: -1
+    JobDependencyPercentage: Optional[int] = field(default=None)
+    # Default: false
+    IsFrameDependent: Optional[bool] = field(default=None)
+    # Default: 0
+    FrameDependencyOffsetStart: Optional[int] = field(default=None)
+    # Default: 0
+    FrameDependencyOffsetEnd: Optional[int] = field(default=None)
+    # Default: true
+    ResumeOnCompleteDependencies: Optional[bool] = field(default=True)
+    # Default: false
+    ResumeOnDeletedDependencies: Optional[bool] = field(default=False)
+    # Default: false
+    ResumeOnFailedDependencies: Optional[bool] = field(default=False)
+    # Default: blank (comma-separated list)
+    RequiredAssets: Optional[str] = field(default=None)
+    # Default: blank (comma-separated list)
+    ScriptDependencies: Optional[str] = field(default=None)
 
     # Failure Detection
-    OverrideJobFailureDetection: Optional[bool] = field(
-        default=False)  # Default: false
-    FailureDetectionJobErrors: Optional[int] = field(default=None)  # 0..x
-    OverrideTaskFailureDetection: Optional[bool] = field(
-        default=False)  # Default: false
-    FailureDetectionTaskErrors: Optional[int] = field(default=None)  # 0..x
-    IgnoreBadJobDetection: Optional[bool] = field(
-        default=False)  # Default: false
-    SendJobErrorWarning: Optional[bool] = field(
-        default=False)  # Default: false
+    # Default: false
+    OverrideJobFailureDetection: Optional[bool] = field(default=False)
+    # 0..x
+    FailureDetectionJobErrors: Optional[int] = field(default=None)
+    # Default: false
+    OverrideTaskFailureDetection: Optional[bool] = field(default=False)
+    # 0..x
+    FailureDetectionTaskErrors: Optional[int] = field(default=None)
+    # Default: false
+    IgnoreBadJobDetection: Optional[bool] = field(default=False)
+    # Default: false
+    SendJobErrorWarning: Optional[bool] = field(default=False)
 
     # Cleanup
-    DeleteOnComplete: Optional[bool] = field(default=False)  # Default: false
-    ArchiveOnComplete: Optional[bool] = field(default=False)  # Default: false
-    OverrideAutoJobCleanup: Optional[bool] = field(
-        default=False)  # Default: false
+    # Default: false
+    DeleteOnComplete: Optional[bool] = field(default=False)
+    # Default: false
+    ArchiveOnComplete: Optional[bool] = field(default=False)
+    # Default: false
+    OverrideAutoJobCleanup: Optional[bool] = field(default=False)
     OverrideJobCleanup: Optional[bool] = field(default=None)
-    JobCleanupDays: Optional[int] = field(
-        default=None)  # Default: false (not clear)
+    # Default: false (not clear)
+    JobCleanupDays: Optional[int] = field(default=None)
     OverrideJobCleanupType: Optional[str] = field(default=None)
 
     # Scheduling
-    ScheduledType: Optional[str] = field(
-        default=None)  # Default: None (<None/Once/Daily/Custom>)
-    ScheduledStartDateTime: Optional[str] = field(
-        default=None)  # <dd/MM/yyyy HH:mm>
-    ScheduledDays: Optional[int] = field(default=1)  # Default: 1
-    JobDelay: Optional[str] = field(default=None)  # <dd:hh:mm:ss>
-    Scheduled: Optional[str] = field(
-        default=None)  # <Day of the Week><Start/Stop>Time=<HH:mm:ss>
+    # Default: 'None'
+    # Options: 'None', 'Once', 'Daily', 'Custom'
+    ScheduledType: Optional[str] = field(default=None)
+    # <dd/MM/yyyy HH:mm>
+    ScheduledStartDateTime: Optional[str] = field(default=None)
+    # Default: 1
+    ScheduledDays: Optional[int] = field(default=1)
+    # <dd:hh:mm:ss>
+    JobDelay: Optional[str] = field(default=None)
+    # <Day of the Week><Start/Stop>Time=<HH:mm:ss>
+    Scheduled: Optional[str] = field(default=None)
 
     # Scripts
-    PreJobScript: Optional[str] = field(default=None)  # Default: blank
-    PostJobScript: Optional[str] = field(default=None)  # Default: blank
-    PreTaskScript: Optional[str] = field(default=None)  # Default: blank
-    PostTaskScript: Optional[str] = field(default=None)  # Default: blank
+    # Default: blank
+    PreJobScript: Optional[str] = field(default=None)
+    # Default: blank
+    PostJobScript: Optional[str] = field(default=None)
+    # Default: blank
+    PreTaskScript: Optional[str] = field(default=None)
+    # Default: blank
+    PostTaskScript: Optional[str] = field(default=None)
 
     # Event Opt-Ins
-    EventOptIns: Optional[str] = field(
-        default=None)  # Default blank (comma-separated list)
+    # Default blank (comma-separated list)
+    EventOptIns: Optional[str] = field(default=None)
 
     # Environment
     EnvironmentKeyValue: DeadlineKeyValueVar = field(
         default_factory=_partial_key_value("EnvironmentKeyValue"))
-    IncludeEnvironment: Optional[bool] = field(default=False)  # Default: false
-    UseJobEnvironmentOnly: Optional[bool] = field(default=False)  # Default: false
-    CustomPluginDirectory: Optional[str] = field(default=None)  # Default blank
+    # Default: false
+    IncludeEnvironment: Optional[bool] = field(default=False)
+    # Default: false
+    UseJobEnvironmentOnly: Optional[bool] = field(default=False)
+    # Default blank
+    CustomPluginDirectory: Optional[str] = field(default=None)
 
     # Job Extra Info
     ExtraInfo: DeadlineIndexedVar = field(
@@ -497,7 +542,8 @@ class DeadlineJobInfo:
     ExtraInfoKeyValue: DeadlineKeyValueVar = field(
         default_factory=_partial_key_value("ExtraInfoKeyValue"))
 
-    OverrideTaskExtraInfoNames: Optional[bool] = field(default=False)  # Default false
+    # Default false
+    OverrideTaskExtraInfoNames: Optional[bool] = field(default=False)
 
     TaskExtraInfoName: DeadlineIndexedVar = field(
         default_factory=_partial_indexed("TaskExtraInfoName"))
