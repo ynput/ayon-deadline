@@ -471,9 +471,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             version (int): override version from instance if exists
 
         Returns:
-            Optional[str]: publish folder where rendered and published files will
-                be stored
-                based on 'publish' template
+            Optional[str]: publish folder where rendered and published files
+                will be stored based on 'publish' template
 
         """
         project_name = context.data["projectName"]

@@ -73,7 +73,7 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.ProjectFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
 
-        deadline_plugin_info.EditorExecutableName = "UnrealEditor-Cmd.exe"  # parse ayon+settings://applications/applications/unreal/variants/3/environmen
+        deadline_plugin_info.EditorExecutableName = "UnrealEditor-Cmd.exe"
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
@@ -158,11 +158,11 @@ class UnrealSubmitDeadline(
     ):
         """Adds Perforce metadata which causes DL pre job to sync to change.
 
-        It triggers only in presence of activated `changelist_metadata` instance,
-        which materialize info about commit. Artists could return to any
-        published commit and re-render if they choose.
-        `changelist_metadata` replaces `workfile` as there are no versioned Unreal
-        projects (because of size).
+        It triggers only in presence of activated `changelist_metadata`
+        instance, which materialize info about commit. Artists could return
+        to any published commit and re-render if they choose.
+        `changelist_metadata` replaces `workfile` as there are no versioned
+        Unreal projects (because of size).
         """
         # normalize paths, c:/ vs C:/
         scene_path = str(Path(scene_path).resolve())

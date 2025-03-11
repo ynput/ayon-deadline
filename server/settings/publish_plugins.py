@@ -263,7 +263,8 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
         title="Export Limit Groups",
         description=(
             "Enter a comma separated list of limits.\n"
-            "Specifies the limit groups that this job is a member of (default = blank)."
+            "Specifies the limit groups that this job is a member"
+            " of (default = blank)."
         )
     )
     export_machine_limit: int = SettingsField(
