@@ -605,7 +605,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
              "<Layer>": layer})
 
 
-        start_frame = get_real_frames_to_render(self.job_info.Frames)[0]
+        start_frame = convert_frames_str_to_list(self.job_info.Frames)[0]
         workspace = self._instance.context.data["workspace"]
         filename_zero = "{}_{:04d}.vrscene".format(output_path, start_frame)
         filepath_zero = os.path.join(workspace, filename_zero)
