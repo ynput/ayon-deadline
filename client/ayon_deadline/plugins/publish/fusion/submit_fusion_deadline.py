@@ -32,7 +32,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     label = "Submit Fusion to Deadline"
     order = pyblish.api.IntegratorOrder
     hosts = ["fusion"]
-    families = ["render"]
+    families = ["render", "image"]
     targets = ["local"]
     settings_category = "deadline"
 
@@ -66,7 +66,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         saver_instances = []
         context = instance.context
         for inst in context:
-            if inst.data["productType"] != "render":
+            if inst.data["productType"] in {"image", "render"}:
                 # Allow only saver family instances
                 continue
 
