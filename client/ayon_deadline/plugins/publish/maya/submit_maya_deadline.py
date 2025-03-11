@@ -32,7 +32,9 @@ from ayon_core.pipeline import (
 
 from ayon_core.lib import is_in_tests, NumberDef, BoolDef
 from ayon_core.pipeline.farm.tools import iter_expected_files
-from ayon_core.pipeline.farm.pyblish_functions import get_real_frames_to_render
+from ayon_core.pipeline.farm.pyblish_functions import (
+    convert_frames_str_to_list
+)
 
 from ayon_maya.api.lib_rendersettings import RenderSettings
 from ayon_maya.api.lib import get_attr_in_layer
