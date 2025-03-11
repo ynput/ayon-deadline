@@ -657,7 +657,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                         ))
 
     def _job_info_label(self, label):
-        frames = get_real_frames_to_render(self.job_info.Frames)
+        frames = convert_frames_str_to_list(self.job_info.Frames)
         start_frame = frames[0]
         end_frame = frames[-1]
         return "{label} {job.Name} [{start}-{end}]".format(
