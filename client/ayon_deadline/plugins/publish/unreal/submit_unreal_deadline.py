@@ -77,15 +77,16 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
         master_level = self._instance.data["master_level"]
         render_queue_path = self._instance.data["render_queue_path"]
-        cmd_args = [f"{master_level} -game ",
-                    f"-MoviePipelineConfig={render_queue_path}"]
-        cmd_args.extend([
+        cmd_args = [
+            master_level,
+            "-game",
+            f"-MoviePipelineConfig={render_queue_path}",
             "-windowed",
             "-Log",
             "-StdOut",
-            "-allowStdOutLogVerbosity"
-            "-Unattended"
-        ])
+            "-allowStdOutLogVerbosity",
+            "-Unattended",
+        ]
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
