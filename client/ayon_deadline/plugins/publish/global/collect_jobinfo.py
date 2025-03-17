@@ -245,9 +245,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         defs.append(
             TextDef(
                 "frames",
-                label="Frames",
+                label="Use Custom Frames",
                 default="",
-                tooltip="Explicit frames to be rendered. (1, 3-4)"
+                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)"
             )
         )
 
