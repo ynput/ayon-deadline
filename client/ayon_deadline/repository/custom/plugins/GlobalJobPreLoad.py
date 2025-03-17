@@ -13,7 +13,7 @@ from Deadline.Scripting import (
     FileUtils,
     DirectoryUtils,
 )
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -464,13 +464,13 @@ def inject_ayon_environment(deadlinePlugin):
 
         if not exe:
             raise RuntimeError((
-               "Ayon executable was not found in the semicolon "
+               "AYON executable was not found in the semicolon "
                "separated list \"{}\"."
                "The path to the render executable can be configured"
                " from the Plugin Configuration in the Deadline Monitor."
             ).format(exe_list))
 
-        print("--- Ayon executable: {}".format(exe))
+        print("--- AYON executable: {}".format(exe))
 
         ayon_bundle_name = job.GetJobEnvironmentKeyValue("AYON_BUNDLE_NAME")
         if not ayon_bundle_name:
@@ -494,25 +494,26 @@ def inject_ayon_environment(deadlinePlugin):
         # Deadline Repository AYON Plug-in settings, in the format of
         # `SERVER:PORT@APIKEY` per line.
         elif job_ayon_server_url and job_ayon_server_url != ayon_server_url:
-            ayon_server_url = job_ayon_server_url
             api_key = get_ayon_api_key_from_additional_servers(
                 config, job_ayon_server_url)
             if api_key:
                 ayon_api_key = api_key
             else:
                 print(
-                    "AYON Server URL submitted with job"
-                    f" '{job_ayon_server_url}' is not the Deadline AYON"
-                    f" Plug-in default server URL '{ayon_server_url}' but"
-                    " has no API key defined in Additional Server URLs."
-                    " Falling back to default API key configured in"
-                    " Deadline repository for the AYON plug-in."
+                    "AYON Server URL submitted with job "
+                    f"'{job_ayon_server_url}' has no API key defined "
+                    "in AYON Deadline plugin configuration,"
+                    " `Additional AYON Servers` section."
+                    " Use Deadline monitor to modify the values."
+                    "Falling back to `AYON API key` set in `AYON Credentials`"
+                    " section of AYON plugin configuration."
                 )
+            ayon_server_url = job_ayon_server_url
 
         if not all([ayon_server_url, ayon_api_key]):
             raise RuntimeError((
                 "Missing required values for server url and api key. "
-                "Please fill in Ayon Deadline plugin or provide by "
+                "Please fill in AYON Deadline plugin or provide by "
                 "AYON_SERVER_URL and AYON_API_KEY"
             ))
 
@@ -558,8 +559,12 @@ def inject_ayon_environment(deadlinePlugin):
         ]
 
         # staging requires passing argument
-        # TODO could be switched to env var after https://github.com/ynput/ayon-launcher/issues/123
-        settings_variant = job.GetJobEnvironmentKeyValue("AYON_DEFAULT_SETTINGS_VARIANT")  # noqa
+        # TODO could be removed when PR in ayon-core starts to fill
+        #  'AYON_USE_STAGING' (https://github.com/ynput/ayon-core/pull/1130)
+        #  - add requirement for "core>=1.1.1" to 'package.py' when removed
+        settings_variant = job.GetJobEnvironmentKeyValue(
+            "AYON_DEFAULT_SETTINGS_VARIANT"
+        )
         if settings_variant == "staging":
             args.append("--use-staging")
 
@@ -583,9 +588,11 @@ def inject_ayon_environment(deadlinePlugin):
             "AYON_BUNDLE_NAME": ayon_bundle_name,
         }
 
-        automatic_tests = job.GetJobEnvironmentKeyValue("AYON_IN_TESTS")
-        if automatic_tests:
-            environment["AYON_IN_TESTS"] = automatic_tests
+        for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
+            value = job.GetJobEnvironmentKeyValue(key)
+            if value:
+                environment[key] = value
+
         for env, val in environment.items():
             # Add the env var for the Render Plugin that is about to render
             deadlinePlugin.SetEnvironmentVariable(env, val)
@@ -660,7 +667,7 @@ def get_ayon_executable():
     if not exe_list:
         raise RuntimeError(
             "Path to AYON executable not configured."
-            "Please set it in Ayon Deadline Plugin."
+            "Please set it in AYON Deadline Plugin."
         )
 
     # clean '\ ' for MacOS pasting

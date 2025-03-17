@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from datetime import datetime
 
 import pyblish.api
 from ayon_core.lib import (
@@ -9,7 +10,10 @@ from ayon_core.lib import (
     TextDef,
     UISeparatorDef
 )
-from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.pipeline.publish import (
+    AYONPyblishPluginMixin,
+    PublishError
+)
 from ayon_core.lib.profiles_filtering import filter_profiles
 from ayon_core.addon import AddonsManager
 
@@ -48,11 +52,18 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             return
 
         attr_values = self._get_jobinfo_defaults(instance)
+        if not attr_values:
+            raise PublishError(
+                "No profile selected for defaults. Ask Admin to "
+                "fill generic profiles at "
+                "ayon+settings://deadline/publish/CollectJobInfo/profiles"
+            )
 
         attr_values.update(self.get_attr_values_from_data(instance.data))
         job_info = PublishDeadlineJobInfo.from_attribute_values(attr_values)
 
         self._handle_machine_list(attr_values, job_info)
+        self._handle_job_delay(attr_values, job_info)
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
@@ -106,8 +117,35 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if machine_list:
             if attr_values["machine_list_deny"]:
                 job_info.Blacklist = machine_list
+                job_info.Whitelist = None
             else:
                 job_info.Whitelist = machine_list
+                job_info.Blacklist = None
+
+    def _handle_job_delay(self, attr_values, job_info):
+        job_delay = attr_values["job_delay"]
+        if not job_delay:
+            return
+        try:
+            parts = job_delay.split(':')
+            if len(parts) != 4:
+                raise ValueError("Invalid format: requires dd:hh:mm:ss")
+
+            _days = int(parts[0])
+            hours = int(parts[1])
+            minutes = int(parts[2])
+            seconds = int(parts[3])
+
+            formatted_time_string = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            _ = datetime.strptime(formatted_time_string, "%H:%M:%S").time()
+            job_info.JobDelay = job_delay
+            job_info.ScheduledType = "Once"
+        except ValueError:
+            self.log.warning(
+                f"Job delay '{job_delay}' doesn't match to "
+                "'dd:hh:mm:ss' format"
+            )
+            job_info.JobDelay = None
 
     @classmethod
     def apply_settings(cls, project_settings):
@@ -318,8 +356,19 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "job_delay",
                 label="Delay job",
                 default=default_values.get("job_delay"),
-                tooltip="Delay job by specified timecode. Format: dd:hh:mm:ss",
+                tooltip=(
+                    "Delay job by specified timecode. Format: dd:hh:mm:ss"
+                ),
                 placeholder="00:00:00:00"
+            ),
+            EnumDef(
+                "publish_job_state",
+                label="Publish Job State",
+                default=default_values.get("publish_job_state"),
+                items=[
+                    {"value": "active", "label": "Active"},
+                    {"value": "suspended", "label": "Suspended"}
+                ]
             )
         ]
 

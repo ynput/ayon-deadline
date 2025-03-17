@@ -100,7 +100,6 @@ class NukeSubmitDeadline(
             render_path = instance.data["path"]
             instance.data["outputDir"] = os.path.dirname(
                 render_path).replace("\\", "/")
-            instance.data["publishJobState"] = "Suspended"
 
         if instance.data.get("bakingNukeScripts"):
             for baking_script in instance.data["bakingNukeScripts"]:
@@ -150,7 +149,7 @@ class NukeSubmitDeadline(
                 end=end_frame
             )
         limit_groups = self._get_limit_groups(self.node_class_limit_groups)
-        job_info.LimitGroups = limit_groups
+        job_info.LimitGroups.extend(limit_groups)
 
         render_path = instance.data["path"]
         job_info.Name = os.path.basename(render_path)

@@ -11,7 +11,8 @@ import ayon_api
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.lib import EnumDef
+from ayon_core.lib.path_templates import TemplateUnsolved
+
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
@@ -20,6 +21,7 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     prepare_representations,
     create_metadata_path
 )
+
 from ayon_deadline import DeadlineAddon
 from ayon_deadline.lib import (
     JobType,
@@ -76,9 +78,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         - ext (str, Optional): The extension (including `.`) that is required
             in the output filename to be picked up for image sequence
             publishing.
-
-        - publishJobState (str, Optional): "Active" or "Suspended"
-            This defaults to "Suspended"
 
         - expectedFiles (list or dict): explained below
 
@@ -185,9 +184,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             or instance.data.get("priority", 50)
         )
 
-        instance_settings = self.get_attr_values_from_data(instance.data)
-        initial_status = instance_settings.get("publishJobState", "Active")
-
         batch_name = self._get_batch_name(instance, render_job)
         username = self._get_username(instance, render_job)
         dependency_ids = self._get_dependency_ids(instance, render_job)
@@ -199,8 +195,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "--targets", "deadline",
             "--targets", "farm",
         ]
-        # TODO remove when AYON launcher respects environment variable
-        #   'AYON_DEFAULT_SETTINGS_VARIANT'
+        # TODO remove settings variant handling when not needed anymore
+        #   which should be when package.py defines 'core>1.1.1' .
         settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
         if settings_variant == "staging":
             args.append("--use-staging")
@@ -214,21 +210,22 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             context.data["ayonAddonsManager"]["deadline"]
         )
 
+        job_info = instance.data["deadline"]["job_info"]
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=batch_name,
             Department=self.deadline_department,
             Priority=priority,
-            InitialStatus=initial_status,
+            InitialStatus=job_info.publish_job_state,
             Group=self.deadline_group,
             Pool=self.deadline_pool or None,
             JobDependencies=dependency_ids,
             UserName=username,
             Comment=context.data.get("comment"),
         )
-        job_info.OutputDirectory.append(
-            output_dir.replace("\\", "/")
-        )
+        if output_dir:
+            job_info.OutputDirectory.append(output_dir)
+
         job_info.EnvironmentKeyValue.update(environment)
         return deadline_addon.submit_ayon_plugin_job(
             server_name,
@@ -417,12 +414,18 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "fps": instance_skeleton_data["fps"],
             "source": instance_skeleton_data["source"],
             "user": instance.context.data["user"],
-            "version": instance.context.data["version"],  # workfile version
             "intent": instance.context.data.get("intent"),
             "comment": instance.context.data.get("comment"),
             "job": render_job or None,
             "instances": instances
         }
+        collected_version = (
+            instance.data.get("version")   # instance override version
+            or instance.context.data.get("version")   # workfile version
+        )
+        if collected_version:
+            publish_job["version"] = collected_version
+
         if deadline_publish_job_id:
             publish_job["deadline_publish_job_id"] = deadline_publish_job_id
 
@@ -435,9 +438,16 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         with open(metadata_path, "w") as f:
             json.dump(publish_job, f, indent=4, sort_keys=True)
 
-    def _get_publish_folder(self, anatomy, template_data,
-                            folder_entity, product_name, context,
-                            product_type, version=None):
+    def _get_publish_folder(
+        self,
+        anatomy,
+        template_data,
+        folder_entity,
+        product_name,
+        context,
+        product_type,
+        version=None
+    ):
         """
             Extracted logic to pre-calculate real publish folder, which is
             calculated in IntegrateNew inside of Deadline process.
@@ -460,11 +470,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             version (int): override version from instance if exists
 
         Returns:
-            (string): publish folder where rendered and published files will
-                be stored
-                based on 'publish' template
-        """
+            Optional[str]: publish folder where rendered and published files
+                will be stored based on 'publish' template
 
+        """
         project_name = context.data["projectName"]
         host_name = context.data["hostName"]
         if not version:
@@ -511,13 +520,15 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         render_dir_template = anatomy.get_template_item(
             "publish", template_name, "directory"
         )
-        return render_dir_template.format_strict(template_data)
+        try:
+            return (
+                render_dir_template
+                .format_strict(template_data)
+                .replace("\\", "/")
+            )
 
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            EnumDef("publishJobState",
-                    label="Publish Job State",
-                    items=["Active", "Suspended"],
-                    default="Active")
-        ]
+        except TemplateUnsolved:
+            self.log.error(
+                "Publish directory template is unsolved for: "
+                f"{template_name} in anatomy. Output directory won't be set."
+            )
