@@ -28,15 +28,6 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
     label = "Collect Deadline User Credentials"
 
     targets = ["local"]
-    hosts = ["aftereffects",
-             "blender",
-             "fusion",
-             "harmony",
-             "nuke",
-             "maya",
-             "max",
-             "houdini",
-             "unreal"]
 
     families = FARM_FAMILIES
 
