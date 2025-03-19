@@ -4,7 +4,7 @@ import pyblish.api
 from datetime import datetime
 from pathlib import Path
 
-import unreal
+from unreal.MoviePipelineEditorLibrary import convert_manifest_file_to_string
 
 from ayon_core.lib import is_in_tests
 
@@ -64,7 +64,7 @@ class UnrealSubmitDeadline(
 
         if work_mrq := self._instance.data["work_mrq"]:
             job_info.ExtraInfoKeyValue.update(
-                {"SerializedMRQ": unreal.MoviePipelineEditorLibrary.convert_manifest_file_to_string(work_mrq)}
+                {"SerializedMRQ": convert_manifest_file_to_string(work_mrq)}
             )
 
         return job_info
@@ -84,7 +84,8 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
 
-        pre_render_script = Path(ayon_unreal.__file__).parent / "api" / "rendering_remote.py"
+        pre_render_script = (
+            Path(ayon_unreal.__file__).parent / "api" / "rendering_remote.py")
         cmd_args = [f'-execcmds="py {pre_render_script.as_posix()}"']
         if work_mrq := self._instance.data["work_mrq"]:
             manifest: str = Path(work_mrq).as_posix()
@@ -127,5 +128,8 @@ class UnrealSubmitDeadline(
         Ahh... why is this so tricky?
         gotta do that in cpp it seems
         """
-        return "C:/Program Files/Epic Games/UE_5.4/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+        ue_base = Path("C:/Program Files/Epic Games/UE_5.4/Engine")
+        ue_bins = ue_base / "Binaries"/ "Win64"
+        ue_cmd_exe = ue_bins / "UnrealEditor-Cmd.exe"
+        return ue_cmd_exe.as_posix()
 
