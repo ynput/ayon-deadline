@@ -419,11 +419,15 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "job": render_job or None,
             "instances": instances
         }
-        collected_version = (
-            instance.data.get("version")   # instance override version
-            or instance.context.data.get("version")   # workfile version
-        )
-        if collected_version:
+
+        # Note that a version of 0 is a valid version number,
+        # so we explicitly check for `None` value
+        # instance override version
+        collected_version = instance.data.get("version")
+        if collected_version is None:
+            # workfile version
+            collected_version = instance.context.data.get("version")
+        if collected_version is not None:
             publish_job["version"] = collected_version
 
         if deadline_publish_job_id:
@@ -470,9 +474,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             version (int): override version from instance if exists
 
         Returns:
-            Optional[str]: publish folder where rendered and published files will
-                be stored
-                based on 'publish' template
+            Optional[str]: publish folder where rendered and published files
+                will be stored based on 'publish' template
 
         """
         project_name = context.data["projectName"]
