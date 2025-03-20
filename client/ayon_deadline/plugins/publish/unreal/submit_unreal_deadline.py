@@ -4,7 +4,7 @@ import pyblish.api
 from datetime import datetime
 from pathlib import Path
 
-from unreal.MoviePipelineEditorLibrary import convert_manifest_file_to_string
+from unreal import MoviePipelineEditorLibrary as mpel
 
 from ayon_core.lib import is_in_tests
 
@@ -64,7 +64,7 @@ class UnrealSubmitDeadline(
 
         if work_mrq := self._instance.data["work_mrq"]:
             job_info.ExtraInfoKeyValue.update(
-                {"SerializedMRQ": convert_manifest_file_to_string(work_mrq)}
+                {"SerializedMRQ": mpel.convert_manifest_file_to_string(work_mrq)}
             )
 
         return job_info
