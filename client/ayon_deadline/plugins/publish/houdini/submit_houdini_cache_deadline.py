@@ -61,13 +61,15 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         job_info.BatchName = batch_name
         job_info.Plugin = instance.data.get("plugin", "Houdini")
 
-        frames = "{start}-{end}x{step}".format(
-            start=int(instance.data["frameStart"]),
-            end=int(instance.data["frameEnd"]),
-            step=int(instance.data["byFrameStep"]),
-        )
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            frames = "{start}-{end}x{step}".format(
+                start=int(instance.data["frameStart"]),
+                end=int(instance.data["frameEnd"]),
+                step=int(instance.data["byFrameStep"]),
+            )
 
-        job_info.Frames = frames
+            job_info.Frames = frames
 
         # When `frames` instance data is a string, it indicates that
         #  the output is a single file.

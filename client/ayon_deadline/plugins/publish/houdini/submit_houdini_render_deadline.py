@@ -182,15 +182,17 @@ class HoudiniSubmitDeadline(
         if is_in_tests():
             job_info.BatchName += datetime.now().strftime("%d%m%Y%H%M%S")
 
-        # Deadline requires integers in frame range
-        start = instance.data["frameStartHandle"]
-        end = instance.data["frameEndHandle"]
-        frames = "{start}-{end}x{step}".format(
-            start=int(start),
-            end=int(end),
-            step=int(instance.data["byFrameStep"]),
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            start = instance.data["frameStartHandle"]
+            end = instance.data["frameEndHandle"]
+            frames = "{start}-{end}x{step}".format(
+                start=int(start),
+                end=int(end),
+                step=int(instance.data["byFrameStep"]),
+            )
+            job_info.Frames = frames
 
         # Make sure we make job frame dependent so render tasks pick up a soon
         # as export tasks are done
