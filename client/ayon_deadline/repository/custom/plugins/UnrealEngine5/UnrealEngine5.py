@@ -558,11 +558,11 @@ class UnrealEngineManagedProcess(ManagedProcess):
         # make sure the project exists
         if not FileUtils.FileExists(uproject.as_posix()):
             self._deadline_plugin.FailRender(f"Could not find `{uproject.as_posix()}`")
-        self._deadline_plugin.GetPluginInfoEntryWithDefault("CommandLineArguments", "")
+
         # Set up the arguments to startup unreal.
         job_command_args = [
             '"{u_project}"'.format(u_project=uproject.as_posix()),
-            cmd_args,
+            self._deadline_plugin.GetPluginInfoEntryWithDefault("CommandLineArguments", ""),
             # Force "-log" otherwise there is no output from the executable
             "-log",
             "-unattended",
