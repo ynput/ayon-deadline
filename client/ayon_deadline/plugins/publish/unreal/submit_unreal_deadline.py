@@ -1,10 +1,14 @@
-import os
 from dataclasses import dataclass, field, asdict
+import getpass
 import pyblish.api
 from datetime import datetime
 from pathlib import Path
 
+from unreal import MoviePipelineEditorLibrary as mpel
+
 from ayon_core.lib import is_in_tests
+
+import ayon_unreal
 
 from ayon_deadline import abstract_submit_deadline
 
@@ -12,7 +16,7 @@ from ayon_deadline import abstract_submit_deadline
 @dataclass
 class DeadlinePluginInfo:
     ProjectFile: str = field(default=None)
-    EditorExecutableName: str = field(default=None)
+    Executable: str = field(default=None)
     EngineVersion: str = field(default=None)
     CommandLineMode: str = field(default=True)
     OutputFilePath: str = field(default=None)
@@ -20,9 +24,6 @@ class DeadlinePluginInfo:
     StartupDirectory: str = field(default=None)
     CommandLineArguments: str = field(default=None)
     MultiProcess: bool = field(default=None)
-    PerforceStream: str = field(default=None)
-    PerforceChangelist: str = field(default=None)
-    PerforceGamePath: str = field(default=None)
 
 
 class UnrealSubmitDeadline(
@@ -44,9 +45,15 @@ class UnrealSubmitDeadline(
 
     def get_job_info(self, job_info=None):
         instance = self._instance
+        context = self._instance.context
 
         job_info.BatchName = self._get_batch_name()
         job_info.Plugin = "UnrealEngine5"
+        job_info.Name = instance.data["name"]
+        job_info.Plugin = "UnrealEngine5"
+        job_info.UserName = context.data.get(
+            "deadlineUser", getpass.getuser())
+        job_info.CommandLineMode = False    # enables RPC
 
         if instance.data["frameEnd"] > instance.data["frameStart"]:
             # Deadline requires integers in frame range
@@ -55,53 +62,37 @@ class UnrealSubmitDeadline(
                 int(round(instance.data["frameEnd"])))
             job_info.Frames = frame_range
 
+        if work_mrq := self._instance.data["work_mrq"]:
+            job_info.ExtraInfoKeyValue.update(
+                {"SerializedMRQ": mpel.convert_manifest_file_to_string(work_mrq)}
+            )
+
         return job_info
 
     def get_plugin_info(self):
         deadline_plugin_info = DeadlinePluginInfo()
 
-        render_path = self._instance.data["expectedFiles"][0]
-        self._instance.data["outputDir"] = os.path.dirname(render_path)
+        expected_file = Path(self._instance.data["expectedFiles"][0]).resolve()
+        self._instance.data["outputDir"] = expected_file.parent.as_posix()
         self._instance.context.data["version"] = 1  #TODO
 
-        render_dir = os.path.dirname(render_path)
         file_name = self._instance.data["file_names"][0]
-        render_path = os.path.join(render_dir, file_name)
+        render_path = (expected_file.parent / file_name).resolve()
 
         deadline_plugin_info.ProjectFile = self.scene_path
-        deadline_plugin_info.Output = render_path.replace("\\", "/")
-
-        deadline_plugin_info.EditorExecutableName = "UnrealEditor-Cmd.exe"
+        deadline_plugin_info.Output = render_path.as_posix()
+        deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
-        master_level = self._instance.data["master_level"]
-        render_queue_path = self._instance.data["render_queue_path"]
-        cmd_args = [
-            master_level,
-            "-game",
-            f"-MoviePipelineConfig={render_queue_path}",
-            "-windowed",
-            "-Log",
-            "-StdOut",
-            "-allowStdOutLogVerbosity",
-            "-Unattended",
-        ]
+
+        pre_render_script = (
+            Path(ayon_unreal.__file__).parent / "api" / "rendering_remote.py")
+        cmd_args = [f'-execcmds="py {pre_render_script.as_posix()}"']
+        if work_mrq := self._instance.data["work_mrq"]:
+            manifest: str = Path(work_mrq).as_posix()
+            cmd_args.append(f"-MRQManifest={manifest}")
+        cmd_args.append("-MRQInstance")
         self.log.debug(f"cmd-args::{cmd_args}")
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
-
-        # if Perforce - triggered by active `changelist_metadata` instance!!
-        collected_version_control = self._get_version_control()
-        if collected_version_control:
-            version_control_data = self._instance.context.data[
-                "version_control"]
-            workspace_dir = version_control_data["workspace_dir"]
-            stream = version_control_data["stream"]
-            self._update_version_control_data(
-                self.scene_path,
-                workspace_dir,
-                stream,
-                collected_version_control["change_info"]["change"],
-                deadline_plugin_info,
-            )
 
         return asdict(deadline_plugin_info)
 
@@ -120,63 +111,25 @@ class UnrealSubmitDeadline(
 
         For automatic tests it adds timestamp, for Perforce driven change list
         """
-        batch_name = os.path.basename(self._instance.data["source"])
+        batch_name = Path(self._instance.data["source"]).stem
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
-        collected_version_control = self._get_version_control()
-        if collected_version_control:
-            change = (collected_version_control["change_info"]
-                                               ["change"])
-            batch_name = f"{batch_name}_{change}"
+
+        if p4_data := self._instance.context.data.get("perforce"):
+            batch_name += f" - Stream {p4_data['stream']}"
+            if cl_num := p4_data.get("changelist"):
+                batch_name += f"@{cl_num}"
+
         return batch_name
 
-    def _get_version_control(self):
-        """Look if changelist_metadata is published to get change list info.
+    def _get_executable(self):
+        """Returns path to Unreal executable.
 
-        Context version_control contains universal connection info, instance
-        version_control contains detail about change list.
+        Ahh... why is this so tricky?
+        gotta do that in cpp it seems
         """
-        change_list_version = {}
-        for inst in self._instance.context:
-            # get change info from `changelist_metadata` instance
-            change_list_version = inst.data.get("version_control")
-            if change_list_version:
-                context_version = (
-                    self._instance.context.data["version_control"])
-                change_list_version.update(context_version)
-                break
-        return change_list_version
+        ue_base = Path("C:/Program Files/Epic Games/UE_5.4/Engine")
+        ue_bins = ue_base / "Binaries"/ "Win64"
+        ue_cmd_exe = ue_bins / "UnrealEditor-Cmd.exe"
+        return ue_cmd_exe.as_posix()
 
-    def _update_version_control_data(
-        self,
-        scene_path,
-        workspace_dir,
-        stream,
-        change_list_id,
-        deadline_plugin_info,
-    ):
-        """Adds Perforce metadata which causes DL pre job to sync to change.
-
-        It triggers only in presence of activated `changelist_metadata`
-        instance, which materialize info about commit. Artists could return
-        to any published commit and re-render if they choose.
-        `changelist_metadata` replaces `workfile` as there are no versioned
-        Unreal projects (because of size).
-        """
-        # normalize paths, c:/ vs C:/
-        scene_path = str(Path(scene_path).resolve())
-        workspace_dir = str(Path(workspace_dir).resolve())
-
-        unreal_project_file_name = os.path.basename(scene_path)
-
-        unreal_project_hierarchy = self.scene_path.replace(workspace_dir, "")
-        unreal_project_hierarchy = (
-            unreal_project_hierarchy.replace(unreal_project_file_name, ""))
-        # relative path from workspace dir to last folder
-        unreal_project_hierarchy = unreal_project_hierarchy.strip("\\")
-
-        deadline_plugin_info.ProjectFile = unreal_project_file_name
-
-        deadline_plugin_info.PerforceStream = stream
-        deadline_plugin_info.PerforceChangelist = change_list_id
-        deadline_plugin_info.PerforceGamePath = unreal_project_hierarchy
