@@ -380,6 +380,18 @@ class UnrealEngineManagedProcess(ManagedProcess):
         logs_dir = self._deadline_plugin.GetPluginInfoEntryWithDefault(
             "LoggingDirectory", ""
         )
+        # error handler for Apple ProRes Media not writing file
+        self.AddStdoutHandlerCallback(
+            ".*LogAppleProResMedia: Error: Failed to.*"
+        ).HandleCallback += self._handle_stdout_error
+
+        self.AddStdoutHandlerCallback(
+            ".*LogWindows: FPlatformMisc::RequestExitWithStatus\(1,.*"
+        ).HandleCallback += self._handle_stdout_error
+
+        self.AddStdoutHandlerCallback(
+            ".*with error DXGI_ERROR_DEVICE_REMOVED with Reason: DXGI_ERROR_DEVICE_HUNG*"
+        ).HandleCallback += self._handle_stdout_error
 
         if logs_dir:
 
