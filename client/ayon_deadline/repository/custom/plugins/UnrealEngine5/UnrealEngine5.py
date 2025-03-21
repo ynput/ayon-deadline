@@ -509,7 +509,7 @@ class UnrealEngineManagedProcess(ManagedProcess):
         """
         Get the arguments to startup unreal
         """
-        self._deadline_plugin.LogInfo("Settifdfdsfsdfsfsfasng UP Render Arguments")
+        self._deadline_plugin.LogInfo("Setting up Render Arguments")
 
         # Look for any unreal uproject paths in the process environment. This
         # assumes a previous process resolves a uproject path and makes it
@@ -518,7 +518,7 @@ class UnrealEngineManagedProcess(ManagedProcess):
 
         if not uproject:
             uproject = self._deadline_plugin.GetPluginInfoEntry("ProjectFile")
-        self._deadline_plugin.LogInfo(f"hhhh")
+
         # Get any path mappings required. Expects this to be a full path
         uproject = RepositoryUtils.CheckPathMapping(uproject)
 
@@ -530,7 +530,7 @@ class UnrealEngineManagedProcess(ManagedProcess):
             uproject = uproject.format(ProjectRoot=project_root)
 
         uproject = Path(uproject.replace("\\", "/"))
-        self._deadline_plugin.LogInfo(f"Suproject:: `{uproject}`")
+        self._deadline_plugin.LogInfo(f"uproject:: `{uproject}`")
         # Check to see if the Uproject is a relative path
         if str(uproject).replace("\\", "/").startswith("../"):
 
@@ -558,11 +558,11 @@ class UnrealEngineManagedProcess(ManagedProcess):
         # make sure the project exists
         if not FileUtils.FileExists(uproject.as_posix()):
             self._deadline_plugin.FailRender(f"Could not find `{uproject.as_posix()}`")
-        self._deadline_plugin.GetPluginInfoEntryWithDefault("CommandLineArguments", "")
+
         # Set up the arguments to startup unreal.
         job_command_args = [
             '"{u_project}"'.format(u_project=uproject.as_posix()),
-            cmd_args,
+            self._deadline_plugin.GetPluginInfoEntryWithDefault("CommandLineArguments", ""),
             # Force "-log" otherwise there is no output from the executable
             "-log",
             "-unattended",
