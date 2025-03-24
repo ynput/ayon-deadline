@@ -3,6 +3,7 @@ import pyblish.api
 from ayon_core.pipeline import PublishXmlValidationError
 
 from ayon_deadline.abstract_submit_deadline import requests_get
+from ayon_deadline.lib import FARM_FAMILIES
 
 
 class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
@@ -10,8 +11,8 @@ class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
 
     label = "Validate Deadline Web Service"
     order = pyblish.api.ValidatorOrder
-    hosts = ["maya", "nuke", "aftereffects", "harmony", "fusion"]
-    families = ["renderlayer", "render", "render.farm"]
+    families = FARM_FAMILIES
+    targets = ["local"]
 
     # cache
     responses = {}
