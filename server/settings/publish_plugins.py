@@ -105,7 +105,10 @@ class CollectJobInfoItem(BaseSettingsModel):
         )
     )
     concurrent_tasks: int = SettingsField(
-        1, title="Number of concurrent tasks")
+        1,
+        title="Number of concurrent tasks",
+        description="Concurrent tasks on single render node"
+    )
     department: str = SettingsField("", title="Department")
     job_delay: str = SettingsField(
         "", title="Delay job",
