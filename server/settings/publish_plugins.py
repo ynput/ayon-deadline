@@ -40,6 +40,7 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
+        {"value": "concurrent_tasks", "label": "Number of Concurrent Tasks"},
         {"value": "publish_job_state", "label": "Publish Job State"},
     ]
 
