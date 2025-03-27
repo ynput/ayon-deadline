@@ -106,6 +106,16 @@ class HoudiniSubmitDeadline(
     export_limits = ""
     export_machine_limit = 0
 
+    # Product type to export file format mapping to label the deadline jobs
+    export_file_format_label = {
+        "redshift_rop": "rs",
+        "arnold_rop": "ass",
+        "mantra_rop": "ifd",
+        "karma_rop": "usd",
+        "vray_rop": "vrscene",
+        "usdrender": "usd"
+    }
+
     @classmethod
     def get_attribute_defs(cls):
         return [
@@ -171,7 +181,17 @@ class HoudiniSubmitDeadline(
         else:
             plugin = "Houdini"
             if split_render_job:
-                job_type = "[EXPORT IFD]"
+                product_type = instance.data["productType"]
+                export_format = self.export_file_format_label.get(product_type)
+                if export_format:
+                    job_type = f"[EXPORT {export_format.upper()}]"
+                else:
+                    self.log.debug(
+                        "Unable to identify export file format for "
+                        f"product type: {product_type}"
+                    )
+                    job_type = "[EXPORT]"
+
         job_info.Plugin = plugin
 
         filepath = context.data["currentFile"]
