@@ -43,7 +43,7 @@ class VrayRenderPluginInfo:
 class RedshiftRenderPluginInfo:
     SceneFile: str = field(default=None)
     # Use "1" as the default Redshift version just because it
-    # default fallback version in Deadline's Redshift plugin
+    # defaults to fallback version in Deadline's Redshift plugin
     # if no version was specified
     Version: str = field(default="1")
 
@@ -171,7 +171,10 @@ class HoudiniSubmitDeadline(
         else:
             plugin = "Houdini"
             if split_render_job:
-                job_type = "[EXPORT IFD]"
+                export_file = instance.data["ifdFile"]
+                extension = os.path.splitext(export_file)[-1] or "SCENE"
+                job_type = f"[EXPORT {extension.upper()}]"
+
         job_info.Plugin = plugin
 
         filepath = context.data["currentFile"]
