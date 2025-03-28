@@ -123,6 +123,14 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             "--targets", "farm"
         ]
 
+        # TODO remove settings variant handling when not needed anymore
+        #   which should be when package.py defines 'core>1.1.1' .
+        settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
+        if settings_variant == "staging":
+            args.append("--use-staging")
+        elif settings_variant != "production":
+            args.extend(["--bundle", settings_variant])
+
         dependency_ids = []
         if job.get("_id"):
             dependency_ids.append(job["_id"])
