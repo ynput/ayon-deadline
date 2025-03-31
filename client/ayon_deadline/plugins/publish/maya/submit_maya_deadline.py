@@ -25,6 +25,7 @@ from datetime import datetime
 import itertools
 from collections import OrderedDict
 from dataclasses import dataclass, field, asdict
+from typing import Tuple, Dict, Any
 
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin
@@ -36,6 +37,7 @@ from ayon_core.pipeline.farm.tools import iter_expected_files
 from ayon_maya.api.lib_rendersettings import RenderSettings
 from ayon_maya.api.lib import get_attr_in_layer
 
+from ayon_deadline.lib import PublishDeadlineJobInfo
 from ayon_deadline import abstract_submit_deadline
 
 
@@ -244,7 +246,9 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                         auth=auth,
                         verify=verify)
 
-    def _tile_render(self, payload):
+    def _tile_render(
+        self, payload: Tuple[PublishDeadlineJobInfo, Dict[str, Any]]
+    ):
         """Submit as tile render per frame with dependent assembly jobs."""
 
         # As collected by super process()
@@ -320,7 +324,8 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                 payload_plugin_info["OutputFilePrefix"]
             )[0]
 
-            new_job_info.update(tiles_data["JobInfo"])
+            for key, value in tiles_data.items():
+                setattr(new_job_info, key, value)
             new_plugin_info.update(tiles_data["PluginInfo"])
 
             self.log.debug("hashing {} - {}".format(file_index, file))
