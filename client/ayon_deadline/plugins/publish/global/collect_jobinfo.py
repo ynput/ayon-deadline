@@ -305,6 +305,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 maximum=1000
             ),
             NumberDef(
+                "concurrent_tasks",
+                label="Concurrent Tasks",
+                tooltip="Number of concurrent tasks to run per render node",
+                default=default_values.get("concurrent_tasks"),
+                decimals=0,
+                minimum=1,
+                maximum=1000
+            ),
+            NumberDef(
                 "priority",
                 label="Priority",
                 default=default_values.get("priority"),
