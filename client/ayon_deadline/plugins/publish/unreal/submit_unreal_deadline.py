@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass, field, asdict
 import getpass
 import pyblish.api
@@ -124,12 +125,8 @@ class UnrealSubmitDeadline(
 
     def _get_executable(self):
         """Returns path to Unreal executable.
-
-        Ahh... why is this so tricky?
-        gotta do that in cpp it seems
         """
-        ue_base = Path("C:/Program Files/Epic Games/UE_5.4/Engine")
-        ue_bins = ue_base / "Binaries"/ "Win64"
-        ue_cmd_exe = ue_bins / "UnrealEditor-Cmd.exe"
+        curr_ue = Path(sys.executable).resolve()
+        ue_cmd_exe = curr_ue.parent / "UnrealEditor-Cmd.exe"
         return ue_cmd_exe.as_posix()
 
