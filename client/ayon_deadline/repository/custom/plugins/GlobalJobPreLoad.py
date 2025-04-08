@@ -528,25 +528,7 @@ def inject_ayon_environment(deadlinePlugin):
             if output_dir:
                 break
 
-        if not output_dir:
-            raise RuntimeError("Unable to find workfile location or "
-                               "location where files should be rendered.")
-
-        start_time = datetime.now()
-        output_dir = os.path.dirname(output_dir)
-        worker_platform = platform.system().lower()
-        environment_file_name = f"extractenvironments_{worker_platform}.txt"
-        export_url = os.path.join(output_dir, environment_file_name)
-        while os.path.exists(f"{export_url}.tmp"):
-            date_diff = datetime.now() - start_time
-            if date_diff > timedelta(seconds=EXTRACT_ENVIRONMENT_TIMEOUT):
-                raise RuntimeError(
-                    "Previous extract environment process stuck for "
-                    f"'{EXTRACT_ENVIRONMENT_TIMEOUT}' sec."
-                    "Starting it from scratch."
-                )
-            print("Extract environment process already triggered, waiting")
-            sleep(2)
+        export_url = _get_export_path(output_dir)
 
         if not os.path.exists(export_url):
             print(f"'{export_url}' doesn't exist yet, extracting...")
@@ -597,6 +579,33 @@ def inject_ayon_environment(deadlinePlugin):
         raise
 
 
+def _get_export_path(output_dir):
+    """Check if another worker started extractenvironments already.
+
+    extractenvironments might be expensive operation, so first worker who
+    starts doing it creates empty file before it. All other workers should
+    wait until this file gets renamed to final name.
+    """
+    start_time = datetime.now()
+    worker_platform = platform.system().lower()
+    environment_file_name = f"extractenvironments_{worker_platform}.txt"
+    export_url = os.path.join(output_dir, environment_file_name)
+    while os.path.exists(f"{export_url}.tmp"):
+        date_diff = datetime.now() - start_time
+        if date_diff > timedelta(seconds=EXTRACT_ENVIRONMENT_TIMEOUT):
+            raise RuntimeError(
+                "Previous extract environment process stuck for "
+                f"'{EXTRACT_ENVIRONMENT_TIMEOUT}' sec."
+                "Starting it from scratch."
+            )
+        print("Extract environment process already triggered, waiting")
+        sleep(2)
+
+    return export_url
+
+
+
+
 def _extractenvironments(
     ayon_server_url,
     ayon_api_key,
@@ -606,6 +615,7 @@ def _extractenvironments(
     export_url,
     job
 ):
+    """Calls `applications.extractenvironments` cli to get farm based envs."""
     print(f">>> Extracting environments to: {export_url}")
 
     add_kwargs = {
