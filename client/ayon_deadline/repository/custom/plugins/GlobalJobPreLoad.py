@@ -523,7 +523,10 @@ def inject_ayon_environment(deadlinePlugin):
 
         output_dir = _get_output_dir(job)
 
-        export_url = _get_export_path(output_dir)
+        worker_platform = platform.system().lower()
+        environment_file_name = f"extractenvironments_{worker_platform}.txt"
+        export_url = os.path.join(output_dir, environment_file_name)
+        _wait_for_in_progress(export_url)
 
         if not os.path.exists(export_url):
             print(f"'{export_url}' doesn't exist yet, extracting...")
@@ -571,17 +574,17 @@ def inject_ayon_environment(deadlinePlugin):
         raise
 
 
-def _get_export_path(output_dir):
+def _wait_for_in_progress(export_url):
     """Check if another worker started extractenvironments already.
 
     extractenvironments might be expensive operation, so first worker who
     starts doing it creates empty file before it. All other workers should
     wait until this file gets renamed to final name.
+    Raises:
+        (RuntimeError) if extraction takes more
+            than EXTRACT_ENVIRONMENT_TIMEOUT seconds
     """
     start_time = datetime.now()
-    worker_platform = platform.system().lower()
-    environment_file_name = f"extractenvironments_{worker_platform}.txt"
-    export_url = os.path.join(output_dir, environment_file_name)
     while os.path.exists(f"{export_url}.tmp"):
         date_diff = datetime.now() - start_time
         if date_diff > timedelta(seconds=EXTRACT_ENVIRONMENT_TIMEOUT):
@@ -592,8 +595,6 @@ def _get_export_path(output_dir):
             )
         print("Extract environment process already triggered, waiting")
         sleep(2)
-
-    return export_url
 
 
 def _get_output_dir(job):
