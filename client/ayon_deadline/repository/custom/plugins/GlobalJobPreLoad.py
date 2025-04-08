@@ -522,6 +522,7 @@ def inject_ayon_environment(deadlinePlugin):
             ))
 
         output_urls = ["OutputFilePath", "Output", "SceneFile"]
+        output_dir = None
         for output in output_urls:
             output_dir = job.GetJobPluginInfoKeyValue(output)
             if output_dir:
