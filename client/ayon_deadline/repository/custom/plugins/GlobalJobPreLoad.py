@@ -540,12 +540,11 @@ def inject_ayon_environment(deadlinePlugin):
         while os.path.exists(f"{export_url}.tmp"):
             date_diff = datetime.now() - start_time
             if date_diff > timedelta(seconds=EXTRACT_ENVIRONMENT_TIMEOUT):
-                print(
+                raise RuntimeError(
                     "Previous extract environment process stuck for "
                     f"'{EXTRACT_ENVIRONMENT_TIMEOUT}' sec."
                     "Starting it from scratch."
                 )
-                break
             print("Extract environment process already triggered, waiting")
             sleep(2)
 
