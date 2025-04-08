@@ -561,9 +561,6 @@ def inject_ayon_environment(deadlinePlugin):
             print(">>> Setting script path {}".format(script_url))
             job.SetJobPluginInfoKeyValue("ScriptFilename", script_url)
 
-        # print(">>> Removing temporary file")
-        # os.remove(export_url)
-
         print(">> Injection end.")
     except Exception as e:
         if hasattr(e, "output"):
