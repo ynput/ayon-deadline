@@ -521,12 +521,7 @@ def inject_ayon_environment(deadlinePlugin):
                 "AYON_SERVER_URL and AYON_API_KEY"
             ))
 
-        output_urls = ["OutputFilePath", "Output", "SceneFile"]
-        output_dir = None
-        for output in output_urls:
-            output_dir = job.GetJobPluginInfoKeyValue(output)
-            if output_dir:
-                break
+        output_dir = _get_output_dir(job)
 
         export_url = _get_export_path(output_dir)
 
@@ -604,6 +599,20 @@ def _get_export_path(output_dir):
     return export_url
 
 
+def _get_output_dir(job):
+    """Look for output dir where metadata.json should be created also."""
+    output_urls = ["OutputFilePath", "Output", "SceneFile"]
+    output_dir = None
+    for output in output_urls:
+        output_dir = job.GetJobPluginInfoKeyValue(output)
+        if output_dir:
+            break
+    if not output_dir:
+        raise RuntimeError(
+            "Unable to find workfile location or "
+            "location where files should be rendered.")
+    output_dir = os.path.dirname(output_dir)
+    return output_dir
 
 
 def _extractenvironments(
