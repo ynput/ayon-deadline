@@ -40,6 +40,7 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
+        {"value": "concurrent_tasks", "label": "Number of Concurrent Tasks"},
         {"value": "publish_job_state", "label": "Publish Job State"},
     ]
 
@@ -104,7 +105,10 @@ class CollectJobInfoItem(BaseSettingsModel):
         )
     )
     concurrent_tasks: int = SettingsField(
-        1, title="Number of concurrent tasks")
+        1,
+        title="Number of concurrent tasks",
+        description="Concurrent tasks on single render node"
+    )
     department: str = SettingsField("", title="Department")
     job_delay: str = SettingsField(
         "", title="Delay job",
@@ -155,10 +159,17 @@ class CollectJobInfoModel(BaseSettingsModel):
 
 
 class ValidateExpectedFilesModel(BaseSettingsModel):
+    """Validate render frames match the job's expected outputs."""
     enabled: bool = SettingsField(True, title="Enabled")
     active: bool = SettingsField(True, title="Active")
     allow_user_override: bool = SettingsField(
-        True, title="Allow user change frame range"
+        True, title="Allow user change frame range",
+        description=(
+            "Allow user to override the frame range of the job in Deadline "
+            "Monitor and use this as the new expected files. "
+            "This is useful when artist should be allowed control on the "
+            "render frame range."
+        )
     )
     families: list[str] = SettingsField(
         default_factory=list, title="Trigger on families"
@@ -190,7 +201,7 @@ class ScenePatchesSubmodel(BaseSettingsModel):
 
 
 class MayaSubmitDeadlineModel(BaseSettingsModel):
-    """Maya deadline submitter settings."""
+    """Maya-specific settings"""
 
     import_reference: bool = SettingsField(
         title="Use Scene with Imported Reference"
@@ -235,13 +246,14 @@ def fusion_deadline_plugin_enum():
 
 
 class FusionSubmitDeadlineModel(BaseSettingsModel):
+    """Fusion-specific settings"""
     plugin: str = SettingsField("Fusion",
                                 enum_resolver=fusion_deadline_plugin_enum,
                                 title="Deadline Plugin")
 
 
 class NukeSubmitDeadlineModel(BaseSettingsModel):
-    """Nuke deadline submitter settings."""
+    """Nuke-specific settings"""
 
     use_gpu: bool = SettingsField(True, title="Use GPU")
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
@@ -254,10 +266,15 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
 
 
 class HoudiniSubmitDeadlineModel(BaseSettingsModel):
-    """Houdini deadline render submitter settings."""
+    """Houdini Export Job settings
+
+    Submitting from Houdini can be configured to first export a renderable
+    scene file (e.g. `usd`, `ifd`, `ass`) instead of rendering directly from
+    the Houdini file. These settings apply to this Houdini **Export Job**.
+    """
 
     export_priority: int = SettingsField(title="Export Priority")
-    export_chunk_size: int = SettingsField(title="Export Chunk Size")
+    export_chunk_size: int = SettingsField(title="Export Frames Per Task")
     export_group: str = SettingsField(title="Export Group")
     export_limits: str = SettingsField(
         title="Export Limit Groups",
@@ -277,6 +294,20 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     )
 
 
+class ProcessCacheJobFarmModel(BaseSettingsModel):
+    """Houdini cache submission settings
+
+    These settings apply only to Houdini cache publish jobs. Those are the
+    **publish jobs** for any farm submitted caching, like for Alembic
+    or VDB products.
+    """
+
+    deadline_priority: int = SettingsField(title="Priority")
+    deadline_group: str = SettingsField(title="Group")
+    deadline_pool: str = SettingsField(title="Pool")
+    deadline_department: str = SettingsField(title="Department")
+
+
 class AOVFilterSubmodel(BaseSettingsModel):
     _layout = "expanded"
     name: str = SettingsField(title="Host")
@@ -286,17 +317,8 @@ class AOVFilterSubmodel(BaseSettingsModel):
     )
 
 
-class ProcessCacheJobFarmModel(BaseSettingsModel):
-    """Process submitted job on farm."""
-
-    deadline_priority: int = SettingsField(title="Priority")
-    deadline_group: str = SettingsField(title="Group")
-    deadline_pool: str = SettingsField(title="Pool")
-    deadline_department: str = SettingsField(title="Department")
-
-
 class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
-    """Process submitted job on farm."""
+    """Publish job settings"""
 
     deadline_priority: int = SettingsField(title="Priority")
     deadline_group: str = SettingsField(title="Group")
@@ -325,14 +347,39 @@ class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
 
 
 class PublishPluginsModel(BaseSettingsModel):
+    # Generic submission settings applying to all hosts
     CollectJobInfo: CollectJobInfoModel = SettingsField(
         default_factory=CollectJobInfoModel,
-        title="Collect JobInfo",
-        description="Generic plugin collecting Deadline job properties like "
-                    "Pools, Groups etc. It allows atomic control based on "
-                    "Profiles (eg. different tasky types might use different "
-                    "Pools etc.)"
+        title="Render Job Settings",
+        description=(
+            "Define defaults for Deadline job properties like Pools, Groups "
+            "etc. It allows context-aware control based on Profiles (eg. "
+            "different task types might use different Pools etc.)"
+        )
     )
+    ProcessSubmittedJobOnFarm: ProcessSubmittedJobOnFarmModel = SettingsField(
+        default_factory=ProcessSubmittedJobOnFarmModel,
+        title="Publish Job Settings")
+
+    # Host-specific
+    FusionSubmitDeadline: FusionSubmitDeadlineModel = SettingsField(
+        default_factory=FusionSubmitDeadlineModel,
+        title="Fusion",
+        section="Host specific")
+    HoudiniSubmitDeadline: HoudiniSubmitDeadlineModel = SettingsField(
+        default_factory=HoudiniSubmitDeadlineModel,
+        title="Houdini Export Job Settings")
+    ProcessSubmittedCacheJobOnFarm: ProcessCacheJobFarmModel = SettingsField(
+        default_factory=ProcessCacheJobFarmModel,
+        title="Houdini Cache Publish Job Settings")
+    MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
+        default_factory=MayaSubmitDeadlineModel,
+        title="Maya")
+    NukeSubmitDeadline: NukeSubmitDeadlineModel = SettingsField(
+        default_factory=NukeSubmitDeadlineModel,
+        title="Nuke")
+
+    # Others
     CollectAYONServerToFarmJob: CollectAYONServerToFarmJobModel = SettingsField(  # noqa
         default_factory=CollectAYONServerToFarmJobModel,
         title="Add AYON server to farm job",
@@ -340,31 +387,13 @@ class PublishPluginsModel(BaseSettingsModel):
             "When enabled submit along your `AYON_SERVER_URL` to the farm job."
             " On the Deadline AYON Plug-in on the Deadline Repository settings"
             " you can specify a custom API key for those server URLs."
-        )
+        ),
+        section="Others"
     )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
         title="Validate Expected Files"
     )
-    FusionSubmitDeadline: FusionSubmitDeadlineModel = SettingsField(
-        default_factory=FusionSubmitDeadlineModel,
-        title="Fusion submit to Deadline")
-    HoudiniSubmitDeadline: HoudiniSubmitDeadlineModel = SettingsField(
-        default_factory=HoudiniSubmitDeadlineModel,
-        title="Houdini Submit render to deadline")
-    MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
-        default_factory=MayaSubmitDeadlineModel,
-        title="Maya Submit to deadline")
-    NukeSubmitDeadline: NukeSubmitDeadlineModel = SettingsField(
-        default_factory=NukeSubmitDeadlineModel,
-        title="Nuke Submit to deadline")
-    ProcessSubmittedCacheJobOnFarm: ProcessCacheJobFarmModel = SettingsField(
-        default_factory=ProcessCacheJobFarmModel,
-        title="Process submitted cache Job on farm",
-        section="Publish Jobs")
-    ProcessSubmittedJobOnFarm: ProcessSubmittedJobOnFarmModel = SettingsField(
-        default_factory=ProcessSubmittedJobOnFarmModel,
-        title="Process submitted job on farm")
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
