@@ -618,13 +618,11 @@ def _get_output_dir(job):
     for output in output_urls:
         output_dir = job.GetJobPluginInfoKeyValue(output)
         if output_dir:
-            break
-    if not output_dir:
-        raise RuntimeError(
-            "Unable to find workfile location or "
-            "location where files should be rendered.")
-    output_dir = os.path.dirname(output_dir)
-    return output_dir
+            return os.path.dirname(output_dir)
+
+    raise RuntimeError(
+        "Unable to find workfile location or"
+        " location where files should be rendered.")
 
 
 def _extract_environments(
