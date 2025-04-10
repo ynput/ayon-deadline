@@ -524,7 +524,7 @@ def inject_ayon_environment(deadlinePlugin):
         output_dir = _get_output_dir(job)
 
         worker_platform = platform.system().lower()
-        environment_file_name = f"extractenvironments_{worker_platform}.json"
+        environment_file_name = f"env_{worker_platform}.json"
         export_url = os.path.join(output_dir, environment_file_name)
         _wait_for_in_progress(job, export_url)
 
