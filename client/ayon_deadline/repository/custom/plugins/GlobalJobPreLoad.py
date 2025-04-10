@@ -680,19 +680,8 @@ def _extract_environments(
     if settings_variant == "staging":
         args.append("--use-staging")
 
-    # Backwards compatibility for older versions
-    legacy_args = [
-        "--headless",
-        "extractenvironments",
-        export_url
-    ]
-
     for key, value in add_kwargs.items():
         args.extend(["--{}".format(key), value])
-        # Legacy arguments expect '--asset' instead of '--folder'
-        if key == "folder":
-            key = "asset"
-        legacy_args.extend(["--{}".format(key), value])
 
     environment = {
         "AYON_SERVER_URL": ayon_server_url,
@@ -716,20 +705,6 @@ def _extract_environments(
     process_exitcode = deadlinePlugin.RunProcess(
         exe, args_str, os.path.dirname(exe), -1
     )
-
-    if process_exitcode != 0:
-        print(
-            "Failed to run AYON process to extract environments. Trying"
-            " to use legacy arguments."
-        )
-        legacy_args_str = subprocess.list2cmdline(legacy_args)
-        process_exitcode = deadlinePlugin.RunProcess(
-            exe, legacy_args_str, os.path.dirname(exe), -1
-        )
-        if process_exitcode != 0:
-            raise RuntimeError(
-                "Failed to run AYON process to extract environments."
-            )
 
 
 def get_ayon_executable():
