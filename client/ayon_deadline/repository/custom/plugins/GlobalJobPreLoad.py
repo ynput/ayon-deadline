@@ -526,7 +526,7 @@ def inject_ayon_environment(deadlinePlugin):
         worker_platform = platform.system().lower()
         environment_file_name = f"extractenvironments_{worker_platform}.json"
         export_url = os.path.join(output_dir, environment_file_name)
-        _wait_for_in_progress(export_url)
+        _wait_for_in_progress(job, export_url)
 
         if not os.path.exists(export_url):
             print(f"'{export_url}' doesn't exist yet, extracting...")
@@ -574,7 +574,7 @@ def inject_ayon_environment(deadlinePlugin):
         raise
 
 
-def _wait_for_in_progress(export_url):
+def _wait_for_in_progress(job, export_url):
     """Check if another worker started extractenvironments already.
 
     extractenvironments might be expensive operation, so first worker who
@@ -585,18 +585,22 @@ def _wait_for_in_progress(export_url):
             than EXTRACT_ENVIRONMENT_TIMEOUT seconds
     """
     export_in_progress_path = f"{export_url}.tmp"
+    timeout = (
+            job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
+            or EXTRACT_ENVIRONMENT_TIMEOUT
+    )
     while os.path.exists(export_in_progress_path):
         file_modified  = datetime.fromtimestamp(
             os.path.getmtime(export_in_progress_path)
         )
         date_diff = datetime.now() - file_modified
-        if date_diff > timedelta(seconds=EXTRACT_ENVIRONMENT_TIMEOUT):
+        if date_diff > timedelta(seconds=timeout):
             try:
                 os.remove(export_in_progress_path)
             except (OSError, PermissionError):
                 raise RuntimeError(
                     "Previous extract environment process stuck for "
-                    f"'{EXTRACT_ENVIRONMENT_TIMEOUT}' sec."
+                    f"'{timeout}' sec."
                     "Starting it from scratch."
                 )
         print("Extract environment process already triggered, waiting")
