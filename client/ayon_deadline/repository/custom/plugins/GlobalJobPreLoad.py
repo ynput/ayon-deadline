@@ -615,7 +615,6 @@ def _wait_for_in_progress(job, export_url):
 def _get_output_dir(job):
     """Look for output dir where metadata.json should be created also."""
     output_urls = ["OutputFilePath", "Output", "SceneFile"]
-    output_dir = None
     for output in output_urls:
         output_dir = job.GetJobPluginInfoKeyValue(output)
         if output_dir:
