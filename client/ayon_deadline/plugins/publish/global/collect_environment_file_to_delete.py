@@ -37,6 +37,6 @@ class CollectEnvironmentFileToDelete(pyblish.api.ContextPlugin):
             path = anatomy.fill_root(path)
             metadata_folder = os.path.dirname(path)
             for file_name in os.listdir(metadata_folder):
-                if file_name.startswith('extractenvironments'):
+                if file_name.startswith('env_'):
                     file_path = os.path.join(metadata_folder, file_name)
                     context.data["cleanupFullPaths"].append(file_path)
