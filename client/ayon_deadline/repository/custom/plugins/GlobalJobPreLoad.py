@@ -532,7 +532,7 @@ def inject_ayon_environment(deadlinePlugin):
             print(f"'{export_url}' doesn't exist yet, extracting...")
             temp_export_url = f"{export_url}.tmp"
             with open(temp_export_url, "w"):
-                _extractenvironments(
+                _extract_environments(
                     ayon_server_url,
                     ayon_api_key,
                     ayon_bundle_name,
@@ -623,7 +623,7 @@ def _get_output_dir(job):
     return output_dir
 
 
-def _extractenvironments(
+def _extract_environments(
     ayon_server_url,
     ayon_api_key,
     ayon_bundle_name,
@@ -651,11 +651,13 @@ def _extractenvironments(
             if value:
                 break
         add_kwargs[key] = value
+
     if not all(add_kwargs.values()):
         raise RuntimeError((
             "Missing required env vars: AYON_PROJECT_NAME,"
             " AYON_FOLDER_PATH, AYON_TASK_NAME, AYON_APP_NAME"
         ))
+
     # Use applications addon arguments
     # TODO validate if applications addon should be used
     args = [
@@ -665,6 +667,7 @@ def _extractenvironments(
         "extractenvironments",
         export_url
     ]
+
     # staging requires passing argument
     # TODO could be removed when PR in ayon-core starts to fill
     #  'AYON_USE_STAGING' (https://github.com/ynput/ayon-core/pull/1130)
@@ -674,37 +677,44 @@ def _extractenvironments(
     )
     if settings_variant == "staging":
         args.append("--use-staging")
+
     # Backwards compatibility for older versions
     legacy_args = [
         "--headless",
         "extractenvironments",
         export_url
     ]
+
     for key, value in add_kwargs.items():
         args.extend(["--{}".format(key), value])
         # Legacy arguments expect '--asset' instead of '--folder'
         if key == "folder":
             key = "asset"
         legacy_args.extend(["--{}".format(key), value])
+
     environment = {
         "AYON_SERVER_URL": ayon_server_url,
         "AYON_API_KEY": ayon_api_key,
         "AYON_BUNDLE_NAME": ayon_bundle_name,
     }
+
     for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
         value = job.GetJobEnvironmentKeyValue(key)
         if value:
             environment[key] = value
+
     for env, val in environment.items():
         # Add the env var for the Render Plugin that is about to render
         deadlinePlugin.SetEnvironmentVariable(env, val)
         # Add the env var for current calls to `DeadlinePlugin.RunProcess`
         deadlinePlugin.SetProcessEnvironmentVariable(env, val)
+
     args_str = subprocess.list2cmdline(args)
     print(">>> Executing: {} {}".format(exe, args_str))
     process_exitcode = deadlinePlugin.RunProcess(
         exe, args_str, os.path.dirname(exe), -1
     )
+
     if process_exitcode != 0:
         print(
             "Failed to run AYON process to extract environments. Trying"
