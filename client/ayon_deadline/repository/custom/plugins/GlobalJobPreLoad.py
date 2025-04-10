@@ -532,6 +532,8 @@ def inject_ayon_environment(deadlinePlugin):
             print(f"'{export_url}' doesn't exist yet, extracting...")
             temp_export_url = f"{export_url}.tmp"
             with open(temp_export_url, "w"):
+                pass
+            try:
                 _extract_environments(
                     ayon_server_url,
                     ayon_api_key,
@@ -541,9 +543,12 @@ def inject_ayon_environment(deadlinePlugin):
                     temp_export_url,
                     job
                 )
-            if not os.path.exists(export_url):
-                print(f"Creating env var file {export_url}")
-                shutil.move(temp_export_url, export_url)
+                if not os.path.exists(export_url):
+                    print(f"Creating env var file {export_url}")
+                    shutil.move(temp_export_url, export_url)
+            finally:
+                if os.path.exists(temp_export_url):
+                    os.remove(temp_export_url)
 
         print(">>> Loading file ...")
         with open(export_url) as fp:
