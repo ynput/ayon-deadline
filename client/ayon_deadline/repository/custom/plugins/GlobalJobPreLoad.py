@@ -584,15 +584,21 @@ def _wait_for_in_progress(export_url):
         (RuntimeError) if extraction takes more
             than EXTRACT_ENVIRONMENT_TIMEOUT seconds
     """
-    start_time = datetime.now()
-    while os.path.exists(f"{export_url}.tmp"):
-        date_diff = datetime.now() - start_time
+    export_in_progress_path = f"{export_url}.tmp"
+    while os.path.exists(export_in_progress_path):
+        file_modified  = datetime.fromtimestamp(
+            os.path.getmtime(export_in_progress_path)
+        )
+        date_diff = datetime.now() - file_modified
         if date_diff > timedelta(seconds=EXTRACT_ENVIRONMENT_TIMEOUT):
-            raise RuntimeError(
-                "Previous extract environment process stuck for "
-                f"'{EXTRACT_ENVIRONMENT_TIMEOUT}' sec."
-                "Starting it from scratch."
-            )
+            try:
+                os.remove(export_in_progress_path)
+            except (OSError, PermissionError):
+                raise RuntimeError(
+                    "Previous extract environment process stuck for "
+                    f"'{EXTRACT_ENVIRONMENT_TIMEOUT}' sec."
+                    "Starting it from scratch."
+                )
         print("Extract environment process already triggered, waiting")
         sleep(2)
 
