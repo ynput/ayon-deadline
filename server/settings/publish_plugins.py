@@ -40,6 +40,7 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
+        {"value": "concurrent_tasks", "label": "Number of Concurrent Tasks"},
         {"value": "publish_job_state", "label": "Publish Job State"},
     ]
 
@@ -104,7 +105,10 @@ class CollectJobInfoItem(BaseSettingsModel):
         )
     )
     concurrent_tasks: int = SettingsField(
-        1, title="Number of concurrent tasks")
+        1,
+        title="Number of concurrent tasks",
+        description="Concurrent tasks on single render node"
+    )
     department: str = SettingsField("", title="Department")
     job_delay: str = SettingsField(
         "", title="Delay job",
