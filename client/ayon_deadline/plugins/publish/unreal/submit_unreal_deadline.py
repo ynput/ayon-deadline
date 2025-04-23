@@ -49,13 +49,15 @@ class UnrealSubmitDeadline(
         job_info.Plugin = "UnrealEngine5"
 
         # already collected explicit values for rendered Frames
-        if not job_info.Frames:
-            if instance.data["frameEnd"] > instance.data["frameStart"]:
-                # Deadline requires integers in frame range
-                frame_range = "{}-{}".format(
-                    int(round(instance.data["frameStart"])),
-                    int(round(instance.data["frameEnd"])))
-                job_info.Frames = frame_range
+        if (
+            not job_info.Frames
+            and instance.data["frameEnd"] > instance.data["frameStart"]
+        ):
+            # Deadline requires integers in frame range
+            frame_range = "{}-{}".format(
+                int(round(instance.data["frameStart"])),
+                int(round(instance.data["frameEnd"])))
+            job_info.Frames = frame_range
 
         return job_info
 
