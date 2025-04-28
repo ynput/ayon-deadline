@@ -66,7 +66,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         saver_instances = []
         context = instance.context
         for inst in context:
-            if inst.data["productType"] in {"image", "render"}:
+            if inst.data["productType"] not in {"image", "render"}:
                 # Allow only saver family instances
                 continue
 
