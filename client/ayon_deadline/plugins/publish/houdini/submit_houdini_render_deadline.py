@@ -174,7 +174,7 @@ class HoudiniSubmitDeadline(
                     plugin = render_plugin
                     break
             else:
-                plugin = "Houdini"
+                plugin = "Render"
                 self.log.warning(
                     f"No matching render plugin found for families: {families}"
                 )
