@@ -160,14 +160,24 @@ class HoudiniSubmitDeadline(
 
         job_type = "[RENDER]"
         if split_render_job and not is_export_job:
-            product_type = instance.data["productType"]
-            plugin = {
+            families = self._get_families(instance)
+            family_to_render_plugin = {
+                "arnold_rop": "Arnold",
+                "karma_rop": "Karma",
+                "mantra_rop": "Mantra",
+                "redshift_rop": "Redshift",
                 "usdrender": "HuskStandalone",
-            }.get(product_type)
-            if not plugin:
-                # Convert from product type to Deadline plugin name
-                # i.e., arnold_rop -> Arnold
-                plugin = product_type.replace("_rop", "").capitalize()
+                "vray_rop": "Vray",
+            }
+            for family, render_plugin in family_to_render_plugin.items():
+                if family in families:
+                    plugin = render_plugin
+                    break
+            else:
+                plugin = "Houdini"
+                self.log.warning(
+                    f"No matching render plugin found for families: {families}"
+                )
         else:
             plugin = "Houdini"
             if split_render_job:
@@ -243,9 +253,7 @@ class HoudiniSubmitDeadline(
 
         # Output driver to render
         if job_type == "render":
-            
-            families = set(instance.data.get("families", []))
-            families.add(instance.data.get("productType"))
+            families = self._get_families(instance)
             
             if "arnold_rop" in families:
                 plugin_info = ArnoldRenderDeadlinePluginInfo(
@@ -346,6 +354,11 @@ class HoudiniSubmitDeadline(
             RestartDelegate=restart_delegate,
             Version=hou_major_minor
         )
+
+    def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
+        families = set(instance.data.get("families", []))
+        families.add(instance.data.get("productType"))
+        return families
 
 
 class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
