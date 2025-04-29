@@ -243,21 +243,24 @@ class HoudiniSubmitDeadline(
 
         # Output driver to render
         if job_type == "render":
-            product_type = instance.data.get("productType")
-            if product_type == "arnold_rop":
+            
+            families = set(instance.data.get("families", []))
+            families.add(instance.data.get("productType"))
+            
+            if "arnold_rop" in families:
                 plugin_info = ArnoldRenderDeadlinePluginInfo(
                     InputFile=instance.data["ifdFile"]
                 )
-            elif product_type == "mantra_rop":
+            elif "mantra_rop" in families:
                 plugin_info = MantraRenderDeadlinePluginInfo(
                     SceneFile=instance.data["ifdFile"],
                     Version=hou_major_minor,
                 )
-            elif product_type == "vray_rop":
+            elif "vray_rop" in families:
                 plugin_info = VrayRenderPluginInfo(
                     InputFilename=instance.data["ifdFile"],
                 )
-            elif product_type == "redshift_rop":
+            elif "redshift_rop" in families:
                 plugin_info = RedshiftRenderPluginInfo(
                     SceneFile=instance.data["ifdFile"]
                 )
@@ -276,14 +279,14 @@ class HoudiniSubmitDeadline(
                         " - using version configured in Deadline"
                     ))
 
-            elif product_type == "usdrender":
+            elif "usdrender" in families:
                 plugin_info = self._get_husk_standalone_plugin_info(
                     instance, hou_major_minor)
 
             else:
                 self.log.error(
-                    "Product type '%s' not supported yet to split render job",
-                    product_type
+                    "Render Product Type does not support to split render "
+                    f"job. Matched product types against: {families}"
                 )
                 return
         else:
