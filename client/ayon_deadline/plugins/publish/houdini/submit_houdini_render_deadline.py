@@ -254,7 +254,6 @@ class HoudiniSubmitDeadline(
         # Output driver to render
         if job_type == "render":
             families = self._get_families(instance)
-            
             if "arnold_rop" in families:
                 plugin_info = ArnoldRenderDeadlinePluginInfo(
                     InputFile=instance.data["ifdFile"]
