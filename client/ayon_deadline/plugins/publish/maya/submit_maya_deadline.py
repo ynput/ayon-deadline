@@ -637,7 +637,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if not patches:
             return
 
-        if not os.path.splitext(self.scene_path)[1].lower() != ".ma":
+        if os.path.splitext(self.scene_path)[1].lower() != ".ma":
             self.log.debug("Skipping workfile patch since workfile is not "
                            ".ma file")
             return
