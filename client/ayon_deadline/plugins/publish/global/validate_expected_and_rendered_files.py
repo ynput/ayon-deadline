@@ -23,7 +23,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         """Process all the nodes in the instance"""
-        if instance.data.get("hasExplicitFrames", False):
+        if instance.data.get("hasExplicitFrames"):
             self.log.debug("Explicit frames rendered, skipping check")
             return
 
