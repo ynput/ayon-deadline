@@ -122,7 +122,7 @@ class NukeSubmitDeadline(
                 # baking job shouldn't be split
                 self.job_info.ChunkSize = 999999
 
-                self.job_info.Frames = f"{start_frame} - {end_frame}"
+                self.job_info.Frames = f"{start_frame}-{end_frame}"
 
                 self.plugin_info = self.get_plugin_info(
                     scene_path=scene_path,
