@@ -628,6 +628,7 @@ def _wait_for_in_progress(job, export_path):
             )
             try:
                 os.remove(export_in_progress_path)
+                break
             except (OSError, PermissionError):
                 raise RuntimeError(
                     f"Failed to remove progress file '{export_in_progress_path}'."
