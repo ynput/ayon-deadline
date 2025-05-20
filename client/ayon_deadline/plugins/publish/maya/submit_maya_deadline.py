@@ -32,6 +32,9 @@ from ayon_core.pipeline import (
 
 from ayon_core.lib import is_in_tests, NumberDef, BoolDef
 from ayon_core.pipeline.farm.tools import iter_expected_files
+from ayon_core.pipeline.farm.pyblish_functions import (
+    convert_frames_str_to_list
+)
 
 from ayon_maya.api.lib_rendersettings import RenderSettings
 from ayon_maya.api.lib import get_attr_in_layer
@@ -127,13 +130,15 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         job_info.Plugin = instance.data.get("mayaRenderPlugin", "MayaBatch")
 
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}x{step}".format(
-            start=int(instance.data["frameStartHandle"]),
-            end=int(instance.data["frameEndHandle"]),
-            step=int(instance.data["byFrameStep"]),
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}x{step}".format(
+                start=int(instance.data["frameStartHandle"]),
+                end=int(instance.data["frameEndHandle"]),
+                step=int(instance.data["byFrameStep"]),
+            )
+            job_info.Frames = frames
 
         return job_info
 
@@ -599,7 +604,8 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             {"<Scene>": scene_filename_no_ext,
              "<Layer>": layer})
 
-        start_frame = int(self._instance.data["frameStartHandle"])
+
+        start_frame = convert_frames_str_to_list(self.job_info.Frames)[0]
         workspace = self._instance.context.data["workspace"]
         filename_zero = "{}_{:04d}.vrscene".format(output_path, start_frame)
         filepath_zero = os.path.join(workspace, filename_zero)
@@ -631,7 +637,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if not patches:
             return
 
-        if not os.path.splitext(self.scene_path)[1].lower() != ".ma":
+        if os.path.splitext(self.scene_path)[1].lower() != ".ma":
             self.log.debug("Skipping workfile patch since workfile is not "
                            ".ma file")
             return
@@ -651,11 +657,14 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                         ))
 
     def _job_info_label(self, label):
+        frames = convert_frames_str_to_list(self.job_info.Frames)
+        start_frame = frames[0]
+        end_frame = frames[-1]
         return "{label} {job.Name} [{start}-{end}]".format(
             label=label,
             job=self.job_info,
-            start=int(self._instance.data["frameStartHandle"]),
-            end=int(self._instance.data["frameEndHandle"]),
+            start=start_frame,
+            end=end_frame,
         )
 
 def _format_tiles(
