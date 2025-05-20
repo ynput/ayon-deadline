@@ -9,10 +9,14 @@ class CollectEnvironmentFileToDelete(pyblish.api.ContextPlugin):
     """Marks file with extracted environments to be deleted too.
 
     'GlobalJobPreLoad' produces persistent environment file which gets created
-    only once per OS. This approach limits DB querying, but keeps extracting
+    only once per AYON_SITE_ID which should be set on all (similar) render
+    nodes. (More granular values for AYON_SITE_ID could be used if necessary.)
+
+    This approach limits DB querying, but keeps extracting
     of environments on render workers, not during submission.
 
-    This file is created next to metadata.json and needs to be removed also.
+    These files is created next to metadata.json in `.ayon_env_cache` folder
+    and need to be removed also, but only during publish job.
     """
 
     order = pyblish.api.CollectorOrder
@@ -36,7 +40,13 @@ class CollectEnvironmentFileToDelete(pyblish.api.ContextPlugin):
         for path in paths:
             path = anatomy.fill_root(path)
             metadata_folder = os.path.dirname(path)
-            for file_name in os.listdir(metadata_folder):
+            shared_env_folder = os.path.join(
+                metadata_folder, ".ayon_env_cache")
+            if not os.path.exists(shared_env_folder):
+                continue
+            for file_name in os.listdir(shared_env_folder):
                 if file_name.startswith('env_'):
-                    file_path = os.path.join(metadata_folder, file_name)
+                    file_path = os.path.join(shared_env_folder, file_name)
                     context.data["cleanupFullPaths"].append(file_path)
+
+            context.data["cleanupEmptyDirs"].append(shared_env_folder)
