@@ -525,10 +525,32 @@ def inject_ayon_environment(deadlinePlugin):
 
         output_dir = _get_output_dir(job)
 
-        worker_platform = platform.system().lower()
-        environment_file_name = f"env_{worker_platform}.json"
-        export_url = os.path.join(output_dir, environment_file_name)
-        _wait_for_in_progress(job, export_url)
+        shared_env_group = os.environ.get("AYON_SITE_ID")
+        # drive caching of environment variables with env var
+        # it is recommended to use same value AYON_SITE_ID for 'same'
+        # render nodes (eg. same OS etc.)
+        if shared_env_group:
+            print("Caching of environment file will be used.")
+            environment_file_name = f"env_{shared_env_group}.json"
+            export_dir_url = os.path.join(
+                output_dir,
+                ".ayon_env_cache"
+            )
+
+            if not os.path.exists(export_dir_url):
+                os.makedirs(export_dir_url, exist_ok=True)
+
+            export_url = os.path.join(
+                export_dir_url,
+                environment_file_name)
+            _wait_for_in_progress(job, export_url)
+        else:
+            # no caching - existing behavior
+            temp_file_name = "{}_{}.json".format(
+                datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
+                str(uuid.uuid1())
+            )
+            export_url = os.path.join(tempfile.gettempdir(), temp_file_name)
 
         if not os.path.exists(export_url):
             print(f"'{export_url}' doesn't exist yet, extracting...")
