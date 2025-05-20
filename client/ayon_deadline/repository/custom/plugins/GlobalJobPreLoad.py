@@ -616,9 +616,14 @@ def _get_output_dir(job):
     """Look for output dir where metadata.json should be created also."""
     output_urls = ["OutputFilePath", "Output", "SceneFile"]
     for output in output_urls:
-        output_dir = job.GetJobPluginInfoKeyValue(output)
-        if output_dir:
-            return os.path.dirname(output_dir)
+        output_value = job.GetJobPluginInfoKeyValue(output)
+        if not output_value:
+            continue
+        _, ext = os.path.splitext(output_value)
+        if ext:
+            return os.path.dirname(output_value)
+        else:
+            return output_value
 
     raise RuntimeError(
         "Unable to find workfile location or"
