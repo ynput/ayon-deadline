@@ -515,11 +515,13 @@ def inject_ayon_environment(deadlinePlugin):
             ayon_server_url = job_ayon_server_url
 
         if not all([ayon_server_url, ayon_api_key]):
-            raise RuntimeError((
-                "Missing required values for server url and api key. "
-                "Please fill in AYON Deadline plugin or provide by "
-                "AYON_SERVER_URL and AYON_API_KEY"
-            ))
+            raise RuntimeError(
+                (
+                    "Missing required values for server url and api key. "
+                    "Please fill in AYON Deadline plugin or provide by "
+                    "AYON_SERVER_URL and AYON_API_KEY"
+                )
+            )
 
         output_dir = _get_output_dir(job)
 
