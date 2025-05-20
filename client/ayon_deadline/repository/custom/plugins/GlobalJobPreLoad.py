@@ -329,13 +329,13 @@ def inject_openpype_environment(deadlinePlugin):
             datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
             str(uuid.uuid1())
         )
-        export_url = os.path.join(tempfile.gettempdir(), temp_file_name)
-        print(">>> Temporary path: {}".format(export_url))
+        export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
+        print(">>> Temporary path: {}".format(export_path))
 
         args = [
             "--headless",
             "extractenvironments",
-            export_url
+            export_path
         ]
 
         add_kwargs = {
@@ -383,7 +383,7 @@ def inject_openpype_environment(deadlinePlugin):
             )
 
         print(">>> Loading file ...")
-        with open(export_url) as fp:
+        with open(export_path) as fp:
             contents = json.load(fp)
 
         for key, value in contents.items():
@@ -402,7 +402,7 @@ def inject_openpype_environment(deadlinePlugin):
             job.SetJobPluginInfoKeyValue("ScriptFilename", script_url)
 
         print(">>> Removing temporary file")
-        os.remove(export_url)
+        os.remove(export_path)
 
         print(">> Injection end.")
     except Exception as e:
@@ -540,22 +540,22 @@ def inject_ayon_environment(deadlinePlugin):
             if not os.path.exists(export_dir_url):
                 os.makedirs(export_dir_url, exist_ok=True)
 
-            export_url = os.path.join(
+            export_path = os.path.join(
                 export_dir_url,
                 environment_file_name)
-            _wait_for_in_progress(job, export_url)
+            _wait_for_in_progress(job, export_path)
         else:
             # no caching - existing behavior
             temp_file_name = "{}_{}.json".format(
                 datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
                 str(uuid.uuid1())
             )
-            export_url = os.path.join(tempfile.gettempdir(), temp_file_name)
+            export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
 
-        if not os.path.exists(export_url):
-            print(f"'{export_url}' doesn't exist yet, extracting...")
-            temp_export_url = f"{export_url}.tmp"
-            with open(temp_export_url, "w"):
+        if not os.path.exists(export_path):
+            print(f"'{export_path}' doesn't exist yet, extracting...")
+            temp_export_path = f"{export_path}.tmp"
+            with open(temp_export_path, "w"):
                 pass
             try:
                 _extract_environments(
@@ -564,19 +564,19 @@ def inject_ayon_environment(deadlinePlugin):
                     ayon_bundle_name,
                     deadlinePlugin,
                     exe,
-                    temp_export_url,
+                    temp_export_path,
                     job
                 )
-                if (not os.path.exists(export_url) and
-                        os.path.exists(temp_export_url)):
-                    print(f"Creating env var file {export_url}")
-                    os.rename(temp_export_url, export_url)
+                if (not os.path.exists(export_path) and
+                        os.path.exists(temp_export_path)):
+                    print(f"Creating env var file {export_path}")
+                    os.rename(temp_export_path, export_path)
             finally:
-                if os.path.exists(temp_export_url):
-                    os.remove(temp_export_url)
+                if os.path.exists(temp_export_path):
+                    os.remove(temp_export_path)
 
         print(">>> Loading file ...")
-        with open(export_url) as fp:
+        with open(export_path) as fp:
             contents = json.load(fp)
 
         for key, value in contents.items():
@@ -604,7 +604,7 @@ def inject_ayon_environment(deadlinePlugin):
         raise
 
 
-def _wait_for_in_progress(job, export_url):
+def _wait_for_in_progress(job, export_path):
     """Check if another worker started extractenvironments already.
 
     extractenvironments might be expensive operation, so first worker who
@@ -614,7 +614,7 @@ def _wait_for_in_progress(job, export_url):
         (RuntimeError) if extraction takes more
             than EXTRACT_ENVIRONMENT_TIMEOUT seconds
     """
-    export_in_progress_path = f"{export_url}.tmp"
+    export_in_progress_path = f"{export_path}.tmp"
     timeout = int(
         job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
         or EXTRACT_ENVIRONMENT_TIMEOUT
@@ -663,11 +663,11 @@ def _extract_environments(
     ayon_bundle_name,
     deadlinePlugin,
     exe,
-    export_url,
+    export_path,
     job
 ):
     """Calls `applications.extractenvironments` cli to get farm based envs."""
-    print(f">>> Extracting environments to: {export_url}")
+    print(f">>> Extracting environments to: {export_path}")
 
     add_kwargs = {
         "envgroup": "farm",
@@ -699,7 +699,7 @@ def _extract_environments(
         "addon",
         "applications",
         "extractenvironments",
-        export_url
+        export_path
     ]
 
     # staging requires passing argument
