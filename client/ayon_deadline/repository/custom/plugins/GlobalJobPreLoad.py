@@ -615,7 +615,7 @@ def _wait_for_in_progress(job, export_url):
             than EXTRACT_ENVIRONMENT_TIMEOUT seconds
     """
     export_in_progress_path = f"{export_url}.tmp"
-    timeout = (
+    timeout = int(
             job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
             or EXTRACT_ENVIRONMENT_TIMEOUT
     )
