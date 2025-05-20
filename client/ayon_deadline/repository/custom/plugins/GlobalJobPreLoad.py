@@ -616,8 +616,8 @@ def _wait_for_in_progress(job, export_url):
     """
     export_in_progress_path = f"{export_url}.tmp"
     timeout = int(
-            job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
-            or EXTRACT_ENVIRONMENT_TIMEOUT
+        job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
+        or EXTRACT_ENVIRONMENT_TIMEOUT
     )
     while os.path.exists(export_in_progress_path):
         file_modified  = datetime.fromtimestamp(
@@ -625,13 +625,15 @@ def _wait_for_in_progress(job, export_url):
         )
         date_diff = datetime.now() - file_modified
         if date_diff > timedelta(seconds=timeout):
+            print(
+                "Previous extract environment process stuck for "
+                f"'{timeout}' sec. Starting it from scratch."
+            )
             try:
                 os.remove(export_in_progress_path)
             except (OSError, PermissionError):
                 raise RuntimeError(
-                    "Previous extract environment process stuck for "
-                    f"'{timeout}' sec."
-                    "Starting it from scratch."
+                    f"Failed to remove progress file '{export_in_progress_path}'."
                 )
         print("Extract environment process already triggered, waiting")
         sleep(2)
