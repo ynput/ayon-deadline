@@ -672,10 +672,10 @@ def _extract_environments(
     }
     # Support backwards compatible keys
     for key, env_keys in (
-            ("project", ["AYON_PROJECT_NAME", "AVALON_PROJECT"]),
-            ("folder", ["AYON_FOLDER_PATH", "AVALON_ASSET"]),
-            ("task", ["AYON_TASK_NAME", "AVALON_TASK"]),
-            ("app", ["AYON_APP_NAME", "AVALON_APP_NAME"]),
+        ("project", ["AYON_PROJECT_NAME", "AVALON_PROJECT"]),
+        ("folder", ["AYON_FOLDER_PATH", "AVALON_ASSET"]),
+        ("task", ["AYON_TASK_NAME", "AVALON_TASK"]),
+        ("app", ["AYON_APP_NAME", "AVALON_APP_NAME"]),
     ):
         value = ""
         for env_key in env_keys:
