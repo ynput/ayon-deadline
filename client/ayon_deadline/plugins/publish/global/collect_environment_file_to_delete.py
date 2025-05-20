@@ -38,6 +38,8 @@ class CollectEnvironmentFileToDelete(pyblish.api.ContextPlugin):
         anatomy = context.data["anatomy"]
         paths = publish_data_paths.split(os.pathsep)
         for path in paths:
+            if not path:
+                continue
             path = anatomy.fill_root(path)
             metadata_folder = os.path.dirname(path)
             shared_env_folder = os.path.join(
