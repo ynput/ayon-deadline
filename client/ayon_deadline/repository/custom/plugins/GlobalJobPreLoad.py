@@ -685,10 +685,10 @@ def _extract_environments(
         add_kwargs[key] = value
 
     if not all(add_kwargs.values()):
-        raise RuntimeError((
+        raise RuntimeError(
             "Missing required env vars: AYON_PROJECT_NAME,"
             " AYON_FOLDER_PATH, AYON_TASK_NAME, AYON_APP_NAME"
-        ))
+        )
 
     # Use applications addon arguments
     # TODO validate if applications addon should be used
