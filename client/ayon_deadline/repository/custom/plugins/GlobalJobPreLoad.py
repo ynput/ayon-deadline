@@ -9,7 +9,6 @@ import platform
 import uuid
 import re
 from time import sleep
-import shutil
 
 from Deadline.Scripting import (
     RepositoryUtils,
