@@ -567,7 +567,8 @@ def inject_ayon_environment(deadlinePlugin):
                     temp_export_url,
                     job
                 )
-                if not os.path.exists(export_url):
+                if (not os.path.exists(export_url) and
+                        os.path.exists(temp_export_url)):
                     print(f"Creating env var file {export_url}")
                     shutil.move(temp_export_url, export_url)
             finally:
