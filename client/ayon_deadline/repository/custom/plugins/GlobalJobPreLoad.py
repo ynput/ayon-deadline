@@ -527,8 +527,7 @@ def inject_ayon_environment(deadlinePlugin):
         # it is recommended to use same value AYON_SITE_ID for 'same'
         # render nodes (eg. same OS etc.)
         if shared_env_group:
-            print("Caching of environment file will be used.")
-            environment_file_name = f"env_{shared_env_group}.json"
+            print(">>> Caching of environment file will be used.")
             environment_file_name = f"env_{job.JobId}_{shared_env_group}.json"
             export_dir_url = os.path.join(
                 output_dir,
@@ -551,7 +550,7 @@ def inject_ayon_environment(deadlinePlugin):
             export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
 
         if not os.path.exists(export_path):
-            print(f"'{export_path}' doesn't exist yet, extracting...")
+            print(f">>> '{export_path}' doesn't exist yet, extracting...")
             temp_export_path = f"{export_path}.tmp"
             with open(temp_export_path, "w"):
                 pass
@@ -573,7 +572,7 @@ def inject_ayon_environment(deadlinePlugin):
                 if os.path.exists(temp_export_path):
                     os.remove(temp_export_path)
 
-        print(">>> Loading file ...")
+        print(f">>> Loading file '{export_path}' ...")
         with open(export_path) as fp:
             contents = json.load(fp)
 
