@@ -529,6 +529,7 @@ def inject_ayon_environment(deadlinePlugin):
         if shared_env_group:
             print("Caching of environment file will be used.")
             environment_file_name = f"env_{shared_env_group}.json"
+            environment_file_name = f"env_{job.JobId}_{shared_env_group}.json"
             export_dir_url = os.path.join(
                 output_dir,
                 ".ayon_env_cache"
