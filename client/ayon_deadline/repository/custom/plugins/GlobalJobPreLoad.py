@@ -644,11 +644,14 @@ def _get_output_dir(job):
         output_value = job.GetJobPluginInfoKeyValue(output)
         if not output_value:
             continue
+        if os.path.isdir(output_value):
+            return output_value
+        if os.path.isfile(output_value):
+            return os.path.dirname(output_value)
+            # Guess based on extension in path
         _, ext = os.path.splitext(output_value)
         if ext:
             return os.path.dirname(output_value)
-        else:
-            return output_value
 
     raise RuntimeError(
         "Unable to find workfile location or"
