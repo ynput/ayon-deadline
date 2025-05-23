@@ -542,7 +542,7 @@ def inject_ayon_environment(deadlinePlugin):
                 environment_file_name)
             _wait_for_in_progress(job, export_path)
         else:
-            # no caching - existing behavior
+            # no caching - default behavior
             temp_file_name = "{}_{}.json".format(
                 datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
                 str(uuid.uuid1())
