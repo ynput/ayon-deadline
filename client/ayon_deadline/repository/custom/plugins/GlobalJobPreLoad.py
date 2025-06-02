@@ -522,7 +522,12 @@ def inject_ayon_environment(deadlinePlugin):
 
         output_dir = _get_output_dir(job)
 
-        shared_env_group = os.environ.get("AYON_SITE_ID")
+        site_id = os.environ.get("AYON_SITE_ID")
+        shared_env_group = None
+        if site_id:
+            hash_base = "|".join([site_id, getpass.getuser()])
+            hash_sha256 = sha256(hash_base.encode())
+            shared_env_group = hash_sha256.hexdigest()[-10:]
         # drive caching of environment variables with env var
         # it is recommended to use same value AYON_SITE_ID for 'same'
         # render nodes (eg. same OS etc.)
