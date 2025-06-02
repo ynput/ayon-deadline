@@ -9,6 +9,8 @@ import platform
 import uuid
 import re
 from time import sleep
+import getpass
+from hashlib import sha256
 
 from Deadline.Scripting import (
     RepositoryUtils,
