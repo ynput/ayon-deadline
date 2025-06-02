@@ -15,7 +15,7 @@ class CollectEnvironmentFileToDelete(pyblish.api.ContextPlugin):
     This approach limits DB querying, but keeps extracting
     of environments on render workers, not during submission.
 
-    These files is created next to metadata.json in `.ayon_env_cache` folder
+    These files are created next to metadata.json in `.ayon_env_cache` folder
     and need to be removed also, but only during publish job.
     """
 
