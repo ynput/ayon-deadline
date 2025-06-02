@@ -522,8 +522,6 @@ def inject_ayon_environment(deadlinePlugin):
                 "AYON_SERVER_URL and AYON_API_KEY"
             )
 
-        output_dir = _get_output_dir(job)
-
         site_id = os.environ.get("AYON_SITE_ID")
         shared_env_group = None
         if site_id:
@@ -535,6 +533,7 @@ def inject_ayon_environment(deadlinePlugin):
         # render nodes (eg. same OS etc.)
         if shared_env_group:
             print(">>> Caching of environment file will be used.")
+            output_dir = _get_output_dir(job)
             environment_file_name = f"env_{job.JobId}_{shared_env_group}.json"
             export_dir_url = os.path.join(
                 output_dir,
