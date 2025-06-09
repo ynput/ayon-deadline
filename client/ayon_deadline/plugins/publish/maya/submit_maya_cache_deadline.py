@@ -75,12 +75,13 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         # Not all hosts can import this module.
         from maya import cmds
         instance = self._instance
+        scene_file = instance.context.data["currentFile"]
         remote_publish_filepath = self.get_remote_publish_script(
             instance)
 
         plugin_info = MayaPluginInfo(
             ScriptJob=True,
-            SceneFile=self.scene_path,
+            SceneFile=scene_file,
             ScriptFilename=remote_publish_filepath,
             Version=cmds.about(version=True),
             ProjectPath=cmds.workspace(query=True,
