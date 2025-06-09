@@ -24,6 +24,7 @@ class CollectUSDPinningEnvVars(pyblish.api.InstancePlugin):
         "renderlayer",
         # Houdini
         "publish.hou",  # cache submissions
+        "publish.farm",
         "redshift_rop",
         "arnold_rop",
         "mantra_rop",
