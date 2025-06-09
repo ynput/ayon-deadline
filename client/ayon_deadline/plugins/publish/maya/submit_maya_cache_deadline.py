@@ -102,13 +102,14 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         instance.data["toBeRenderedOn"] = "deadline"
 
     def get_remote_publish_script(self, instance):
-        """_summary_
+        """Get filepath of the remote publish script for
+        ScriptFilename parameter in Job Info
 
         Args:
-            instance (_type_): _description_
+            instance (pyblish.api.Instance): Instance
 
         Returns:
-            _type_: _description_
+            str: filepath of remote publish script
         """
         temp_dir = tempdir.get_temp_dir(
             instance.context.data["projectName"],
@@ -120,6 +121,9 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         return remote_publish_filename
 
     def _remote_publish_script(self):
+        """
+        Script which executes remote publish
+        """
         return ("""
 try:
     from ayon_core.lib import Logger
