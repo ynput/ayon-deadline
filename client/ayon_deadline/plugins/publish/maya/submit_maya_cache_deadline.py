@@ -127,18 +127,49 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         """
         return ("""
 try:
-    from ayon_core.lib import Logger
     import pyblish.util
+    import pyblish.api
+    from ayon_core.lib import Logger
+    from ayon_core.pipeline import registered_host
+    from ayon_core.pipeline.create import CreateContext
+
 except ImportError as exc:
     # Ensure Deadline fails by output an error that contains "Fatal Error:"
     raise ImportError(f"Fatal Error: {{}}".format(exc))
 
-def remote_publish(log):
 
+def recursive_validate(log, error_format, valid_action_names):
+    context = pyblish.api.Context()
+    context.data["create_context"] = CreateContext(registered_host())
+    context = pyblish.util.collect(context)
+    pyblish.util.validate(context)
+
+    for result in context.data["results"]:
+        if result["success"]:
+            continue
+
+        for action in result["plugin"].actions:
+            if action.__name__ not in valid_action_names:
+                continue
+            try:
+                action().process(context, result["plugin"])
+            except Exception:
+                error_message = error_format.format(**result)
+                log.error(error_message)
+                raise RuntimeError("Fatal Error: {{}}".format(error_message))
+
+    log.info("Validation was successful")
+
+
+def remote_publish(log):
     # Error exit as soon as any error occurs.
     error_format = "Failed {{plugin.__name__}}: {{error}}:{{error.traceback}}"
-
-    for result in pyblish.util.publish_iter():
+    valid_action_names = ["RepairAction", "GenerateUUIDsOnInvalidAction"]
+    recursive_validate(log, error_format, valid_action_names)
+    # Validation should be successful so running a complete publish.
+    context = pyblish.util.publish()
+    success = True
+    for result in context.data["results"]:
         if not result["error"]:
             continue
 
@@ -146,6 +177,9 @@ def remote_publish(log):
         log.error(error_message)
         # 'Fatal Error: ' is because of Deadline
         raise RuntimeError("Fatal Error: {{}}".format(error_message))
+
+    log.info("Publish was successful")
+
 
 if __name__ == "__main__":
     # Perform remote publish with thorough error checking
