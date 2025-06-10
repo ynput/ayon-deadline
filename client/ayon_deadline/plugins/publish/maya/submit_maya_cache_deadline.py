@@ -117,68 +117,46 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
             use_local_temp=True)
         remote_publish_filename = os.path.join(temp_dir, "remote_publish.py")
         with open(remote_publish_filename, "w") as script_file:
-            remote_publish_script = self._remote_publish_script()
+            remote_publish_script = self._remote_publish_script(instance)
             script_file.write(remote_publish_script)
         return remote_publish_filename
 
-    def _remote_publish_script(self):
+    def _remote_publish_script(self, instance):
         """
         Script which executes remote publish
         """
         return ("""
 try:
-    import pyblish.util
-    import pyblish.api
+    from pyblish import util
     from ayon_core.lib import Logger
-    from ayon_core.pipeline import registered_host
-    from ayon_core.pipeline.create import CreateContext
 
 except ImportError as exc:
     # Ensure Deadline fails by output an error that contains "Fatal Error:"
-    raise ImportError(f"Fatal Error: {{}}".format(exc))
+    raise ImportError("Fatal Error: {{}}".format(exc))
 
-
-def recursive_validate(log, error_format, valid_action_names):
-    context = pyblish.api.Context()
-    context.data["create_context"] = CreateContext(registered_host())
-    context = pyblish.util.collect(context)
-    pyblish.util.validate(context)
-
+def check_results(context):
+    error_format = "Failed {{plugin.__name__}}: {{error}}:{{error.traceback}}"
     for result in context.data["results"]:
         if result["success"]:
             continue
-
-        for action in result["plugin"].actions:
-            if action.__name__ not in valid_action_names:
-                continue
-            try:
-                action().process(context, result["plugin"])
-            except Exception:
-                error_message = error_format.format(**result)
-                log.error(error_message)
-                raise RuntimeError("Fatal Error: {{}}".format(error_message))
-
-    log.info("Validation was successful")
-
-
-def remote_publish(log):
-    # Error exit as soon as any error occurs.
-    error_format = "Failed {{plugin.__name__}}: {{error}}:{{error.traceback}}"
-    valid_action_names = ["RepairAction", "GenerateUUIDsOnInvalidAction"]
-    recursive_validate(log, error_format, valid_action_names)
-    # Validation should be successful so running a complete publish.
-    context = pyblish.util.publish()
-    success = True
-    for result in context.data["results"]:
-        if not result["error"]:
-            continue
-
+        # Error exit as soon as any error occurs.
         error_message = error_format.format(**result)
         log.error(error_message)
         # 'Fatal Error: ' is because of Deadline
         raise RuntimeError("Fatal Error: {{}}".format(error_message))
 
-    log.info("Publish was successful")
+def remote_publish(log):
+    context = util.collect()
+    for instance in context:
+        if instance.name != "{name}":
+            instance.data["publish"] = False
+
+    check_results(context)
+
+    stages = [util.extract, util.integrate]
+    for stage in stages:
+        stage(context)
+        check_results(context)
 
 
 if __name__ == "__main__":
@@ -186,4 +164,4 @@ if __name__ == "__main__":
     log = Logger.get_logger(__name__)
     remote_publish(log)
 
-""")
+""").format(name=instance.data["productName"])
