@@ -148,7 +148,9 @@ def check_results(context):
 def remote_publish(log):
     context = util.collect()
     for instance in context:
-        if instance.name != "{name}":
+        if instance.name == "{name}":
+            instance.data["farm"] = False
+        else:
             instance.data["publish"] = False
 
     check_results(context)
