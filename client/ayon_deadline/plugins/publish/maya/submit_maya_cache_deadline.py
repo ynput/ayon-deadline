@@ -6,14 +6,15 @@ import pyblish.api
 from ayon_core.lib import (
     is_in_tests,
 )
+
 from ayon_core.pipeline import (
-    tempdir,
     AYONPyblishPluginMixin
 )
-from ayon_core.pipeline.publish.lib import (
-    replace_with_published_scene_path
+
+from ayon_deadline import (
+    abstract_submit_deadline,
+    remote_publish
 )
-from ayon_deadline import abstract_submit_deadline
 
 
 @dataclass
@@ -68,7 +69,13 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         if isinstance(instance.data.get("frames"), str):
             job_info.ChunkSize = 99999999
 
-        job_info.EnvironmentKeyValue["AYON_REMOTE_PUBLISH"] = "1"
+        additonal_env_var = {
+            "AYON_REMOTE_PUBLISH" : "1",
+            "AYON_INSTANCE_NAME": instance.data["productName"],
+            "AYON_PRODUCT_TYPE": instance.data["productType"]
+        }
+        for key, value in additonal_env_var.items():
+            job_info.EnvironmentKeyValue[key] = value
         return job_info
 
     def get_plugin_info(self):
@@ -76,13 +83,11 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         from maya import cmds
         instance = self._instance
         scene_file = instance.context.data["currentFile"]
-        remote_publish_filepath = self.get_remote_publish_script(
-            instance)
 
         plugin_info = MayaPluginInfo(
             ScriptJob=True,
             SceneFile=scene_file,
-            ScriptFilename=remote_publish_filepath,
+            ScriptFilename=remote_publish.__file__.replace(".pyc", ".py"),
             Version=cmds.about(version=True),
             ProjectPath=cmds.workspace(query=True,
                                        rootDirectory=True)
@@ -93,78 +98,9 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         return plugin_payload
 
     def from_published_scene(self, replace_in_path=False):
-        instance = self._instance
-        replace_in_path = False
-        return replace_with_published_scene_path(
-            instance, replace_in_path)
+        return super().from_published_scene(False)
 
     def process(self, instance):
         super(MayaCacheSubmitDeadline, self).process(instance)
         instance.data["toBeRenderedOn"] = "deadline"
 
-    def get_remote_publish_script(self, instance):
-        """Get filepath of the remote publish script for
-        ScriptFilename parameter in Job Info
-
-        Args:
-            instance (pyblish.api.Instance): Instance
-
-        Returns:
-            str: filepath of remote publish script
-        """
-        temp_dir = tempdir.get_temp_dir(
-            instance.context.data["projectName"],
-            use_local_temp=True)
-        remote_publish_filename = os.path.join(temp_dir, "remote_publish.py")
-        with open(remote_publish_filename, "w") as script_file:
-            remote_publish_script = self._remote_publish_script(instance)
-            script_file.write(remote_publish_script)
-        return remote_publish_filename
-
-    def _remote_publish_script(self, instance):
-        """
-        Script which executes remote publish
-        """
-        return ("""
-try:
-    from pyblish import util
-    from ayon_core.lib import Logger
-
-except ImportError as exc:
-    # Ensure Deadline fails by output an error that contains "Fatal Error:"
-    raise ImportError("Fatal Error: {{}}".format(exc))
-
-def check_results(context):
-    error_format = "Failed {{plugin.__name__}}: {{error}}:{{error.traceback}}"
-    for result in context.data["results"]:
-        if result["success"]:
-            continue
-        # Error exit as soon as any error occurs.
-        error_message = error_format.format(**result)
-        log.error(error_message)
-        # 'Fatal Error: ' is because of Deadline
-        raise RuntimeError("Fatal Error: {{}}".format(error_message))
-
-def remote_publish(log):
-    context = util.collect()
-    for instance in context:
-        if instance.name == "{name}":
-            instance.data["publish"] = True
-            instance.data["farm"] = False
-        else:
-            instance.data["publish"] = False
-
-    check_results(context)
-
-    stages = [util.extract, util.integrate]
-    for stage in stages:
-        stage(context)
-        check_results(context)
-
-
-if __name__ == "__main__":
-    # Perform remote publish with thorough error checking
-    log = Logger.get_logger(__name__)
-    remote_publish(log)
-
-""").format(name=instance.data["productName"])
