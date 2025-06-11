@@ -18,16 +18,17 @@ def remote_publish(log):
         print(f"Setting active state {active} for instance: {instance}")
         instance["active"] = active
         pyblish_context.data["create_context"] = create_context
-        pyblish_plugins = create_context.publish_plugins
 
-        for result in pyblish.util.publish_iter(
-            context=pyblish_context,
-            plugins=pyblish_plugins
-        ):
-            if result["error"]:
-                error_message = error_format.format(**result)
-                log.error(error_message)
-                raise RuntimeError("Fatal Error : {}".format(error_message))
+    pyblish_plugins = create_context.publish_plugins
+
+    for result in pyblish.util.publish_iter(
+        context=pyblish_context,
+        plugins=pyblish_plugins
+    ):
+        if result["error"]:
+            error_message = error_format.format(**result)
+            log.error(error_message)
+            raise RuntimeError("Fatal Error : {}".format(error_message))
 
 
 if __name__ == "__main__":

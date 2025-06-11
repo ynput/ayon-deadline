@@ -44,9 +44,6 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
     def get_job_info(self, job_info=None):
         instance = self._instance
         context = instance.context
-        assert all(
-            result["success"] for result in context.data["results"]
-        ), "Errors found, aborting integration.."
 
         project_name = instance.context.data["projectName"]
         filepath = context.data["currentFile"]
