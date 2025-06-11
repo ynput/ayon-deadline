@@ -12,7 +12,9 @@ def remote_publish(log):
     host = registered_host()
     create_context = CreateContext(host)
     pyblish_context = pyblish.api.Context()
-    solo_instance_ids: set[str] = set(os.environ.get("instance_ids", "").split(";"))
+    solo_instance_ids: set[str] = set(
+        os.environ.get("instance_ids", "").split(";")
+    )
     for instance in create_context.instances:
         active: bool = instance["id"] in solo_instance_ids
         log.info(f"Setting active state {active} for instance: {instance}")

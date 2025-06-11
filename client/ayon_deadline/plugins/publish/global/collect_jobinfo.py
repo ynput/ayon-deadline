@@ -97,7 +97,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         # 'publish.hou' has different submit job plugin
         # TODO find out if we need separate submit publish job plugin
-        if "publish.hou" in all_families or "workfile_publish_on_farm" in all_families:
+        if "publish.hou" in all_families or (
+            "workfile_publish_on_farm" in all_families
+        ):
             return
 
         # Add submit publish job family
