@@ -12,7 +12,7 @@ def check_results(context, log):
         error_message = error_format.format(**result)
         log.error(error_message)
         # 'Fatal Error: ' is because of Deadline
-        raise RuntimeError("Fatal Error: {{}}".format(error_message))
+        raise RuntimeError("Fatal Error: {}".format(error_message))
 
 def remote_publish(log):
     context = util.collect()
@@ -28,7 +28,7 @@ def remote_publish(log):
 
     check_results(context, log)
 
-    stages = [util.extract, util.integrate]
+    stages = [util.validate,util.extract, util.integrate]
     for stage in stages:
         stage(context)
         check_results(context, log)
