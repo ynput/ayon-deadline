@@ -16,7 +16,7 @@ def remote_publish(log):
         os.environ.get("instance_ids", "").split(";")
     )
     for instance in create_context.instances:
-        active: bool = instance["id"] in solo_instance_ids
+        active: bool = instance.id in solo_instance_ids
         log.info(f"Setting active state {active} for instance: {instance}")
         if active:
             instance["active"] = active
