@@ -59,7 +59,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
 
         job_info.Name = job_name
         job_info.BatchName = batch_name
-        job_info.Plugin = instance.data.get("plugin", "MayaBatch")
+        job_info.Plugin = "MayaBatch"
 
         # When `frames` instance data is a string, it indicates that
         #  the output is a single file.
@@ -149,6 +149,7 @@ def remote_publish(log):
     context = util.collect()
     for instance in context:
         if instance.name == "{name}":
+            instance.data["publish"] = True
             instance.data["farm"] = False
         else:
             instance.data["publish"] = False
