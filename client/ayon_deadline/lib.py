@@ -21,7 +21,7 @@ FARM_FAMILIES = [
     "arnold_rop", "mantra_rop",
     "karma_rop", "vray_rop", "redshift_rop",
     "renderFarm", "usdrender", "publish.hou",
-    "publish.farm",
+    "workfile_publish_on_farm",
     "deadline"
 ]
 

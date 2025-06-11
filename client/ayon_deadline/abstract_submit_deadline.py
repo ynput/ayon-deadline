@@ -111,7 +111,7 @@ class AbstractSubmitDeadline(
             job_info.use_published,
             instance.data.get("stagingDir_is_custom", False)
         )
-        if instance.data.get("expectedFiles", []):
+        if instance.data.get("expectedFiles"):
             self._append_job_output_paths(
                 instance,
                 self.job_info

@@ -11,10 +11,9 @@ from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
 
-from ayon_deadline import (
-    abstract_submit_deadline,
-    remote_publish
-)
+from ayon_deadline import abstract_submit_deadline
+
+from ayon_deadline.scripts import remote_publish
 
 
 @dataclass
@@ -38,7 +37,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
     label = "Submit Scene to Deadline (Maya)"
     order = pyblish.api.IntegratorOrder
     hosts = ["maya"]
-    families = ["publish.farm"]
+    families = ["workfile_publish_on_farm"]
     targets = ["local"]
     settings_category = "deadline"
 
@@ -69,13 +68,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         if isinstance(instance.data.get("frames"), str):
             job_info.ChunkSize = 99999999
 
-        additonal_env_var = {
-            "AYON_REMOTE_PUBLISH" : "1",
-            "AYON_INSTANCE_NAME": instance.data["productName"],
-            "AYON_PRODUCT_TYPE": instance.data["productType"]
-        }
-        for key, value in additonal_env_var.items():
-            job_info.EnvironmentKeyValue[key] = value
+        job_info.EnvironmentKeyValue["instance_ids"] = instance.data["id"]
         return job_info
 
     def get_plugin_info(self):
