@@ -13,7 +13,7 @@ def remote_publish(log):
     create_context = CreateContext(host)
     pyblish_context = pyblish.api.Context()
     solo_instance_ids: set[str] = set(
-        os.environ.get("instance_ids", "").split(";")
+        os.environ.get("INSTANCE_IDS", "").split(";")
     )
     for instance in create_context.instances:
         active: bool = instance.id in solo_instance_ids
@@ -24,11 +24,10 @@ def remote_publish(log):
 
         pyblish_context.data["create_context"] = create_context
 
-    pyblish_plugins = create_context.publish_plugins
-
     for result in pyblish.util.publish_iter(
         context=pyblish_context,
-        plugins=pyblish_plugins
+        plugins=create_context.publish_plugins
+
     ):
         for record in result["records"]:
             log.info("{}: {}".format(result["plugin"].label, record.msg))
