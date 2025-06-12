@@ -65,7 +65,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         if isinstance(instance.data.get("frames"), str):
             job_info.ChunkSize = 99999999
 
-        job_info.EnvironmentKeyValue["instance_ids"] = instance.name
+        job_info.EnvironmentKeyValue["INSTANCE_IDS"] = instance.name
         return job_info
 
     def get_plugin_info(self):
