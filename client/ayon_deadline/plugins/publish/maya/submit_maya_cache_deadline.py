@@ -66,6 +66,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
             job_info.ChunkSize = 99999999
 
         job_info.EnvironmentKeyValue["INSTANCE_IDS"] = instance.name
+        job_info.EnvironmentKeyValue["AYON_REMOTE_PUBLISH"] = "1"
         return job_info
 
     def get_plugin_info(self):
