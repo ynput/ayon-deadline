@@ -99,7 +99,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         # TODO find out if we need separate submit publish job plugin
         if (
             "publish.hou" in all_families
-            or "workfile_publish_on_farm" in all_families
+            or "remote_publish_on_farm" in all_families
         ):
             return
 

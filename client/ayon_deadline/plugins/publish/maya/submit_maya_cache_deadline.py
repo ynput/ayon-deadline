@@ -37,7 +37,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
     label = "Submit Scene to Deadline (Maya)"
     order = pyblish.api.IntegratorOrder
     hosts = ["maya"]
-    families = ["workfile_publish_on_farm"]
+    families = ["remote_publish_on_farm"]
     targets = ["local"]
     settings_category = "deadline"
 

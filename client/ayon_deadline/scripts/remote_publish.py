@@ -20,7 +20,6 @@ def remote_publish(log):
         log.info(f"Setting active state {active} for instance: {instance}")
         if active:
             instance["active"] = active
-            instance.get("creator_attributes", {}).pop("farm")
 
         pyblish_context.data["create_context"] = create_context
 
