@@ -657,7 +657,7 @@ def _get_output_dir(job):
             return output_value
         if os.path.isfile(output_value):
             return os.path.dirname(output_value)
-            # Guess based on extension in path
+        # Path does not exist yet, guess if is file based on extension
         _, ext = os.path.splitext(output_value)
         if ext:
             return os.path.dirname(output_value)
@@ -723,7 +723,7 @@ def _extract_environments(
         args.append("--use-staging")
 
     for key, value in add_kwargs.items():
-        args.extend(["--{}".format(key), value])
+        args.extend([f"--{key}", value])
 
     environment = {
         "AYON_SERVER_URL": ayon_server_url,
