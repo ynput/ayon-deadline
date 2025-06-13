@@ -525,7 +525,7 @@ def inject_ayon_environment(deadlinePlugin):
         site_id = os.environ.get("AYON_SITE_ID")
         shared_env_group = None
         if site_id:
-            hash_base = "|".join([site_id, getpass.getuser()])
+            hash_base = f"{site_id}|{getpass.getuser()}"
             hash_sha256 = sha256(hash_base.encode())
             shared_env_group = hash_sha256.hexdigest()[-10:]
         # drive caching of environment variables with env var
