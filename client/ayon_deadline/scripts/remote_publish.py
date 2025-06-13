@@ -18,10 +18,7 @@ def remote_publish(log):
     for instance in create_context.instances:
         active: bool = instance.id in solo_instance_ids
         log.info(f"Setting active state {active} for instance: {instance}")
-        if active:
-            instance["active"] = active
-        else:
-            instance["active"] = False
+        instance["active"] = active
 
         pyblish_context.data["create_context"] = create_context
 
