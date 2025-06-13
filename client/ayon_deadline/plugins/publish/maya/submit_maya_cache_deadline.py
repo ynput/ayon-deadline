@@ -57,13 +57,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         job_info.Name = job_name
         job_info.BatchName = batch_name
         job_info.Plugin = "MayaBatch"
-
-        # When `frames` instance data is a string, it indicates that
-        #  the output is a single file.
-        # Set the chunk size to a large number because multiple
-        #  machines cannot render to the same file.
-        if isinstance(instance.data.get("frames"), str):
-            job_info.ChunkSize = 99999999
+        job_info.ChunkSize = 99999999
 
         job_info.EnvironmentKeyValue["INSTANCE_IDS"] = instance.name
         job_info.EnvironmentKeyValue["AYON_REMOTE_PUBLISH"] = "1"
