@@ -720,7 +720,7 @@ def _extract_environments(
         args.append("--use-staging")
 
     for key, value in add_kwargs.items():
-        args.extend(["--{}".format(key), value])
+        args.extend([f"--{key}", value])
 
     environment = {
         "AYON_SERVER_URL": ayon_server_url,
