@@ -556,7 +556,10 @@ def inject_ayon_environment(deadlinePlugin):
             export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
 
         if not os.path.exists(export_path):
-            print(f">>> '{export_path}' doesn't exist yet, extracting...")
+            print(
+                f">>> '{export_path}' with extracted environment doesn't "
+                "exist yet, running extraction process..."
+            )
             temp_export_path = f"{export_path}.tmp"
             with open(temp_export_path, "w"):
                 pass
