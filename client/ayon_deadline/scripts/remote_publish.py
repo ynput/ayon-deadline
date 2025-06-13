@@ -27,9 +27,6 @@ def remote_publish(log):
         plugins=create_context.publish_plugins
 
     ):
-        for record in result["records"]:
-            log.info("{}: {}".format(result["plugin"].label, record.msg))
-
         if result["error"]:
             error_message = error_format.format(**result)
             log.error(error_message)
