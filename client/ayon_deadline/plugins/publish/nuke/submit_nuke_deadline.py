@@ -230,6 +230,12 @@ class NukeSubmitDeadline(
     ):
         """ Create expected files in instance data
         """
+        if instance.data["render_target"] == "frames_farm":
+            self.log.debug(
+                "Expected files already collected for 'frames_farm', skipping."
+            )
+            return
+
         if not instance.data.get("expectedFiles"):
             instance.data["expectedFiles"] = []
 
