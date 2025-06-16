@@ -2,18 +2,22 @@
 # -*- coding: utf-8 -*-
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 import json
 import platform
 import uuid
 import re
+from time import sleep
+import getpass
+from hashlib import sha256
+
 from Deadline.Scripting import (
     RepositoryUtils,
     FileUtils,
     DirectoryUtils,
 )
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -21,6 +25,7 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
+EXTRACT_ENVIRONMENT_TIMEOUT = 30
 
 
 class OpenPypeVersion:
@@ -325,13 +330,13 @@ def inject_openpype_environment(deadlinePlugin):
             datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
             str(uuid.uuid1())
         )
-        export_url = os.path.join(tempfile.gettempdir(), temp_file_name)
-        print(">>> Temporary path: {}".format(export_url))
+        export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
+        print(">>> Temporary path: {}".format(export_path))
 
         args = [
             "--headless",
             "extractenvironments",
-            export_url
+            export_path
         ]
 
         add_kwargs = {
@@ -379,7 +384,7 @@ def inject_openpype_environment(deadlinePlugin):
             )
 
         print(">>> Loading file ...")
-        with open(export_url) as fp:
+        with open(export_path) as fp:
             contents = json.load(fp)
 
         for key, value in contents.items():
@@ -398,7 +403,7 @@ def inject_openpype_environment(deadlinePlugin):
             job.SetJobPluginInfoKeyValue("ScriptFilename", script_url)
 
         print(">>> Removing temporary file")
-        os.remove(export_url)
+        os.remove(export_path)
 
         print(">> Injection end.")
     except Exception as e:
@@ -511,116 +516,73 @@ def inject_ayon_environment(deadlinePlugin):
             ayon_server_url = job_ayon_server_url
 
         if not all([ayon_server_url, ayon_api_key]):
-            raise RuntimeError((
+            raise RuntimeError(
                 "Missing required values for server url and api key. "
                 "Please fill in AYON Deadline plugin or provide by "
                 "AYON_SERVER_URL and AYON_API_KEY"
-            ))
+            )
 
-        # tempfile.TemporaryFile cannot be used because of locking
-        temp_file_name = "{}_{}.json".format(
-            datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
-            str(uuid.uuid1())
-        )
-        export_url = os.path.join(tempfile.gettempdir(), temp_file_name)
-        print(">>> Temporary path: {}".format(export_url))
+        site_id = os.environ.get("AYON_SITE_ID")
+        shared_env_group = None
+        if site_id:
+            hash_base = f"{site_id}|{getpass.getuser()}"
+            hash_sha256 = sha256(hash_base.encode())
+            shared_env_group = hash_sha256.hexdigest()[-10:]
+        # drive caching of environment variables with env var
+        # it is recommended to use same value AYON_SITE_ID for 'same'
+        # render nodes (eg. same OS etc.)
+        if shared_env_group:
+            print(">>> Caching of environment file will be used.")
+            output_dir = _get_output_dir(job)
+            environment_file_name = f"env_{job.JobId}_{shared_env_group}.json"
+            export_dir_url = os.path.join(
+                output_dir,
+                ".ayon_env_cache"
+            )
 
-        add_kwargs = {
-            "envgroup": "farm",
-        }
-        # Support backwards compatible keys
-        for key, env_keys in (
-            ("project", ["AYON_PROJECT_NAME", "AVALON_PROJECT"]),
-            ("folder", ["AYON_FOLDER_PATH", "AVALON_ASSET"]),
-            ("task", ["AYON_TASK_NAME", "AVALON_TASK"]),
-            ("app", ["AYON_APP_NAME", "AVALON_APP_NAME"]),
-        ):
-            value = ""
-            for env_key in env_keys:
-                value = job.GetJobEnvironmentKeyValue(env_key)
-                if value:
-                    break
-            add_kwargs[key] = value
+            if not os.path.exists(export_dir_url):
+                os.makedirs(export_dir_url, exist_ok=True)
 
-        if not all(add_kwargs.values()):
-            raise RuntimeError((
-                "Missing required env vars: AYON_PROJECT_NAME,"
-                " AYON_FOLDER_PATH, AYON_TASK_NAME, AYON_APP_NAME"
-            ))
+            export_path = os.path.join(
+                export_dir_url,
+                environment_file_name)
+            _wait_for_in_progress(job, export_path)
+        else:
+            # no caching - default behavior
+            temp_file_name = "{}_{}.json".format(
+                datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
+                str(uuid.uuid1())
+            )
+            export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
 
-        # Use applications addon arguments
-        # TODO validate if applications addon should be used
-        args = [
-            "--headless",
-            "addon",
-            "applications",
-            "extractenvironments",
-            export_url
-        ]
-
-        # staging requires passing argument
-        # TODO could be removed when PR in ayon-core starts to fill
-        #  'AYON_USE_STAGING' (https://github.com/ynput/ayon-core/pull/1130)
-        #  - add requirement for "core>=1.1.1" to 'package.py' when removed
-        settings_variant = job.GetJobEnvironmentKeyValue(
-            "AYON_DEFAULT_SETTINGS_VARIANT"
-        )
-        if settings_variant == "staging":
-            args.append("--use-staging")
-
-        # Backwards compatibility for older versions
-        legacy_args = [
-            "--headless",
-            "extractenvironments",
-            export_url
-        ]
-
-        for key, value in add_kwargs.items():
-            args.extend(["--{}".format(key), value])
-            # Legacy arguments expect '--asset' instead of '--folder'
-            if key == "folder":
-                key = "asset"
-            legacy_args.extend(["--{}".format(key), value])
-
-        environment = {
-            "AYON_SERVER_URL": ayon_server_url,
-            "AYON_API_KEY": ayon_api_key,
-            "AYON_BUNDLE_NAME": ayon_bundle_name,
-        }
-
-        for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
-            value = job.GetJobEnvironmentKeyValue(key)
-            if value:
-                environment[key] = value
-
-        for env, val in environment.items():
-            # Add the env var for the Render Plugin that is about to render
-            deadlinePlugin.SetEnvironmentVariable(env, val)
-            # Add the env var for current calls to `DeadlinePlugin.RunProcess`
-            deadlinePlugin.SetProcessEnvironmentVariable(env, val)
-
-        args_str = subprocess.list2cmdline(args)
-        print(">>> Executing: {} {}".format(exe, args_str))
-        process_exitcode = deadlinePlugin.RunProcess(
-            exe, args_str, os.path.dirname(exe), -1
-        )
-
-        if process_exitcode != 0:
+        if not os.path.exists(export_path):
             print(
-                "Failed to run AYON process to extract environments. Trying"
-                " to use legacy arguments."
+                f">>> '{export_path}' with extracted environment doesn't "
+                "exist yet, running extraction process..."
             )
-            legacy_args_str = subprocess.list2cmdline(legacy_args)
-            process_exitcode = deadlinePlugin.RunProcess(
-                exe, legacy_args_str, os.path.dirname(exe), -1
-            )
-            if process_exitcode != 0:
-                raise RuntimeError(
-                    "Failed to run AYON process to extract environments."
+            temp_export_path = f"{export_path}.tmp"
+            with open(temp_export_path, "w"):
+                pass
+            try:
+                _extract_environments(
+                    ayon_server_url,
+                    ayon_api_key,
+                    ayon_bundle_name,
+                    deadlinePlugin,
+                    exe,
+                    temp_export_path,
+                    job
                 )
+                if (not os.path.exists(export_path) and
+                        os.path.exists(temp_export_path)):
+                    print(f"Creating env var file {export_path}")
+                    os.rename(temp_export_path, export_path)
+            finally:
+                if os.path.exists(temp_export_path):
+                    os.remove(temp_export_path)
 
-        print(">>> Loading file ...")
-        with open(export_url) as fp:
+        print(f">>> Loading file '{export_path}' ...")
+        with open(export_path) as fp:
             contents = json.load(fp)
 
         for key, value in contents.items():
@@ -638,9 +600,6 @@ def inject_ayon_environment(deadlinePlugin):
             print(">>> Setting script path {}".format(script_url))
             job.SetJobPluginInfoKeyValue("ScriptFilename", script_url)
 
-        print(">>> Removing temporary file")
-        os.remove(export_url)
-
         print(">> Injection end.")
     except Exception as e:
         if hasattr(e, "output"):
@@ -649,6 +608,146 @@ def inject_ayon_environment(deadlinePlugin):
         print(traceback.format_exc())
         print("!!! Injection failed.")
         raise
+
+
+def _wait_for_in_progress(job, export_path):
+    """Check if another worker started extractenvironments already.
+
+    extractenvironments might be expensive operation, so first worker who
+    starts doing it creates empty file before it. All other workers should
+    wait until this file gets renamed to final name.
+    Raises:
+        (RuntimeError) if extraction takes more
+            than EXTRACT_ENVIRONMENT_TIMEOUT seconds
+    """
+    export_in_progress_path = f"{export_path}.tmp"
+    timeout = int(
+        job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
+        or EXTRACT_ENVIRONMENT_TIMEOUT
+    )
+    while os.path.exists(export_in_progress_path):
+        file_modified  = datetime.fromtimestamp(
+            os.path.getmtime(export_in_progress_path)
+        )
+        date_diff = datetime.now() - file_modified
+        if date_diff > timedelta(seconds=timeout):
+            print(
+                "Previous extract environment process stuck for "
+                f"'{timeout}' sec. Starting it from scratch."
+            )
+            try:
+                os.remove(export_in_progress_path)
+                break
+            except (OSError, PermissionError):
+                raise RuntimeError(
+                    f"Failed to remove progress file "
+                    f"'{export_in_progress_path}'."
+                )
+        print("Extract environment process already triggered, waiting")
+        sleep(2)
+
+
+def _get_output_dir(job):
+    """Look for output dir where metadata.json should be created also."""
+    output_urls = ["OutputFilePath", "Output", "SceneFile"]
+    for output in output_urls:
+        output_value = job.GetJobPluginInfoKeyValue(output)
+        if not output_value:
+            continue
+        if os.path.isdir(output_value):
+            return output_value
+        if os.path.isfile(output_value):
+            return os.path.dirname(output_value)
+        # Path does not exist yet, guess if is file based on extension
+        _, ext = os.path.splitext(output_value)
+        if ext:
+            return os.path.dirname(output_value)
+
+    raise RuntimeError(
+        "Unable to find workfile location or"
+        " location where files should be rendered.")
+
+
+def _extract_environments(
+    ayon_server_url,
+    ayon_api_key,
+    ayon_bundle_name,
+    deadlinePlugin,
+    exe,
+    export_path,
+    job
+):
+    """Calls `applications.extractenvironments` cli to get farm based envs."""
+    print(f">>> Extracting environments to: {export_path}")
+
+    add_kwargs = {
+        "envgroup": "farm",
+    }
+    # Support backwards compatible keys
+    for key, env_keys in (
+        ("project", ["AYON_PROJECT_NAME", "AVALON_PROJECT"]),
+        ("folder", ["AYON_FOLDER_PATH", "AVALON_ASSET"]),
+        ("task", ["AYON_TASK_NAME", "AVALON_TASK"]),
+        ("app", ["AYON_APP_NAME", "AVALON_APP_NAME"]),
+    ):
+        value = ""
+        for env_key in env_keys:
+            value = job.GetJobEnvironmentKeyValue(env_key)
+            if value:
+                break
+        add_kwargs[key] = value
+
+    if not all(add_kwargs.values()):
+        raise RuntimeError(
+            "Missing required env vars: AYON_PROJECT_NAME,"
+            " AYON_FOLDER_PATH, AYON_TASK_NAME, AYON_APP_NAME"
+        )
+
+    # Use applications addon arguments
+    # TODO validate if applications addon should be used
+    args = [
+        "--headless",
+        "addon",
+        "applications",
+        "extractenvironments",
+        export_path
+    ]
+
+    # staging requires passing argument
+    # TODO could be removed when PR in ayon-core starts to fill
+    #  'AYON_USE_STAGING' (https://github.com/ynput/ayon-core/pull/1130)
+    #  - add requirement for "core>=1.1.1" to 'package.py' when removed
+    settings_variant = job.GetJobEnvironmentKeyValue(
+        "AYON_DEFAULT_SETTINGS_VARIANT"
+    )
+    if settings_variant == "staging":
+        args.append("--use-staging")
+
+    for key, value in add_kwargs.items():
+        args.extend([f"--{key}", value])
+
+    environment = {
+        "AYON_SERVER_URL": ayon_server_url,
+        "AYON_API_KEY": ayon_api_key,
+        "AYON_BUNDLE_NAME": ayon_bundle_name,
+    }
+
+    for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
+        value = job.GetJobEnvironmentKeyValue(key)
+        if value:
+            environment[key] = value
+
+    for env, val in environment.items():
+        # Add the env var for the Render Plugin that is about to render
+        deadlinePlugin.SetEnvironmentVariable(env, val)
+        # Add the env var for current calls to `DeadlinePlugin.RunProcess`
+        deadlinePlugin.SetProcessEnvironmentVariable(env, val)
+
+    args_str = subprocess.list2cmdline(args)
+    print(f">>> Executing: {exe} {args_str}")
+    _process_exitcode = deadlinePlugin.RunProcess(
+        exe, args_str, os.path.dirname(exe), -1
+    )
 
 
 def get_ayon_executable():
