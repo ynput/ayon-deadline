@@ -640,7 +640,8 @@ def _wait_for_in_progress(job, export_path):
                 break
             except (OSError, PermissionError):
                 raise RuntimeError(
-                    f"Failed to remove progress file '{export_in_progress_path}'."
+                    f"Failed to remove progress file "
+                    f"'{export_in_progress_path}'."
                 )
         print("Extract environment process already triggered, waiting")
         sleep(2)
@@ -743,8 +744,8 @@ def _extract_environments(
         deadlinePlugin.SetProcessEnvironmentVariable(env, val)
 
     args_str = subprocess.list2cmdline(args)
-    print(">>> Executing: {} {}".format(exe, args_str))
-    process_exitcode = deadlinePlugin.RunProcess(
+    print(f">>> Executing: {exe} {args_str}")
+    _process_exitcode = deadlinePlugin.RunProcess(
         exe, args_str, os.path.dirname(exe), -1
     )
 
