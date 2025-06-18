@@ -5,6 +5,8 @@ from dataclasses import dataclass, field, asdict
 import pyblish.api
 from ayon_core.lib import (
     is_in_tests,
+    NumberDef,
+    TextDef
 )
 
 from ayon_core.pipeline import (
@@ -41,6 +43,35 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
     targets = ["local"]
     settings_category = "deadline"
 
+    # presets
+    export_priority = 50
+    export_chunk_size = 99999999
+    export_primary_pool = ""
+
+    @classmethod
+    def get_attribute_defs(cls):
+        return [
+            NumberDef(
+                "export_priority",
+                label="Export Priority",
+                default=cls.export_priority,
+                decimals=0
+            ),
+            NumberDef(
+                "export_chunk",
+                label="Export Frames Per Task",
+                default=cls.export_chunk_size,
+                decimals=0,
+                minimum=1,
+                maximum=1000
+            ),
+            TextDef(
+                "export_primary_pool",
+                default=cls.export_primary_pool,
+                label="Export Primary Pool"
+            ),
+        ]
+
     def get_job_info(self, job_info=None):
         instance = self._instance
         context = instance.context
@@ -57,7 +88,17 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         job_info.Name = job_name
         job_info.BatchName = batch_name
         job_info.Plugin = "MayaBatch"
-        job_info.ChunkSize = 99999999
+
+        attribute_values = self.get_attr_values_from_data(instance.data)
+        job_info.Priority = attribute_values.get(
+            "export_priority", self.export_priority
+        )
+        job_info.ChunkSize = attribute_values.get(
+            "export_chunk", self.export_chunk_size
+        )
+        job_info.Pool = attribute_values.get(
+            "export_primary_pool", self.export_primary_pool
+        )
 
         job_info.EnvironmentKeyValue["INSTANCE_IDS"] = instance.name
         job_info.EnvironmentKeyValue["AYON_REMOTE_PUBLISH"] = "1"

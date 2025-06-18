@@ -294,6 +294,17 @@ class HoudiniSubmitDeadlineModel(BaseSettingsModel):
     )
 
 
+class MayaCacheSubmitDeadlineModel(BaseSettingsModel):
+    """Maya cache submission settings
+
+    These settings apply only to Maya cache submission.
+    """
+
+    export_priority: int = SettingsField(title="Export Priority")
+    export_chunk_size: int = SettingsField(title="Export Frames Per Task")
+    export_primary_pool: str = SettingsField(title="Export Primary Pool")
+
+
 class ProcessCacheJobFarmModel(BaseSettingsModel):
     """Houdini cache submission settings
 
@@ -372,6 +383,9 @@ class PublishPluginsModel(BaseSettingsModel):
     ProcessSubmittedCacheJobOnFarm: ProcessCacheJobFarmModel = SettingsField(
         default_factory=ProcessCacheJobFarmModel,
         title="Houdini Cache Publish Job Settings")
+    MayaCacheSubmitDeadline: MayaCacheSubmitDeadlineModel = SettingsField(
+        default_factory=MayaCacheSubmitDeadlineModel,
+        title="Maya Cache")
     MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
         default_factory=MayaSubmitDeadlineModel,
         title="Maya")
@@ -494,6 +508,11 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "export_group": "",
         "export_limits": "",
         "export_machine_limit": 0
+    },
+    "MayaCacheSubmitDeadline": {
+        "export_priority": 50,
+        "export_chunk_size": 10,
+        "export_primary_pool": "",
     },
     "MayaSubmitDeadline": {
         "tile_assembler_plugin": "DraftTileAssembler",
