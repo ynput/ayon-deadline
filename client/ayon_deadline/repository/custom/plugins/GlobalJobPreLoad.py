@@ -387,7 +387,7 @@ def inject_openpype_environment(deadlinePlugin):
         with open(export_path) as fp:
             contents = json.load(fp)
 
-        for key, value in contents.items():
+        for key, value in sorted(contents.items()):
             deadlinePlugin.SetProcessEnvironmentVariable(key, value)
 
         if "PATH" in contents:
@@ -585,7 +585,7 @@ def inject_ayon_environment(deadlinePlugin):
         with open(export_path) as fp:
             contents = json.load(fp)
 
-        for key, value in contents.items():
+        for key, value in sorted(contents.items()):
             deadlinePlugin.SetProcessEnvironmentVariable(key, value)
 
         if "PATH" in contents:
