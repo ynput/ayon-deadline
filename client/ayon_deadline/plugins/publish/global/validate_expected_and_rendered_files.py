@@ -43,6 +43,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             expected_files = self._get_expected_files(repre)
 
             staging_dir = repre["stagingDir"]
+            self.log.debug(f"Validating files in directory: {staging_dir}")
             existing_files = self._get_existing_files(staging_dir)
 
             is_image = f'.{repre["ext"]}' in IMAGE_EXTENSIONS
