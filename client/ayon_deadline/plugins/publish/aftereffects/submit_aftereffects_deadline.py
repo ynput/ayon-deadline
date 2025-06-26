@@ -20,7 +20,7 @@ class DeadlinePluginInfo():
     ProjectPath: str = field(default=None)
     AWSAssetFile0: str = field(default=None)
     Version: str = field(default=None)
-    MultiProcess: str = field(default=None)
+    MultiProcess: bool = field(default=None)
 
 
 class AfterEffectsSubmitDeadline(
@@ -34,6 +34,8 @@ class AfterEffectsSubmitDeadline(
     use_published = True
     targets = ["local"]
     settings_category = "deadline"
+
+    multiprocess: bool = True
 
     def get_job_info(self, job_info=None):
         job_info.Plugin = "AfterEffects"
