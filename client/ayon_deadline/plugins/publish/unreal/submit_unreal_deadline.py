@@ -19,7 +19,6 @@ class DeadlinePluginInfo:
     Output: str = field(default=None)
     StartupDirectory: str = field(default=None)
     CommandLineArguments: str = field(default=None)
-    MultiProcess: bool = field(default=None)
     PerforceStream: str = field(default=None)
     PerforceChangelist: str = field(default=None)
     PerforceGamePath: str = field(default=None)

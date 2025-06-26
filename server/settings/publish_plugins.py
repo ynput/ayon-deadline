@@ -126,7 +126,6 @@ class CollectJobInfoItem(BaseSettingsModel):
         True, title="Use Asset dependencies")
     use_workfile_dependency: bool = SettingsField(
         True, title="Workfile Dependency")
-    multiprocess: bool = SettingsField(False, title="Multiprocess")
 
     additional_job_info: str = SettingsField(
         "",
@@ -420,7 +419,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "task_types": [],
           "limit_groups": [],
           "machine_list": [],
-          "multiprocess": False,
           "primary_pool": "",
           "machine_limit": 0,
           "use_published": True,
@@ -457,7 +455,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           "task_types": [],
           "limit_groups": [],
           "machine_list": [],
-          "multiprocess": False,
           "primary_pool": "",
           "machine_limit": 0,
           "use_published": True,
