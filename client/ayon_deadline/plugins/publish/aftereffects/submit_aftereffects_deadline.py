@@ -35,8 +35,6 @@ class AfterEffectsSubmitDeadline(
     targets = ["local"]
     settings_category = "deadline"
 
-    multiprocess: bool = True
-
     def get_job_info(self, job_info=None):
         job_info.Plugin = "AfterEffects"
 
@@ -72,7 +70,7 @@ class AfterEffectsSubmitDeadline(
         # added override of multiprocess by env var, if shouldn't be used for
         # some app variant use MULTIPROCESS:false in Settings, default is True
         env_multi = env_value_to_bool("MULTIPROCESS", default=True)
-        deadline_plugin_info.MultiProcess = env_multi and self.multiprocess
+        deadline_plugin_info.MultiProcess = env_multi
         deadline_plugin_info.SceneFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
 
