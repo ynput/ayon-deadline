@@ -69,8 +69,9 @@ class AfterEffectsSubmitDeadline(
         # must be here because of DL AE plugin
         # added override of multiprocess by env var, if shouldn't be used for
         # some app variant use MULTIPROCESS:false in Settings, default is True
-        env_multi = env_value_to_bool("MULTIPROCESS", default=True)
-        deadline_plugin_info.MultiProcess = env_multi
+        deadline_plugin_info.MultiProcess = env_value_to_bool(
+            "MULTIPROCESS", default=True
+        )
         deadline_plugin_info.SceneFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
 
