@@ -1,6 +1,6 @@
 name = "deadline"
 title = "Deadline"
-version = "0.5.11+dev"
+version = "0.5.12"
 
 client_dir = "ayon_deadline"
 
