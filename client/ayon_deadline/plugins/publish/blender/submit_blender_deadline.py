@@ -95,7 +95,7 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             if render_instance is instance:
                 continue
 
-            self._append_job_output_paths(instance, job_info)
+            self._append_job_output_paths(render_instance, job_info)
 
         return job_info
 
