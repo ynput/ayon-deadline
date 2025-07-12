@@ -43,7 +43,6 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         # Collect all saver instances in context that are to be rendered
         render_instances = []
-        context = instance.context
         for inst in context:
             if inst.data["productType"] != "render":
                 # Allow only render instances
