@@ -52,8 +52,8 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         key = "__hasRun{}".format(self.__class__.__name__)
         if context.data.get(key, False):
             return
-        else:
-            context.data[key] = True
+
+        context.data[key] = True
 
         # Collect all saver instances in context that are to be rendered
         render_instances = []
