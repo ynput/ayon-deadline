@@ -49,7 +49,7 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         # comp file output because the Deadline job will always render all
         # active ones anyway (and the relevant view layers).
         context = instance.context
-        key = "__hasRun{}".format(self.__class__.__name__)
+        key = f"__hasRun{self.__class__.__name__}"
         if context.data.get(key, False):
             return
 
