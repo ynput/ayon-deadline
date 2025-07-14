@@ -86,6 +86,10 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         for render_instance in render_instances:
             for key in transfer_keys:
                 render_instance.data[key] = instance.data[key]
+        
+        # Remove this data which we only added to get access to the data
+        # in the inherited `self.get_job_info()` method.
+        instance.data.pop("_farmRenderInstances", None)
 
     def get_job_info(self, job_info=None, **kwargs):
         instance = self._instance
