@@ -30,6 +30,16 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                            "Skipping deadline submission.")
             return
 
+        # Always set instance output directory to the expected
+        expected_files = instance.data["expectedFiles"]
+        if not expected_files:
+            raise RuntimeError("No Render Elements found!")
+
+        first_file = next(iter_expected_files(expected_files))
+        output_dir = os.path.dirname(first_file)
+        instance.data["outputDir"] = output_dir
+        instance.data["toBeRenderedOn"] = "deadline"
+
         # We are submitting a farm job not per instance - but once per Blender
         # scene. This is a hack to avoid submitting multiple jobs for each
         # comp file output because the Deadline job will always render all
@@ -114,17 +124,6 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return plugin_payload
 
     def process_submission(self, auth=None):
-        instance = self._instance
-
-        expected_files = instance.data["expectedFiles"]
-        if not expected_files:
-            raise RuntimeError("No Render Elements found!")
-
-        first_file = next(iter_expected_files(expected_files))
-        output_dir = os.path.dirname(first_file)
-        instance.data["outputDir"] = output_dir
-        instance.data["toBeRenderedOn"] = "deadline"
-
         payload = self.assemble_payload()
         auth = self._instance.data["deadline"]["auth"]
         verify = self._instance.data["deadline"]["verify"]
