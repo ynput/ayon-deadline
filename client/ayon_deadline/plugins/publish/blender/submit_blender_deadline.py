@@ -4,7 +4,7 @@
 import os
 from dataclasses import dataclass, field, asdict
 
-from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.pipeline.publish import AYONPyblishPluginMixin, PublishError
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_deadline import abstract_submit_deadline
@@ -33,7 +33,11 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         # Always set instance output directory to the expected
         expected_files = instance.data["expectedFiles"]
         if not expected_files:
-            raise RuntimeError("No Render Elements found!")
+            raise PublishError(
+                message="No Render Elements found.",
+                title="No Render Elements found.",
+                description="Expected files for render elements are empty."
+            )
 
         first_file = next(iter_expected_files(expected_files))
         output_dir = os.path.dirname(first_file)
