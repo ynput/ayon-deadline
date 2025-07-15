@@ -550,7 +550,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         self,
         anatomy: Anatomy,
         instances: List[dict[str, Any]],
-        job_info: DeadlineJobInfo
+        job_info: DeadlineJobInfo,
     ) -> None:
         """Adds all expected rendered files as Job dependencies.
 
@@ -559,6 +559,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         """
         for instance in instances:
             for representation in instance["representations"]:
+                if isinstance(representation["files"], str):
+                    representation["files"] = [representation["files"]]
                 for file_name in representation["files"]:
                     full_path = os.path.join(
                         representation["stagingDir"], file_name
