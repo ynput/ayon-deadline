@@ -560,8 +560,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         for instance in instances:
             for representation in instance["representations"]:
                 if isinstance(representation["files"], str):
-                    representation["files"] = [representation["files"]]
-                for file_name in representation["files"]:
+                    files = [representation["files"]]
+                else:
+                    files = representation["files"]
+                for file_name in files:
                     full_path = os.path.join(
                         representation["stagingDir"], file_name
                     )
