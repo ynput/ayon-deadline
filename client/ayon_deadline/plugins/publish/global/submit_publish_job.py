@@ -5,12 +5,13 @@ import json
 import re
 import getpass
 from copy import deepcopy
+from typing import List, Any
 
 import clique
 import ayon_api
 import pyblish.api
 
-from ayon_core.pipeline import publish
+from ayon_core.pipeline import publish, Anatomy
 from ayon_core.lib.path_templates import TemplateUnsolved
 
 from ayon_core.pipeline.version_start import get_versioning_start
@@ -144,6 +145,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # poor man exclusion
     skip_integration_repre_list = []
 
+    add_rendered_dependencies = False
+
+
     def _submit_deadline_post_job(
         self, instance, render_job, instances, rootless_metadata_path
     ):
@@ -227,6 +231,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             job_info.OutputDirectory.append(output_dir)
 
         job_info.EnvironmentKeyValue.update(environment)
+
+        if self.add_rendered_dependencies:
+            self._add_rendered_dependencies(anatomy, instances, job_info)
+
         return deadline_addon.submit_ayon_plugin_job(
             server_name,
             args,
@@ -537,3 +545,23 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Publish directory template is unsolved for: "
                 f"{template_name} in anatomy. Output directory won't be set."
             )
+
+    def _add_rendered_dependencies(
+        self,
+        anatomy: Anatomy,
+        instances: List[dict[str, Any]],
+        job_info: DeadlineJobInfo
+    ) -> None:
+        """Adds all expected rendered files as Job dependencies.
+
+        This should help when DL file system is still synchronizing rendered
+        files, but publish job starts prematurely.
+        """
+        for instance in instances:
+            for representation in instance["representations"]:
+                for file_name in representation["files"]:
+                    full_path = os.path.join(
+                        representation["stagingDir"], file_name
+                    )
+                    full_path = anatomy.fill_root(full_path)
+                    job_info.AssetDependency += full_path
