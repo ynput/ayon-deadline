@@ -74,7 +74,7 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             render_instances.append(inst)
 
         if not render_instances:
-            raise RuntimeError("No instances found for Deadline submission")
+            raise PublishError("No instances found for Deadline submission")
 
         instance.data["_farmRenderInstances"] = render_instances
 
