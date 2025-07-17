@@ -339,6 +339,13 @@ class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
         title="Reviewable products filter",
     )
 
+    add_rendered_dependencies: bool = SettingsField(
+        False,
+        title="Add rendered files as Dependencies",
+        description="Add all expected rendered files as job Dependencies."
+                    "Publish job won't trigger until all files are present."
+    )
+
     @validator("aov_filter")
     def validate_unique_names(cls, value):
         ensure_unique_names(value)
@@ -558,6 +565,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
                     ".*"
                 ]
             }
-        ]
+        ],
+        "add_rendered_dependencies": False
     }
 }
