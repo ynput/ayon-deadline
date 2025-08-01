@@ -31,7 +31,7 @@ class UnrealSubmitDeadline(
     (`render` product must be created with flag for Farm publishing) OR
     Perforce assisted rendering.
 
-    For this Ayon server must contain `ayon-version-control` addon and provide
+    For this Ayon server must contain `ayon-perforce` addon and provide
     configuration for it (P4 credentials etc.)!
     """
 
@@ -92,17 +92,19 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.CommandLineArguments = " ".join(cmd_args)
 
         # if Perforce - triggered by active `changelist_metadata` instance!!
-        collected_version_control = self._get_version_control()
-        if collected_version_control:
-            version_control_data = self._instance.context.data[
-                "version_control"]
-            workspace_dir = version_control_data["workspace_dir"]
-            stream = version_control_data["stream"]
-            self._update_version_control_data(
+        collected_perforce = self._get_perforce_info()
+        if collected_perforce:
+            perforce_data = (
+                self._instance.context.data.get("perforce")
+                or self._instance.context.data.get("version_control")
+            )
+            workspace_dir = perforce_data["workspace_dir"]
+            stream = perforce_data["stream"]
+            self._update_perforce_data(
                 self.scene_path,
                 workspace_dir,
                 stream,
-                collected_version_control["change_info"]["change"],
+                collected_perforce["change_info"]["change"],
                 deadline_plugin_info,
             )
 
@@ -126,31 +128,36 @@ class UnrealSubmitDeadline(
         batch_name = os.path.basename(self._instance.data["source"])
         if is_in_tests():
             batch_name += datetime.now().strftime("%d%m%Y%H%M%S")
-        collected_version_control = self._get_version_control()
-        if collected_version_control:
-            change = (collected_version_control["change_info"]
-                                               ["change"])
+        collected_perforce = self._get_perforce_info()
+        if collected_perforce:
+            change = (collected_perforce["change_info"]["change"])
             batch_name = f"{batch_name}_{change}"
         return batch_name
 
-    def _get_version_control(self):
+    def _get_perforce_info(self):
         """Look if changelist_metadata is published to get change list info.
 
-        Context version_control contains universal connection info, instance
-        version_control contains detail about change list.
+        Context perforce dict contains universal connection info, instance
+        perforce contains detail about change list.
         """
         change_list_version = {}
         for inst in self._instance.context:
             # get change info from `changelist_metadata` instance
-            change_list_version = inst.data.get("version_control")
+            inst_data = inst.data
+            change_list_version = (
+                inst_data.get("perforce")
+                or inst_data.get("version_control")  # backward compatibility
+            )
             if change_list_version:
                 context_version = (
-                    self._instance.context.data["version_control"])
+                    self._instance.context.data.get("perforce")
+                    or self._instance.context.data.get("version_control")
+                )
                 change_list_version.update(context_version)
                 break
         return change_list_version
 
-    def _update_version_control_data(
+    def _update_perforce_data(
         self,
         scene_path,
         workspace_dir,
