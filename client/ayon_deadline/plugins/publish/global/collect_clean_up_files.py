@@ -5,12 +5,12 @@ from typing import List, Dict
 import pyblish.api
 
 
-class CollectCleanUpForBlender(pyblish.api.InstancePlugin):
+class CollectSceneRenderCleanUpBlender(pyblish.api.InstancePlugin):
     """Collect files and directories to be cleaned up.
     """
 
     order = pyblish.api.CollectorOrder - 0.1
-    label = "Collect Clean Up (Blender)"
+    label = "Collect Scene Render Clean Up (Blender)"
     targets = ["farm"]
 
     def process(self, instance):
