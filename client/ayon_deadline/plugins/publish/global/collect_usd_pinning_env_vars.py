@@ -18,7 +18,7 @@ class CollectUSDPinningEnvVars(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder + 0.250
     label = "Collect USD Pinning Env vars (Deadline Job)"
 
-    enabled = HAS_AYON_USD
+    enabled = True
     families = [
         # Maya
         "renderlayer",
