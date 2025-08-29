@@ -43,7 +43,7 @@ class VrayRenderPluginInfo:
 class RedshiftRenderPluginInfo:
     SceneFile: str = field(default=None)
     # Use "1" as the default Redshift version just because it
-    # default fallback version in Deadline's Redshift plugin
+    # defaults to fallback version in Deadline's Redshift plugin
     # if no version was specified
     Version: str = field(default="1")
 
@@ -160,18 +160,31 @@ class HoudiniSubmitDeadline(
 
         job_type = "[RENDER]"
         if split_render_job and not is_export_job:
-            product_type = instance.data["productType"]
-            plugin = {
+            families = self._get_families(instance)
+            family_to_render_plugin = {
+                "arnold_rop": "Arnold",
+                "karma_rop": "Karma",
+                "mantra_rop": "Mantra",
+                "redshift_rop": "Redshift",
                 "usdrender": "HuskStandalone",
-            }.get(product_type)
-            if not plugin:
-                # Convert from product type to Deadline plugin name
-                # i.e., arnold_rop -> Arnold
-                plugin = product_type.replace("_rop", "").capitalize()
+                "vray_rop": "Vray",
+            }
+            for family, render_plugin in family_to_render_plugin.items():
+                if family in families:
+                    plugin = render_plugin
+                    break
+            else:
+                plugin = "Render"
+                self.log.warning(
+                    f"No matching render plugin found for families: {families}"
+                )
         else:
             plugin = "Houdini"
             if split_render_job:
-                job_type = "[EXPORT IFD]"
+                export_file = instance.data["ifdFile"]
+                extension = os.path.splitext(export_file)[-1] or "SCENE"
+                job_type = f"[EXPORT {extension.upper()}]"
+
         job_info.Plugin = plugin
 
         filepath = context.data["currentFile"]
@@ -182,15 +195,17 @@ class HoudiniSubmitDeadline(
         if is_in_tests():
             job_info.BatchName += datetime.now().strftime("%d%m%Y%H%M%S")
 
-        # Deadline requires integers in frame range
-        start = instance.data["frameStartHandle"]
-        end = instance.data["frameEndHandle"]
-        frames = "{start}-{end}x{step}".format(
-            start=int(start),
-            end=int(end),
-            step=int(instance.data["byFrameStep"]),
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            start = instance.data["frameStartHandle"]
+            end = instance.data["frameEndHandle"]
+            frames = "{start}-{end}x{step}".format(
+                start=int(start),
+                end=int(end),
+                step=int(instance.data["byFrameStep"]),
+            )
+            job_info.Frames = frames
 
         # Make sure we make job frame dependent so render tasks pick up a soon
         # as export tasks are done
@@ -240,21 +255,21 @@ class HoudiniSubmitDeadline(
 
         # Output driver to render
         if job_type == "render":
-            product_type = instance.data.get("productType")
-            if product_type == "arnold_rop":
+            families = self._get_families(instance)
+            if "arnold_rop" in families:
                 plugin_info = ArnoldRenderDeadlinePluginInfo(
                     InputFile=instance.data["ifdFile"]
                 )
-            elif product_type == "mantra_rop":
+            elif "mantra_rop" in families:
                 plugin_info = MantraRenderDeadlinePluginInfo(
                     SceneFile=instance.data["ifdFile"],
                     Version=hou_major_minor,
                 )
-            elif product_type == "vray_rop":
+            elif "vray_rop" in families:
                 plugin_info = VrayRenderPluginInfo(
                     InputFilename=instance.data["ifdFile"],
                 )
-            elif product_type == "redshift_rop":
+            elif "redshift_rop" in families:
                 plugin_info = RedshiftRenderPluginInfo(
                     SceneFile=instance.data["ifdFile"]
                 )
@@ -273,14 +288,14 @@ class HoudiniSubmitDeadline(
                         " - using version configured in Deadline"
                     ))
 
-            elif product_type == "usdrender":
+            elif "usdrender" in families:
                 plugin_info = self._get_husk_standalone_plugin_info(
                     instance, hou_major_minor)
 
             else:
                 self.log.error(
-                    "Product type '%s' not supported yet to split render job",
-                    product_type
+                    "Render Product Type does not support to split render "
+                    f"job. Matched product types against: {families}"
                 )
                 return
         else:
@@ -340,6 +355,11 @@ class HoudiniSubmitDeadline(
             RestartDelegate=restart_delegate,
             Version=hou_major_minor
         )
+
+    def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
+        families = set(instance.data.get("families", []))
+        families.add(instance.data.get("productType"))
+        return families
 
 
 class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):

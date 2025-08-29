@@ -10,9 +10,11 @@ Provides:
     instance.data["deadline"] -> auth (tuple (str, str)) -
         (username, password) or None
 """
+import os
+
 import pyblish.api
 
-from ayon_api import get_server_api_connection
+from ayon_api import get_addon_site_settings
 
 from ayon_deadline.lib import FARM_FAMILIES
 
@@ -28,15 +30,6 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
     label = "Collect Deadline User Credentials"
 
     targets = ["local"]
-    hosts = ["aftereffects",
-             "blender",
-             "fusion",
-             "harmony",
-             "nuke",
-             "maya",
-             "max",
-             "houdini",
-             "unreal"]
 
     families = FARM_FAMILIES
 
@@ -100,10 +93,9 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
                 default_username, default_password
             )
 
-        # TODO import 'get_addon_site_settings' when available
-        #   in public 'ayon_api'
-        local_settings = get_server_api_connection().get_addon_site_settings(
-            deadline_addon.name, deadline_addon.version)
+        site_id = os.environ["AYON_SITE_ID"]
+        local_settings = get_addon_site_settings(
+            deadline_addon.name, deadline_addon.version, site_id)
         local_settings = local_settings["local_settings"]
         for server_info in local_settings:
             if deadline_server_name == server_info["server_name"]:

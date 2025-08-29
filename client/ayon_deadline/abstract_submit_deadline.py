@@ -4,13 +4,14 @@
 It provides Deadline JobInfo data class.
 
 """
+from __future__ import annotations
 import json.decoder
 from abc import abstractmethod
 import getpass
 import os
 from datetime import datetime
 from copy import deepcopy
-from typing import Optional
+from typing import Any, Optional
 import clique
 
 import requests
@@ -87,12 +88,12 @@ class AbstractSubmitDeadline(
 
     def __init__(self, *args, **kwargs):
         super(AbstractSubmitDeadline, self).__init__(*args, **kwargs)
-        self._instance = None
+        self._instance: Optional[pyblish.api.Instance] = None
         self._deadline_url = None
-        self.scene_path = None
-        self.job_info = None
-        self.plugin_info = None
-        self.aux_files = None
+        self.scene_path: Optional[str] = None
+        self.job_info: Optional[PublishDeadlineJobInfo] = None
+        self.plugin_info: Optional[dict[str, Any]] = None
+        self.aux_files: Optional[list[str]] = None
 
     def process(self, instance):
         """Plugin entry point."""
@@ -110,10 +111,11 @@ class AbstractSubmitDeadline(
             job_info.use_published,
             instance.data.get("stagingDir_is_custom", False)
         )
-        self._append_job_output_paths(
-            instance,
-            self.job_info
-        )
+        if instance.data.get("expectedFiles"):
+            self._append_job_output_paths(
+                instance,
+                self.job_info
+            )
         self.plugin_info = self.get_plugin_info()
 
         self.aux_files = self.get_aux_files()
@@ -232,6 +234,9 @@ class AbstractSubmitDeadline(
         if job_info.SecondaryPool != "none":
             job_info.SecondaryPool = job_info.SecondaryPool
 
+        if job_info.Frames:
+            instance.data["hasExplicitFrames"] = True
+
         # Adding file dependencies.
         if not is_in_tests() and job_info.use_asset_dependencies:
             dependencies = instance.context.data.get("fileDependencies", [])
@@ -293,7 +298,7 @@ class AbstractSubmitDeadline(
         that field even empty must be present on Deadline submission.
 
         Returns:
-            list: List of files.
+            list[str]: List of files.
 
         """
         return []

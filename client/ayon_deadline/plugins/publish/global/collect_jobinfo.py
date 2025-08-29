@@ -97,7 +97,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         # 'publish.hou' has different submit job plugin
         # TODO find out if we need separate submit publish job plugin
-        if "publish.hou" in all_families:
+        if (
+            "publish.hou" in all_families
+            or "remote_publish_on_farm" in all_families
+        ):
             return
 
         # Add submit publish job family
@@ -245,9 +248,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         defs.append(
             TextDef(
                 "frames",
-                label="Frames",
+                label="Use Custom Frames",
                 default="",
-                tooltip="Explicit frames to be rendered. (1, 3-4)"
+                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)"
             )
         )
 
@@ -300,6 +303,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "chunk_size",
                 label="Frames Per Task",
                 default=default_values.get("chunk_size"),
+                decimals=0,
+                minimum=1,
+                maximum=1000
+            ),
+            NumberDef(
+                "concurrent_tasks",
+                label="Concurrent Tasks",
+                tooltip="Number of concurrent tasks to run per render node",
+                default=default_values.get("concurrent_tasks"),
                 decimals=0,
                 minimum=1,
                 maximum=1000

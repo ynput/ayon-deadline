@@ -19,7 +19,6 @@ class DeadlinePluginInfo:
     Output: str = field(default=None)
     StartupDirectory: str = field(default=None)
     CommandLineArguments: str = field(default=None)
-    MultiProcess: bool = field(default=None)
     PerforceStream: str = field(default=None)
     PerforceChangelist: str = field(default=None)
     PerforceGamePath: str = field(default=None)
@@ -48,7 +47,11 @@ class UnrealSubmitDeadline(
         job_info.BatchName = self._get_batch_name()
         job_info.Plugin = "UnrealEngine5"
 
-        if instance.data["frameEnd"] > instance.data["frameStart"]:
+        # already collected explicit values for rendered Frames
+        if (
+            not job_info.Frames
+            and instance.data["frameEnd"] > instance.data["frameStart"]
+        ):
             # Deadline requires integers in frame range
             frame_range = "{}-{}".format(
                 int(round(instance.data["frameStart"])),

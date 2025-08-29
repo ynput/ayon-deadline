@@ -1,6 +1,7 @@
 import os
 import re
 from dataclasses import dataclass, field, asdict
+import copy
 
 import pyblish.api
 
@@ -103,6 +104,7 @@ class NukeSubmitDeadline(
 
         if instance.data.get("bakingNukeScripts"):
             for baking_script in instance.data["bakingNukeScripts"]:
+                self.job_info = copy.deepcopy(self.job_info)
                 self.job_info.JobType = "Normal"
 
                 response_data = instance.data.get("deadlineSubmissionJob", {})
@@ -119,6 +121,8 @@ class NukeSubmitDeadline(
 
                 # baking job shouldn't be split
                 self.job_info.ChunkSize = 999999
+
+                self.job_info.Frames = f"{start_frame}-{end_frame}"
 
                 self.plugin_info = self.get_plugin_info(
                     scene_path=scene_path,
@@ -226,6 +230,12 @@ class NukeSubmitDeadline(
     ):
         """ Create expected files in instance data
         """
+        if instance.data["render_target"] == "frames_farm":
+            self.log.debug(
+                "Expected files already collected for 'frames_farm', skipping."
+            )
+            return
+
         if not instance.data.get("expectedFiles"):
             instance.data["expectedFiles"] = []
 
