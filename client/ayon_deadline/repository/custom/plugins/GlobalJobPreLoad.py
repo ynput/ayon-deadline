@@ -1,6 +1,7 @@
 # /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import sys
 import tempfile
 from datetime import datetime, timedelta
 import subprocess
@@ -11,6 +12,7 @@ import re
 from time import sleep
 import getpass
 from hashlib import sha256
+import importlib.util
 
 from Deadline.Scripting import (
     RepositoryUtils,
@@ -18,7 +20,19 @@ from Deadline.Scripting import (
     DirectoryUtils,
 )
 
-from Deadline.Plugins.Ayon import handle_credentials
+
+def import_from_path(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+pluginName = 'Ayon'  # The other plugin you want to import from
+pluginsDir = RepositoryUtils.GetCustomPluginsDirectory()
+pluginFile = os.path.join(pluginsDir, pluginName, pluginName + ".py")
+ayon_module = import_from_path(pluginName, pluginFile)
+
 
 __version__ = "1.2.3"
 VERSION_REGEX = re.compile(
@@ -446,7 +460,7 @@ def inject_ayon_environment(deadlinePlugin):
                 "Missing env var in job properties AYON_BUNDLE_NAME"
             )
 
-        ayon_server_url, ayon_api_key = handle_credentials(job)
+        ayon_server_url, ayon_api_key = ayon_module.handle_credentials(job)
 
         site_id = os.environ.get("AYON_SITE_ID")
         shared_env_group = None
