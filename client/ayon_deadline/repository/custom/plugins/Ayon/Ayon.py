@@ -179,10 +179,10 @@ def handle_credentials(job):
             config, job_ayon_server_url)
         if api_key:
             ayon_api_key = api_key
-            print("Using API key from Additional AYON Servers.")
+            print(">>> Using API key from Additional AYON Servers.")
         else:
             print(
-                "AYON Server URL submitted with job "
+                ">>> AYON Server URL submitted with job "
                 f"'{job_ayon_server_url}' has no API key defined "
                 "in AYON Deadline plugin configuration,"
                 " `Additional AYON Servers` section."
