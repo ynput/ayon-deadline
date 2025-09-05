@@ -70,7 +70,7 @@ class AyonDeadlinePlugin(DeadlinePlugin):
 
         # set required env vars for AYON
         # cannot be in InitializeProcess as it is too soon
-        ayon_api_key, ayon_server_url = handle_credentials(job)
+        ayon_server_url, ayon_api_key = handle_credentials(job)
 
         ayon_bundle_name = job.GetJobEnvironmentKeyValue("AYON_BUNDLE_NAME")
 
