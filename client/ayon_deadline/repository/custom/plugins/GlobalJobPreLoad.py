@@ -1,7 +1,6 @@
 # /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-import sys
 import tempfile
 from datetime import datetime, timedelta
 import subprocess
@@ -12,26 +11,12 @@ import re
 from time import sleep
 import getpass
 from hashlib import sha256
-import importlib.util
 
 from Deadline.Scripting import (
     RepositoryUtils,
     FileUtils,
     DirectoryUtils,
 )
-
-
-def import_from_path(module_name, file_path):
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module
-
-pluginName = 'Ayon'  # The other plugin you want to import from
-pluginsDir = RepositoryUtils.GetCustomPluginsDirectory()
-pluginFile = os.path.join(pluginsDir, pluginName, pluginName + ".py")
-ayon_module = import_from_path(pluginName, pluginFile)
 
 
 __version__ = "1.2.3"
