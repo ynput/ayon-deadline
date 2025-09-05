@@ -715,15 +715,17 @@ def inject_render_job_id(deadlinePlugin):
     dependency_ids = job.JobDependencyIDs
     print(">>> Dependency IDs: {}".format(dependency_ids))
     render_job_ids = ",".join(dependency_ids)
+    deadlinePlugin.SetProcessEnvironmentVariable(
+        "RENDER_JOB_IDS", render_job_ids
+    )
 
     ayon_server_url, ayon_api_key = handle_credentials(job)
 
-    environment = {
-        "RENDER_JOB_IDS": render_job_ids,
+    credentials = {
         "AYON_SERVER_URL": ayon_server_url,
         "AYON_API_KEY": ayon_api_key
     }
-    for env, val in environment.items():
+    for env, val in credentials.items():
         job.SetJobEnvironmentKeyValue(env, val)
     print(">>> Injection end.")
 
