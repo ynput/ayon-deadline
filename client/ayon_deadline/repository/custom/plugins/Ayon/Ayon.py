@@ -153,6 +153,12 @@ class AyonDeadlinePlugin(DeadlinePlugin):
 
 
 def handle_credentials(job):
+    """Returns a tuple of values for AYON_SERVER_URL and AYON_API_KEY
+
+    AYON_API_KEY might be overridden directly from job environments.
+    Or specific AYON_SERVER_URL might be attached to job to pick corespondent
+    AYON_API_KEY from plugin configuration.
+    """
     config = RepositoryUtils.GetPluginConfig("Ayon")
     ayon_server_url = config.GetConfigEntryWithDefault("AyonServerUrl", "")
     ayon_api_key = config.GetConfigEntryWithDefault("AyonApiKey", "")
