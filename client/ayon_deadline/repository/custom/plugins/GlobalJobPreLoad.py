@@ -730,43 +730,6 @@ def inject_render_job_id(deadlinePlugin):
     print(">>> Injection end.")
 
 
-def __main__(deadlinePlugin):
-    print("*** GlobalJobPreload {} start ...".format(__version__))
-    print(">>> Getting job ...")
-    job = deadlinePlugin.GetJob()
-
-    openpype_render_job = job.GetJobEnvironmentKeyValue(
-        "OPENPYPE_RENDER_JOB")
-    openpype_publish_job = job.GetJobEnvironmentKeyValue(
-        "OPENPYPE_PUBLISH_JOB")
-    openpype_remote_job = job.GetJobEnvironmentKeyValue(
-        "OPENPYPE_REMOTE_PUBLISH")
-
-    if openpype_publish_job == "1" and openpype_render_job == "1":
-        raise RuntimeError(
-            "Misconfiguration. Job couldn't be both render and publish."
-        )
-
-    if openpype_publish_job == "1":
-        inject_render_job_id(deadlinePlugin)
-    if openpype_render_job == "1" or openpype_remote_job == "1":
-        inject_openpype_environment(deadlinePlugin)
-
-    ayon_render_job = job.GetJobEnvironmentKeyValue("AYON_RENDER_JOB")
-    ayon_publish_job = job.GetJobEnvironmentKeyValue("AYON_PUBLISH_JOB")
-    ayon_remote_job = job.GetJobEnvironmentKeyValue("AYON_REMOTE_PUBLISH")
-
-    if ayon_publish_job == "1" and ayon_render_job == "1":
-        raise RuntimeError(
-            "Misconfiguration. Job couldn't be both render and publish."
-        )
-
-    if ayon_publish_job == "1":
-        inject_render_job_id(deadlinePlugin)
-    if ayon_render_job == "1" or ayon_remote_job == "1":
-        inject_ayon_environment(deadlinePlugin)
-
-
 def handle_credentials(job):
     """Returns a tuple of values for AYON_SERVER_URL and AYON_API_KEY
 
@@ -853,3 +816,40 @@ def _get_ayon_api_key_from_additional_servers(config, server):
         additional_server, api_key = line.split("@", 1)
         if additional_server == server:
             return api_key
+
+
+def __main__(deadlinePlugin):
+    print("*** GlobalJobPreload {} start ...".format(__version__))
+    print(">>> Getting job ...")
+    job = deadlinePlugin.GetJob()
+
+    openpype_render_job = job.GetJobEnvironmentKeyValue(
+        "OPENPYPE_RENDER_JOB")
+    openpype_publish_job = job.GetJobEnvironmentKeyValue(
+        "OPENPYPE_PUBLISH_JOB")
+    openpype_remote_job = job.GetJobEnvironmentKeyValue(
+        "OPENPYPE_REMOTE_PUBLISH")
+
+    if openpype_publish_job == "1" and openpype_render_job == "1":
+        raise RuntimeError(
+            "Misconfiguration. Job couldn't be both render and publish."
+        )
+
+    if openpype_publish_job == "1":
+        inject_render_job_id(deadlinePlugin)
+    if openpype_render_job == "1" or openpype_remote_job == "1":
+        inject_openpype_environment(deadlinePlugin)
+
+    ayon_render_job = job.GetJobEnvironmentKeyValue("AYON_RENDER_JOB")
+    ayon_publish_job = job.GetJobEnvironmentKeyValue("AYON_PUBLISH_JOB")
+    ayon_remote_job = job.GetJobEnvironmentKeyValue("AYON_REMOTE_PUBLISH")
+
+    if ayon_publish_job == "1" and ayon_render_job == "1":
+        raise RuntimeError(
+            "Misconfiguration. Job couldn't be both render and publish."
+        )
+
+    if ayon_publish_job == "1":
+        inject_render_job_id(deadlinePlugin)
+    if ayon_render_job == "1" or ayon_remote_job == "1":
+        inject_ayon_environment(deadlinePlugin)
