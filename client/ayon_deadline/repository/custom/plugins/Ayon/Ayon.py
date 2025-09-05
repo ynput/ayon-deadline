@@ -14,7 +14,7 @@ import re
 import os
 import platform
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 ######################################################################
 # This is the function that Deadline calls to get an instance of the
@@ -70,15 +70,8 @@ class AyonDeadlinePlugin(DeadlinePlugin):
 
         # set required env vars for AYON
         # cannot be in InitializeProcess as it is too soon
-        config = RepositoryUtils.GetPluginConfig("Ayon")  # plugin name stays
-        ayon_server_url = (
-                job.GetJobEnvironmentKeyValue("AYON_SERVER_URL") or
-                config.GetConfigEntryWithDefault("AyonServerUrl", "")
-        )
-        ayon_api_key = (
-                job.GetJobEnvironmentKeyValue("AYON_API_KEY") or
-                config.GetConfigEntryWithDefault("AyonApiKey", "")
-        )
+        ayon_api_key, ayon_server_url = handle_credentials(job)
+
         ayon_bundle_name = job.GetJobEnvironmentKeyValue("AYON_BUNDLE_NAME")
 
         environment = {
@@ -157,3 +150,85 @@ class AyonDeadlinePlugin(DeadlinePlugin):
     def HandleProgress(self):
         progress = float(self.GetRegexMatch(1))
         self.SetProgress(progress)
+
+
+def handle_credentials(job):
+    config = RepositoryUtils.GetPluginConfig("Ayon")
+    ayon_server_url = config.GetConfigEntryWithDefault("AyonServerUrl", "")
+    ayon_api_key = config.GetConfigEntryWithDefault("AyonApiKey", "")
+
+    job_ayon_server_url = job.GetJobEnvironmentKeyValue("AYON_SERVER_URL")
+    job_ayon_api_key = job.GetJobEnvironmentKeyValue("AYON_API_KEY")
+
+    # API key submitted with job environment will always take priority
+    if job_ayon_api_key:
+        ayon_api_key = job_ayon_api_key
+
+    # Allow custom AYON API key per server URL if server URL is submitted
+    # along with the job. The custom API keys can be configured on the
+    # Deadline Repository AYON Plug-in settings, in the format of
+    # `SERVER:PORT@APIKEY` per line.
+    elif job_ayon_server_url and job_ayon_server_url != ayon_server_url:
+        api_key = _get_ayon_api_key_from_additional_servers(
+            config, job_ayon_server_url)
+        if api_key:
+            ayon_api_key = api_key
+            print("Using API key from Additional AYON Servers.")
+        else:
+            print(
+                "AYON Server URL submitted with job "
+                f"'{job_ayon_server_url}' has no API key defined "
+                "in AYON Deadline plugin configuration,"
+                " `Additional AYON Servers` section."
+                " Use Deadline monitor to modify the values."
+                "Falling back to `AYON API key` set in `AYON Credentials`"
+                " section of AYON plugin configuration."
+            )
+        ayon_server_url = job_ayon_server_url
+    if not all([ayon_server_url, ayon_api_key]):
+        raise RuntimeError(
+            "Missing required values for server url and api key. "
+            "Please fill in AYON Deadline plugin or provide by "
+            "AYON_SERVER_URL and AYON_API_KEY"
+        )
+    return ayon_server_url, ayon_api_key
+
+
+def _get_ayon_api_key_from_additional_servers(config, server):
+    """Get AYON API key from the list of additional servers.
+
+    The additional servers are configured on the DeadlineRepository AYON
+    Plug-in settings using the `AyonAdditionalServerUrls` param. Each line
+    represents a server URL with an API key, like:
+        server1:port@APIKEY1
+        server2:port@APIKEY2
+
+    Returns:
+        Optional[str]: If the server URL is found in the additional servers
+            then return the API key for that server.
+
+    """
+    additional_servers: str = config.GetConfigEntryWithDefault(
+        "AyonAdditionalServerUrls", "").strip()
+    if not additional_servers:
+        return
+
+    if not isinstance(additional_servers, list):
+        additional_servers = additional_servers.split(";")
+
+    for line in additional_servers:
+        line = line.strip()
+        # Ignore empty lines
+        if not line:
+            continue
+
+        # Log warning if additional server URL is misconfigured
+        # without an API key
+        if "@" not in line:
+            print("Configured additional server URL lacks "
+                  f"`@APIKEY` suffix: {line}")
+            continue
+
+        additional_server, api_key = line.split("@", 1)
+        if additional_server == server:
+            return api_key
