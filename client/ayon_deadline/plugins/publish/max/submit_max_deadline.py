@@ -272,8 +272,9 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         plugin_info_list = []
         instance = self._instance
         cameras = instance.data.get("cameras", [])
+        renderer = instance.data["renderer"]
         plugin_data = {}
-        multipass = get_multipass_setting(project_settings)
+        multipass = get_multipass_setting(renderer, project_settings)
         if multipass:
             plugin_data["DisableMultipass"] = 0
         else:
