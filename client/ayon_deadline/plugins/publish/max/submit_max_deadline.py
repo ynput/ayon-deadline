@@ -151,11 +151,9 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if renderer in [
             "ART_Renderer",
             "Redshift_Renderer",
-            "V_Ray_6_Hotfix_3",
-            "V_Ray_GPU_6_Hotfix_3",
             "Default_Scanline_Renderer",
             "Quicksilver_Hardware_Renderer",
-        ]:
+        ] and renderer.startswith("V_Ray_"):
             render_elem_list = RenderSettings().get_render_element()
             for i, element in enumerate(render_elem_list):
                 elem_bname = os.path.basename(element)
@@ -240,11 +238,9 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if renderer in [
             "ART_Renderer",
             "Redshift_Renderer",
-            "V_Ray_6_Hotfix_3",
-            "V_Ray_GPU_6_Hotfix_3",
             "Default_Scanline_Renderer",
             "Quicksilver_Hardware_Renderer",
-        ]:
+        ] and renderer.startswith("V_Ray_"):
             render_elem_list = RenderSettings().get_batch_render_elements(
                 instance.name, old_output_dir, camera
             )
@@ -293,8 +289,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
     def from_published_scene(self, replace_in_path=True):
         instance = self._instance
-        if instance.data["renderer"] == "Redshift_Renderer":
-            self.log.debug("Using Redshift...published scene wont be used..")
+        renderer = instance.data["renderer"]
+        if renderer == "Redshift_Renderer" or (
+            renderer.startswith("V_Ray_")
+        ):
+            self.log.debug(
+                f"Using {renderer}...published scene wont be used.."
+            )
             replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
