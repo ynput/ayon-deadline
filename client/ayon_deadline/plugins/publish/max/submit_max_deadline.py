@@ -123,8 +123,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
         plugin_data = {}
-
-        multipass = get_multipass_setting(project_settings)
+        renderer = instance.data["renderer"]
+        multipass = get_multipass_setting(renderer, project_settings)
         if multipass:
             plugin_data["DisableMultipass"] = 0
         else:
