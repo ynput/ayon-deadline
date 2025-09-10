@@ -133,11 +133,9 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        render_output = rt.rendOutputFilename
-        plugin_data["RenderOutput"] = render_output.replace("\\", "/")
+
         # as 3dsmax has version with different languages
         plugin_data["Language"] = "ENU"
-
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
@@ -154,6 +152,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                 new_elem = new_elem.replace("/", "\\")
                 plugin_data["RenderElementOutputFilename%d" % i] = new_elem   # noqa
 
+
+
         if renderer == "Redshift_Renderer":
             plugin_data["redshift_SeparateAovFiles"] = instance.data.get(
                 "separateAovFiles")
@@ -162,6 +162,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_info["Camera0"] = camera
             plugin_info["Camera"] = camera
             plugin_info["Camera1"] = camera
+
+        if renderer.startswith("V_Ray_"):
+                plugin_data["RenderOutput"] = ""
+        else:
+            render_output = rt.rendOutputFilename
+            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
+
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
 
@@ -218,8 +225,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        render_output = rt.rendOutputFilename
-        plugin_data["RenderOutput"] = render_output.replace("\\", "/")
+        first_file = next(self._iter_expected_files(files))
+        old_output_dir = os.path.dirname(first_file)
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
@@ -238,6 +245,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                     new_elem = f"{dir}/{elem_bname}"
                     new_elem = new_elem.replace("/", "\\")
                     plugin_info["RenderElementOutputFilename%d" % i] = new_elem   # noqa
+            if renderer.startswith("V_Ray_"):
+                 plugin_data["RenderOutput"] = ""
 
         if camera:
             # set the default camera and target camera
@@ -245,6 +254,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_data["Camera"] = camera
             plugin_data["Camera1"] = camera
             plugin_data["Camera0"] = None
+
+        if renderer.startswith("V_Ray_"):
+                plugin_data["RenderOutput"] = ""
+        else:
+            render_output = rt.rendOutputFilename
+            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
 
         plugin_info.update(plugin_data)
         return plugin_info
