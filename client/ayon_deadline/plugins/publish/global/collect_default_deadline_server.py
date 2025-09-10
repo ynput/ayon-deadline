@@ -20,7 +20,7 @@ class CollectDefaultDeadlineServer(pyblish.api.ContextPlugin):
     # Run before collect_deadline_server_instance.
     order = pyblish.api.CollectorOrder + 0.200
     label = "Default Deadline Webservice"
-    targets = ["local"]
+    targets = ["local", "deadline"]
 
     def process(self, context):
         deadline_addon = context.data["ayonAddonsManager"]["deadline"]

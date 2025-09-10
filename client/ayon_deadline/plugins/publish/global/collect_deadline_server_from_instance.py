@@ -16,6 +16,7 @@ TODOS:
 - Don't store deadline url, but use server name instead.
 
 """
+import os
 from typing import Optional, Tuple
 
 import pyblish.api
@@ -30,13 +31,14 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
     # Run before collect_render.
     order = pyblish.api.CollectorOrder + 0.225
     label = "Deadline Webservice from the Instance"
-    targets = ["local"]
+    targets = ["local", "deadline"]
 
     families = FARM_FAMILIES
 
     def process(self, instance):
-        if not instance.data.get("farm"):
-            self.log.debug("Should not be processed on farm, skipping.")
+        if (not instance.data.get("farm") and
+                not os.environ.get("HEADLESS_PUBLISH")):
+            self.log.debug("Should not be processed on local inst, skipping.")
             return
 
         # NOTE: Remove when nothing sets 'deadline' to 'None'
