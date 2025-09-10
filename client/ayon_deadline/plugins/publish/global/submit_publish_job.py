@@ -410,11 +410,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             instance, render_job, instances, rootless_metadata_path
         )
 
-        # Inject deadline url to instances to query DL for job id for overrides
-        for inst in instances:
-            inst["deadline"] = deepcopy(instance.data["deadline"])
-            inst["deadline"].pop("job_info")
-
         # publish job file
         publish_job = {
             "folderPath": instance_skeleton_data["folderPath"],
