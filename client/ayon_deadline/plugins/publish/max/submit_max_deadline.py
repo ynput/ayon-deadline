@@ -117,7 +117,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             get_current_renderer,
             get_multipass_setting
         )
-        from ayon_max.api.lib_rendersettings import RenderSettings
+        from pymxs import runtime as rt
 
         instance = self._instance
         job_info = copy.deepcopy(self.job_info)
@@ -133,15 +133,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        first_file = next(self._iter_expected_files(files))
-        old_output_dir = os.path.dirname(first_file)
-        output_beauty = RenderSettings().get_render_output(instance.name,
-                                                           old_output_dir)
-        rgb_bname = os.path.basename(output_beauty)
-        dir = os.path.dirname(first_file)
-        beauty_name = f"{dir}/{rgb_bname}"
-        beauty_name = beauty_name.replace("\\", "/")
-        plugin_data["RenderOutput"] = beauty_name
+        render_output = rt.rendOutputFilename
+        plugin_data["RenderOutput"] = render_output.replace("\\", "/")
         # as 3dsmax has version with different languages
         plugin_data["Language"] = "ENU"
 
@@ -204,6 +197,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         Args:
             infos(dict): a dictionary with plugin info.
         """
+        from pymxs import runtime as rt
         instance = self._instance
         # set the target camera
         plugin_info = copy.deepcopy(self.plugin_info)
@@ -224,14 +218,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        first_file = next(self._iter_expected_files(files))
-        old_output_dir = os.path.dirname(first_file)
-        rgb_output = RenderSettings().get_batch_render_output(camera)       # noqa
-        rgb_bname = os.path.basename(rgb_output)
-        dir = os.path.dirname(first_file)
-        beauty_name = f"{dir}/{rgb_bname}"
-        beauty_name = beauty_name.replace("\\", "/")
-        plugin_info["RenderOutput"] = beauty_name
+        render_output = rt.rendOutputFilename
+        plugin_data["RenderOutput"] = render_output.replace("\\", "/")
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
