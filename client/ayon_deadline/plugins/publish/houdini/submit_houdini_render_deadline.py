@@ -344,7 +344,8 @@ class HoudiniSubmitDeadline(
         )
 
         # Get SlapComps
-        slapcomp_sources = "\n".join(instance.data["slapComp"])
+        slapcomps: "list[str]" = instance.data.get("slapComp", [])
+        slapcomp_sources = "\n".join(slapcomps)
 
         return HuskStandalonePluginInfo(
             SceneFile=instance.data["ifdFile"],
