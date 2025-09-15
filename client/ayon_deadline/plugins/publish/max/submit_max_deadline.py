@@ -246,7 +246,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                     new_elem = new_elem.replace("/", "\\")
                     plugin_info["RenderElementOutputFilename%d" % i] = new_elem   # noqa
             if renderer.startswith("V_Ray_"):
-                 plugin_data["RenderOutput"] = ""
+                plugin_data["RenderOutput"] = ""
 
         if camera:
             # set the default camera and target camera
