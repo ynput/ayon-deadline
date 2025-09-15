@@ -235,7 +235,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             "Redshift_Renderer",
             "Default_Scanline_Renderer",
             "Quicksilver_Hardware_Renderer",
-        ] and renderer.startswith("V_Ray_"):
+        ] or renderer.startswith("V_Ray_"):
             render_elem_list = RenderSettings().get_batch_render_elements(
                 instance.name, old_output_dir, camera
             )
