@@ -256,7 +256,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_data["Camera0"] = None
 
         if renderer.startswith("V_Ray_"):
-                plugin_data["RenderOutput"] = ""
+            plugin_data["RenderOutput"] = ""
         else:
             render_output = rt.rendOutputFilename
             plugin_data["RenderOutput"] = render_output.replace("\\", "/")
