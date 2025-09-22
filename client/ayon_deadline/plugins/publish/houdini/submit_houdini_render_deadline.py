@@ -70,7 +70,6 @@ class HuskStandalonePluginInfo:
     PostRender: str = field(default="")
     RestartDelegate: str = field(default="")
     Version: str = field(default="")
-    SlapCompSources: str = field(default="")
 
 
 class HoudiniSubmitDeadline(
@@ -342,11 +341,6 @@ class HoudiniSubmitDeadline(
             rop_node.evalParm("rendersettings")
             or "/Render/rendersettings"
         )
-
-        # Get SlapComps
-        # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
-        slapcomps: "list[str]" = instance.data.get("slapComp", [])
-
         return HuskStandalonePluginInfo(
             SceneFile=instance.data["ifdFile"],
             Renderer=rop_node.evalParm("renderer"),
@@ -359,8 +353,7 @@ class HoudiniSubmitDeadline(
             PostFrame=rop_node.evalParm("husk_postframe"),
             PostRender=rop_node.evalParm("husk_postrender"),
             RestartDelegate=restart_delegate,
-            Version=hou_major_minor,
-            SlapCompSources="\n".join(slapcomps)
+            Version=hou_major_minor
         )
 
     def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
