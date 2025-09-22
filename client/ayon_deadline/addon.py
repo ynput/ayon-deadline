@@ -270,19 +270,19 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         server_info: Dict[str, Any],
         local_settings: Optional[Dict[str, Any]] = None,
     ) -> Optional[Tuple[str, str]]:
-        server_name = server_info["name"]
+        selected_server_name = server_info["name"]
 
         require_authentication = server_info["require_authentication"]
         if require_authentication:
             if local_settings is None:
                 local_settings = self._get_local_settings()
 
-            for server_info in local_settings["local_settings"]:
-                if server_name != server_info["server_name"]:
+            for local_info in local_settings["local_settings"]:
+                if selected_server_name != local_info["server_name"]:
                     continue
 
-                if server_info["username"] and server_info["password"]:
-                    return server_info["username"], server_info["password"]
+                if local_info["username"] and local_info["password"]:
+                    return local_info["username"], local_info["password"]
 
         default_username = server_info["default_username"]
         default_password = server_info["default_password"]
