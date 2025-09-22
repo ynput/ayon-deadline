@@ -202,7 +202,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         Args:
             infos(dict): a dictionary with plugin info.
         """
-        from pymxs import runtime as rt
         instance = self._instance
         # set the target camera
         plugin_info = copy.deepcopy(self.plugin_info)
@@ -282,8 +281,10 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return replace_with_published_scene_path(
             instance, replace_in_path)
 
-    def _collect_render_output(self, renderer, dir, plugin_data):
-        """Collects render output and render element paths based on renderer type.
+    @staticmethod
+    def _collect_render_output(renderer, dir, plugin_data):
+        """Collects render output and render element paths based on
+        renderer type.
         Args:
             renderer (str): The name of the current renderer.
             dir (str): The directory where render outputs should be saved.
