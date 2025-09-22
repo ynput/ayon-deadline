@@ -15,13 +15,12 @@ class CollectSceneRenderCleanUp(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         representations : List[Dict] = instance.data.get("representations", [])
-        self.log.debug(f"representations: {representations}")
         staging_dirs: List[str] = []
         files : List[str] = []
         for repre in representations:
             staging_dir = repre.get("stagingDir")
             for tmp_file in os.listdir(staging_dir):
-                if "_tmp" not in tmp_file:
+                if not os.path.isfile(tmp_file) and "_tmp" not in tmp_file:
                     continue
                 staging_dirs.append(staging_dir)
                 files.append(os.path.join(staging_dir, tmp_file))
