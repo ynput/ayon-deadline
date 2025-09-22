@@ -344,7 +344,7 @@ class HoudiniSubmitDeadline(
         )
 
         # Get SlapComps
-        # This instance data comes from `CollectSlapComps` plugin in Houdini addon.
+        # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
         slapcomps: "list[str]" = instance.data.get("slapComp", [])
 
         return HuskStandalonePluginInfo(
