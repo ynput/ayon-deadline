@@ -117,8 +117,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             get_current_renderer,
             get_multipass_setting
         )
-        from pymxs import runtime as rt
-
         instance = self._instance
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
@@ -133,25 +131,17 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
+        first_file = next(self._iter_expected_files(files))
+        old_output_dir = os.path.dirname(first_file)
 
         # as 3dsmax has version with different languages
         plugin_data["Language"] = "ENU"
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
-        if renderer in [
-            "ART_Renderer",
-            "Redshift_Renderer",
-            "Default_Scanline_Renderer",
-            "Quicksilver_Hardware_Renderer",
-        ] or renderer.startswith("V_Ray_"):
-            render_elem_list = RenderSettings().get_render_element()
-            for i, element in enumerate(render_elem_list):
-                elem_bname = os.path.basename(element)
-                new_elem = f"{dir}/{elem_bname}"
-                new_elem = new_elem.replace("/", "\\")
-                plugin_data["RenderElementOutputFilename%d" % i] = new_elem   # noqa
-
+        plugin_data = self._collect_render_output(
+            renderer, old_output_dir, plugin_data
+        )
         if renderer == "Redshift_Renderer":
             plugin_data["redshift_SeparateAovFiles"] = instance.data.get(
                 "separateAovFiles")
@@ -160,12 +150,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_info["Camera0"] = camera
             plugin_info["Camera"] = camera
             plugin_info["Camera1"] = camera
-
-        if renderer.startswith("V_Ray_"):
-            plugin_data["RenderOutput"] = ""
-        else:
-            render_output = rt.rendOutputFilename
-            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
 
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
