@@ -17,7 +17,9 @@ from Deadline.Scripting import (
     FileUtils,
     DirectoryUtils,
 )
-__version__ = "1.2.2"
+
+
+__version__ = "1.2.3"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -415,46 +417,6 @@ def inject_openpype_environment(deadlinePlugin):
         raise
 
 
-def get_ayon_api_key_from_additional_servers(config, server):
-    """Get AYON API key from the list of additional servers.
-
-    The additional servers are configured on the DeadlineRepository AYON
-    Plug-in settings using the `AyonAdditionalServerUrls` param. Each line
-    represents a server URL with an API key, like:
-        server1:port@APIKEY1
-        server2:port@APIKEY2
-
-    Returns:
-        Optional[str]: If the server URL is found in the additional servers
-            then return the API key for that server.
-
-    """
-    additional_servers: str = config.GetConfigEntryWithDefault(
-        "AyonAdditionalServerUrls", "").strip()
-    if not additional_servers:
-        return
-
-    if not isinstance(additional_servers, list):
-        additional_servers = additional_servers.split(";")
-
-    for line in additional_servers:
-        line = line.strip()
-        # Ignore empty lines
-        if not line:
-            continue
-
-        # Log warning if additional server URL is misconfigured
-        # without an API key
-        if "@" not in line:
-            print("Configured additional server URL lacks "
-                  f"`@APIKEY` suffix: {line}")
-            continue
-
-        additional_server, api_key = line.split("@", 1)
-        if additional_server == server:
-            return api_key
-
-
 def inject_ayon_environment(deadlinePlugin):
     """ Pull env vars from AYON and push them to rendering process.
 
@@ -483,44 +445,7 @@ def inject_ayon_environment(deadlinePlugin):
                 "Missing env var in job properties AYON_BUNDLE_NAME"
             )
 
-        config = RepositoryUtils.GetPluginConfig("Ayon")
-
-        ayon_server_url = config.GetConfigEntryWithDefault("AyonServerUrl", "")
-        ayon_api_key = config.GetConfigEntryWithDefault("AyonApiKey", "")
-        job_ayon_server_url = job.GetJobEnvironmentKeyValue("AYON_SERVER_URL")
-        job_ayon_api_key = job.GetJobEnvironmentKeyValue("AYON_API_KEY")
-
-        # API key submitted with job environment will always take priority
-        if job_ayon_api_key:
-            ayon_api_key = job_ayon_api_key
-
-        # Allow custom AYON API key per server URL if server URL is submitted
-        # along with the job. The custom API keys can be configured on the
-        # Deadline Repository AYON Plug-in settings, in the format of
-        # `SERVER:PORT@APIKEY` per line.
-        elif job_ayon_server_url and job_ayon_server_url != ayon_server_url:
-            api_key = get_ayon_api_key_from_additional_servers(
-                config, job_ayon_server_url)
-            if api_key:
-                ayon_api_key = api_key
-            else:
-                print(
-                    "AYON Server URL submitted with job "
-                    f"'{job_ayon_server_url}' has no API key defined "
-                    "in AYON Deadline plugin configuration,"
-                    " `Additional AYON Servers` section."
-                    " Use Deadline monitor to modify the values."
-                    "Falling back to `AYON API key` set in `AYON Credentials`"
-                    " section of AYON plugin configuration."
-                )
-            ayon_server_url = job_ayon_server_url
-
-        if not all([ayon_server_url, ayon_api_key]):
-            raise RuntimeError(
-                "Missing required values for server url and api key. "
-                "Please fill in AYON Deadline plugin or provide by "
-                "AYON_SERVER_URL and AYON_API_KEY"
-            )
+        ayon_server_url, ayon_api_key = handle_credentials(job)
 
         site_id = os.environ.get("AYON_SITE_ID")
         shared_env_group = None
@@ -790,11 +715,107 @@ def inject_render_job_id(deadlinePlugin):
     dependency_ids = job.JobDependencyIDs
     print(">>> Dependency IDs: {}".format(dependency_ids))
     render_job_ids = ",".join(dependency_ids)
-
     deadlinePlugin.SetProcessEnvironmentVariable(
         "RENDER_JOB_IDS", render_job_ids
     )
+
+    ayon_server_url, ayon_api_key = handle_credentials(job)
+
+    credentials = {
+        "AYON_SERVER_URL": ayon_server_url,
+        "AYON_API_KEY": ayon_api_key
+    }
+    for env, val in credentials.items():
+        job.SetJobEnvironmentKeyValue(env, val)
     print(">>> Injection end.")
+
+
+def handle_credentials(job):
+    """Returns a tuple of values for AYON_SERVER_URL and AYON_API_KEY
+
+    AYON_API_KEY might be overridden directly from job environments.
+    Or specific AYON_SERVER_URL might be attached to job to pick corespondent
+    AYON_API_KEY from plugin configuration.
+    """
+    config = RepositoryUtils.GetPluginConfig("Ayon")
+    ayon_server_url = config.GetConfigEntryWithDefault("AyonServerUrl", "")
+    ayon_api_key = config.GetConfigEntryWithDefault("AyonApiKey", "")
+
+    job_ayon_server_url = job.GetJobEnvironmentKeyValue("AYON_SERVER_URL")
+    job_ayon_api_key = job.GetJobEnvironmentKeyValue("AYON_API_KEY")
+
+    # API key submitted with job environment will always take priority
+    if job_ayon_api_key:
+        ayon_api_key = job_ayon_api_key
+
+    # Allow custom AYON API key per server URL if server URL is submitted
+    # along with the job. The custom API keys can be configured on the
+    # Deadline Repository AYON Plug-in settings, in the format of
+    # `SERVER:PORT@APIKEY` per line.
+    elif job_ayon_server_url and job_ayon_server_url != ayon_server_url:
+        api_key = _get_ayon_api_key_from_additional_servers(
+            config, job_ayon_server_url)
+        if api_key:
+            ayon_api_key = api_key
+            print(">>> Using API key from Additional AYON Servers.")
+        else:
+            print(
+                ">>> AYON Server URL submitted with job "
+                f"'{job_ayon_server_url}' has no API key defined "
+                "in AYON Deadline plugin configuration,"
+                " `Additional AYON Servers` section."
+                " Use Deadline monitor to modify the values."
+                "Falling back to `AYON API key` set in `AYON Credentials`"
+                " section of AYON plugin configuration."
+            )
+        ayon_server_url = job_ayon_server_url
+    if not all([ayon_server_url, ayon_api_key]):
+        raise RuntimeError(
+            "Missing required values for server url and api key. "
+            "Please fill in AYON Deadline plugin or provide by "
+            "AYON_SERVER_URL and AYON_API_KEY"
+        )
+    return ayon_server_url, ayon_api_key
+
+
+def _get_ayon_api_key_from_additional_servers(config, server):
+    """Get AYON API key from the list of additional servers.
+
+    The additional servers are configured on the DeadlineRepository AYON
+    Plug-in settings using the `AyonAdditionalServerUrls` param. Each line
+    represents a server URL with an API key, like:
+        server1:port@APIKEY1
+        server2:port@APIKEY2
+
+    Returns:
+        Optional[str]: If the server URL is found in the additional servers
+            then return the API key for that server.
+
+    """
+    additional_servers: str = config.GetConfigEntryWithDefault(
+        "AyonAdditionalServerUrls", "").strip()
+    if not additional_servers:
+        return
+
+    if not isinstance(additional_servers, list):
+        additional_servers = additional_servers.split(";")
+
+    for line in additional_servers:
+        line = line.strip()
+        # Ignore empty lines
+        if not line:
+            continue
+
+        # Log warning if additional server URL is misconfigured
+        # without an API key
+        if "@" not in line:
+            print("Configured additional server URL lacks "
+                  f"`@APIKEY` suffix: {line}")
+            continue
+
+        additional_server, api_key = line.split("@", 1)
+        if additional_server == server:
+            return api_key
 
 
 def __main__(deadlinePlugin):
