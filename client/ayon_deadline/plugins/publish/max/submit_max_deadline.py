@@ -228,33 +228,16 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
-        if renderer in [
-            "ART_Renderer",
-            "Redshift_Renderer",
-            "Default_Scanline_Renderer",
-            "Quicksilver_Hardware_Renderer",
-        ] or renderer.startswith("V_Ray_"):
-            render_elem_list = RenderSettings().get_batch_render_elements(
-                instance.name, old_output_dir, camera
-            )
-            for i, element in enumerate(render_elem_list):
-                if camera in element:
-                    elem_bname = os.path.basename(element)
-                    new_elem = f"{dir}/{elem_bname}"
-                    new_elem = new_elem.replace("/", "\\")
-                    plugin_info["RenderElementOutputFilename%d" % i] = new_elem   # noqa
+        plugin_data = self._collect_render_output(
+            renderer, old_output_dir, plugin_data
+        )
+
         if camera:
             # set the default camera and target camera
             # (weird parameters from max)
             plugin_data["Camera"] = camera
             plugin_data["Camera1"] = camera
             plugin_data["Camera0"] = None
-
-        if renderer.startswith("V_Ray_"):
-            plugin_data["RenderOutput"] = ""
-        else:
-            render_output = rt.rendOutputFilename
-            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
 
         plugin_info.update(plugin_data)
         return plugin_info
@@ -298,6 +281,35 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
+
+    def _collect_render_output(self, renderer, dir, plugin_data):
+        """Collects render output and render element paths based on renderer type.
+        Args:
+            renderer (str): The name of the current renderer.
+            dir (str): The directory where render outputs should be saved.
+            plugin_data (dict): The dictionary to populate with output paths.
+        Returns:
+            dict: Updated plugin_data with render output paths.
+
+        """
+        from pymxs import runtime as rt
+        from ayon_max.api.lib_rendersettings import is_supported_renderer
+        # Handle render elements
+        if is_supported_renderer(renderer):
+            render_elem_list = RenderSettings().get_render_element()
+            for i, element in enumerate(render_elem_list):
+                elem_bname = os.path.basename(element)
+                new_elem_path = os.path.join(dir, elem_bname)
+                plugin_data[f"RenderElementOutputFilename{i}"] = new_elem_path
+
+        # Handle main render output
+        if renderer.startswith("V_Ray_"):
+            plugin_data["RenderOutput"] = ""
+        else:
+            render_output = rt.rendOutputFilename
+            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
+
+        return plugin_data
 
     @staticmethod
     def _iter_expected_files(exp):
