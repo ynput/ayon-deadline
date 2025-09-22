@@ -8,4 +8,6 @@ ayon_required_addons = {
     "core": ">1.0.9",
     "applications": ">=1.0.0",
 }
-ayon_compatible_addons = {}
+ayon_compatible_addons = {
+    "houdini": ">0.6.3",
+}
