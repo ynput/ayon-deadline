@@ -29,7 +29,7 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder + 0.250
     label = "Collect Deadline User Credentials"
 
-    targets = ["local","deadline"]
+    targets = ["local", "deadline"]
 
     families = FARM_FAMILIES
 
