@@ -34,9 +34,11 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
     families = FARM_FAMILIES
 
     def process(self, instance):
-        if (not instance.data.get("farm") and
-                not os.environ.get("HEADLESS_PUBLISH")):
-            self.log.debug("Should not be processed on local inst, skipping.")
+        if (
+            not instance.data.get("farm")
+            and not os.environ.get("HEADLESS_PUBLISH")
+        ):
+            self.log.debug("Should not be processed, skipping.")
             return
 
         collected_deadline_url = instance.data["deadline"]["url"]
