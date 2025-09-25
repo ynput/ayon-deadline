@@ -19,11 +19,12 @@ class CollectSceneRenderCleanUp(pyblish.api.InstancePlugin):
         files : List[str] = []
         for repre in representations:
             staging_dir = repre.get("stagingDir")
-            for tmp_file in os.listdir(staging_dir):
-                if not os.path.isfile(tmp_file) and "_tmp" not in tmp_file:
+            for filename in os.listdir(staging_dir):
+                base, _ = os.path.splitext(filename)
+                if not base.endswith("_tmp"):
                     continue
                 staging_dirs.append(staging_dir)
-                files.append(os.path.join(staging_dir, tmp_file))
+                files.append(os.path.join(staging_dir, filename))
 
             # Check for blender temporary dir
             blender_tmp_dir = os.path.join(staging_dir, "tmp")
