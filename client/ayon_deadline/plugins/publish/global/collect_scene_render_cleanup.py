@@ -5,21 +5,28 @@ from typing import List, Dict
 import pyblish.api
 
 
-class CollectSceneRenderCleanUpBlender(pyblish.api.InstancePlugin):
-    """Collect files and directories to be cleaned up.
+class CollectSceneRenderCleanUp(pyblish.api.InstancePlugin):
+    """Collect files and directories to be cleaned up
     """
 
     order = pyblish.api.CollectorOrder - 0.1
-    label = "Collect Scene Render Clean Up (Blender)"
+    label = "Collect Scene Render Clean Up"
     targets = ["farm"]
 
     def process(self, instance):
         representations : List[Dict] = instance.data.get("representations", [])
-        self.log.debug(f"representations: {representations}")
         staging_dirs: List[str] = []
         files : List[str] = []
         for repre in representations:
             staging_dir = repre.get("stagingDir")
+            for filename in os.listdir(staging_dir):
+                base, _ = os.path.splitext(filename)
+                if not base.endswith("_tmp"):
+                    continue
+                staging_dirs.append(staging_dir)
+                files.append(os.path.join(staging_dir, filename))
+
+            # Check for blender temporary dir
             blender_tmp_dir = os.path.join(staging_dir, "tmp")
             if not os.path.exists(blender_tmp_dir):
                 blender_tmp_dir = os.path.join(
