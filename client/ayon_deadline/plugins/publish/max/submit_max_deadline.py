@@ -117,14 +117,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             get_current_renderer,
             get_multipass_setting
         )
-        from ayon_max.api.lib_rendersettings import RenderSettings
-
         instance = self._instance
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
         plugin_data = {}
-
-        multipass = get_multipass_setting(project_settings)
+        renderer = instance.data["renderer"]
+        multipass = get_multipass_setting(renderer, project_settings)
         if multipass:
             plugin_data["DisableMultipass"] = 0
         else:
@@ -135,34 +133,15 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             raise KnownPublishError("No render elements found")
         first_file = next(self._iter_expected_files(files))
         old_output_dir = os.path.dirname(first_file)
-        output_beauty = RenderSettings().get_render_output(instance.name,
-                                                           old_output_dir)
-        rgb_bname = os.path.basename(output_beauty)
-        dir = os.path.dirname(first_file)
-        beauty_name = f"{dir}/{rgb_bname}"
-        beauty_name = beauty_name.replace("\\", "/")
-        plugin_data["RenderOutput"] = beauty_name
+
         # as 3dsmax has version with different languages
         plugin_data["Language"] = "ENU"
-
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
-        if renderer in [
-            "ART_Renderer",
-            "Redshift_Renderer",
-            "V_Ray_6_Hotfix_3",
-            "V_Ray_GPU_6_Hotfix_3",
-            "Default_Scanline_Renderer",
-            "Quicksilver_Hardware_Renderer",
-        ]:
-            render_elem_list = RenderSettings().get_render_element()
-            for i, element in enumerate(render_elem_list):
-                elem_bname = os.path.basename(element)
-                new_elem = f"{dir}/{elem_bname}"
-                new_elem = new_elem.replace("/", "\\")
-                plugin_data["RenderElementOutputFilename%d" % i] = new_elem   # noqa
-
+        plugin_data = self._collect_render_output(
+            renderer, old_output_dir, plugin_data
+        )
         if renderer == "Redshift_Renderer":
             plugin_data["redshift_SeparateAovFiles"] = instance.data.get(
                 "separateAovFiles")
@@ -171,6 +150,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_info["Camera0"] = camera
             plugin_info["Camera"] = camera
             plugin_info["Camera1"] = camera
+
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
 
@@ -228,32 +208,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             raise KnownPublishError("No render elements found")
         first_file = next(self._iter_expected_files(files))
         old_output_dir = os.path.dirname(first_file)
-        rgb_output = RenderSettings().get_batch_render_output(camera)       # noqa
-        rgb_bname = os.path.basename(rgb_output)
-        dir = os.path.dirname(first_file)
-        beauty_name = f"{dir}/{rgb_bname}"
-        beauty_name = beauty_name.replace("\\", "/")
-        plugin_info["RenderOutput"] = beauty_name
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
-        if renderer in [
-            "ART_Renderer",
-            "Redshift_Renderer",
-            "V_Ray_6_Hotfix_3",
-            "V_Ray_GPU_6_Hotfix_3",
-            "Default_Scanline_Renderer",
-            "Quicksilver_Hardware_Renderer",
-        ]:
-            render_elem_list = RenderSettings().get_batch_render_elements(
-                instance.name, old_output_dir, camera
-            )
-            for i, element in enumerate(render_elem_list):
-                if camera in element:
-                    elem_bname = os.path.basename(element)
-                    new_elem = f"{dir}/{elem_bname}"
-                    new_elem = new_elem.replace("/", "\\")
-                    plugin_info["RenderElementOutputFilename%d" % i] = new_elem   # noqa
+        plugin_data = self._collect_render_output(
+            renderer, old_output_dir, plugin_data
+        )
 
         if camera:
             # set the default camera and target camera
@@ -276,8 +236,9 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         plugin_info_list = []
         instance = self._instance
         cameras = instance.data.get("cameras", [])
+        renderer = instance.data["renderer"]
         plugin_data = {}
-        multipass = get_multipass_setting(project_settings)
+        multipass = get_multipass_setting(renderer, project_settings)
         if multipass:
             plugin_data["DisableMultipass"] = 0
         else:
@@ -293,11 +254,47 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
     def from_published_scene(self, replace_in_path=True):
         instance = self._instance
-        if instance.data["renderer"] == "Redshift_Renderer":
-            self.log.debug("Using Redshift...published scene wont be used..")
+        renderer = instance.data["renderer"]
+        if renderer == "Redshift_Renderer" or (
+            renderer.startswith("V_Ray_")
+        ):
+            self.log.debug(
+                f"Using {renderer}...published scene wont be used.."
+            )
             replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
+
+    @staticmethod
+    def _collect_render_output(renderer, dir, plugin_data):
+        """Collects render output and render element paths based on
+        renderer type.
+        Args:
+            renderer (str): The name of the current renderer.
+            dir (str): The directory where render outputs should be saved.
+            plugin_data (dict): The dictionary to populate with output paths.
+        Returns:
+            dict: Updated plugin_data with render output paths.
+
+        """
+        from pymxs import runtime as rt
+        from ayon_max.api.lib_rendersettings import is_supported_renderer
+        # Handle render elements
+        if is_supported_renderer(renderer):
+            render_elem_list = RenderSettings().get_render_element()
+            for i, element in enumerate(render_elem_list):
+                elem_bname = os.path.basename(element)
+                new_elem_path = os.path.join(dir, elem_bname)
+                plugin_data[f"RenderElementOutputFilename{i}"] = new_elem_path
+
+        # Handle main render output
+        if renderer.startswith("V_Ray_"):
+            plugin_data["RenderOutput"] = ""
+        else:
+            render_output = rt.rendOutputFilename
+            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
+
+        return plugin_data
 
     @staticmethod
     def _iter_expected_files(exp):
