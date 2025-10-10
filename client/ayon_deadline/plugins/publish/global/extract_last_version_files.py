@@ -71,7 +71,8 @@ class ExtractLastVersionFiles(pyblish.api.InstancePlugin):
                 for file_path in last_version_copied_files.values()
             ]
             repre["files"].extend(added_file_names)
-
+            import pprint
+            self.log.info(f"used::{pprint.pformat(used_version_entity, indent=4)}")
             # reset representation/instance to original length
             repre["frameStart"] = used_version_entity["attrib"]["frameStart"]
             repre["frameEnd"] = used_version_entity["attrib"]["frameEnd"]
