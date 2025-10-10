@@ -250,7 +250,17 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "frames",
                 label="Use Custom Frames",
                 default="",
-                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)"
+                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)",
+            )
+        )
+
+        defs.append(
+            BoolDef(
+                "reuseLastVersion",
+                label="Re-use rest of last version",
+                default=False,
+                tooltip="Use 'Custom Frames' to create new version from last "
+                        "version files plus newly created frames."
             )
         )
 
