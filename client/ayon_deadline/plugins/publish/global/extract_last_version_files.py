@@ -3,7 +3,7 @@ import os
 import pyblish.api
 import clique
 
-from ayon_core.pipeline.publish.lib import fill_sequence_gaps_with_previous
+from ayon_core.pipeline.publish.lib import fill_sequence_gaps_with_previous_version
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 from ayon_core.pipeline import KnownPublishError
 
@@ -54,7 +54,7 @@ class ExtractLastVersionFiles(pyblish.api.InstancePlugin):
             collection = collections[0]
 
             used_version_entity, last_version_copied_files = (
-                fill_sequence_gaps_with_previous(
+                fill_sequence_gaps_with_previous_version(
                     collection=collection,
                     staging_dir=repre["stagingDir"],
                     instance=instance,
