@@ -244,23 +244,32 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
+        use_custom_frames = (
+            cls._get_publish_use_custom_frames_value(instance.data) or "none"
+        )
+
         # explicit frames to render - for test renders
+        use_custom_frames_enum_values = [
+            {"value": "none", "label": "Task Frame Range"},
+            {"value": "custom_only", "label": "Custom Frames Only"},
+            {"value": "reuse_last_version", "label": "Reuse from Last Version"}
+        ]
+        defs.append(
+            EnumDef(
+                "use_custom_frames",
+                label="Use Custom Frames",
+                default=use_custom_frames,
+                items=use_custom_frames_enum_values,
+            )
+        )
+        custom_frames_visible = cls._is_custom_frames_used(use_custom_frames)
         defs.append(
             TextDef(
                 "frames",
-                label="Use Custom Frames",
+                label="Custom Frames",
                 default="",
                 tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)",
-            )
-        )
-
-        defs.append(
-            BoolDef(
-                "reuseLastVersion",
-                label="Re-use rest of last version",
-                default=False,
-                tooltip="Use 'Custom Frames' to create new version from last "
-                        "version files plus newly created frames."
+                visible=custom_frames_visible
             )
         )
 
@@ -427,6 +436,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 event["create_context"], instance
             )
             instance.set_publish_plugin_attr_defs(cls.__name__, new_attrs)
+
+    @classmethod
+    def _is_custom_frames_used(cls, value):
+        return value in ["custom_only", "reuse_last_version"]
 
     @classmethod
     def _get_publish_use_custom_frames_value(cls, instance_data):
