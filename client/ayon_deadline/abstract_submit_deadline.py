@@ -237,7 +237,7 @@ class AbstractSubmitDeadline(
         if job_info.Frames:
             instance.data["hasExplicitFrames"] = True
 
-        if job_info.reuseLastVersion:
+        if job_info.reuse_last_version:
             instance.data["reuseLastVersion"] = True
 
         # Adding file dependencies.

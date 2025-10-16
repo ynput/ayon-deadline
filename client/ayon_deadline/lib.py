@@ -678,7 +678,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
     use_published: Optional[bool] = field(default=None)
     use_asset_dependencies: Optional[bool] = field(default=None)
     use_workfile_dependency: Optional[bool] = field(default=None)
-    reuseLastVersion: Optional[bool] = field(default=None)
+    reuse_last_version: Optional[bool] = field(default=None)
 
     @classmethod
     def from_attribute_values(
@@ -700,7 +700,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
             "use_published": data["use_published"],
             "use_asset_dependencies": data["use_asset_dependencies"],
             "use_workfile_dependency": data["use_workfile_dependency"],
-            "reuseLastVersion": data["reuseLastVersion"],
+            "reuse_last_version": data.get("reuse_last_version", False),
         })
 
     def add_render_job_env_var(self):
