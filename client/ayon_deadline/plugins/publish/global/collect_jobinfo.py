@@ -10,6 +10,7 @@ from ayon_core.lib import (
     TextDef,
     UISeparatorDef
 )
+from ayon_core.pipeline import KnownPublishError
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin,
     PublishError
@@ -64,6 +65,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         self._handle_machine_list(attr_values, job_info)
         self._handle_job_delay(attr_values, job_info)
+        self._handle_custom_frames(attr_values, job_info)
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
@@ -149,6 +151,20 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "'dd:hh:mm:ss' format"
             )
             job_info.JobDelay = None
+
+    def _handle_custom_frames(self, attr_values, job_info):
+        """Fill JobInfo.Frames only if dropdown says so."""
+        job_info.Frames = None
+        job_info.reuse_last_version = False
+        use_custom_frames = self._is_custom_frames_used(
+            attr_values["use_custom_frames"]
+        )
+        if use_custom_frames:
+            if not attr_values["frames"]:
+                raise KnownPublishError("Please fill `Custom Frames` value")
+            job_info.Frames = attr_values["frames"]
+            if attr_values["use_custom_frames"] == "reuse_last_version":
+                job_info.reuse_last_version = True
 
     @classmethod
     def apply_settings(cls, project_settings):
