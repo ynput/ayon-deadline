@@ -407,11 +407,16 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     @classmethod
     def on_values_changed(cls, event):
         for instance_change in event["changes"]:
+            custom_frame_change = cls._get_publish_use_custom_frames_value(
+                instance_change["changes"]
+            )
+
             instance = instance_change["instance"]
             #recalculate only if context changes
             if (
                 "task" not in instance_change
                 and "folderPath" not in instance_change
+                and not custom_frame_change
             ):
                 continue
 
@@ -422,6 +427,14 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 event["create_context"], instance
             )
             instance.set_publish_plugin_attr_defs(cls.__name__, new_attrs)
+
+    @classmethod
+    def _get_publish_use_custom_frames_value(cls, instance_data):
+        return (
+            instance_data.get("publish_attributes", {})
+                         .get("CollectJobInfo")
+                         .get("use_custom_frames")
+        )
 
     def _get_jobinfo_defaults(self, instance):
         """Queries project setting for profile with default values
