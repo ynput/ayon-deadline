@@ -3,7 +3,9 @@ import os
 import pyblish.api
 import clique
 
-from ayon_core.pipeline.publish.lib import fill_sequence_gaps_with_previous_version
+from ayon_core.pipeline.publish.lib import (
+    fill_sequence_gaps_with_previous_version
+)
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 from ayon_core.pipeline import KnownPublishError
 
