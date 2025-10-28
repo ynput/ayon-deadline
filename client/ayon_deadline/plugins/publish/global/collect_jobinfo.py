@@ -461,7 +461,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     def _get_publish_use_custom_frames_value(cls, instance_data):
         return (
             instance_data.get("publish_attributes", {})
-                         .get("CollectJobInfo")
+                         .get("CollectJobInfo", {})
                          .get("use_custom_frames")
         )
 
