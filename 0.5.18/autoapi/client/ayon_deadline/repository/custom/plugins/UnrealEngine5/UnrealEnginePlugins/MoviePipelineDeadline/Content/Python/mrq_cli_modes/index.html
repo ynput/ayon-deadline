@@ -1,0 +1,733 @@
+<!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel=prev href=../mrq_cli.html><link rel=next href=render_manifest.html><link rel=icon href=../../../../../../../../../../../../img/favicon.ico><meta name=generator content="mkdocs-1.6.1, mkdocs-material-9.6.22"><title>mrq_cli_modes - ayon-deadline</title><link rel=stylesheet href=../../../../../../../../../../../../assets/stylesheets/main.84d31ad4.min.css><link rel=stylesheet href=../../../../../../../../../../../../assets/stylesheets/palette.06af60db.min.css><script src=https://unpkg.com/iframe-worker/shim></script><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback"><style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style><link rel=stylesheet href=../../../../../../../../../../../../assets/_mkdocstrings.css><link rel=stylesheet href=../../../../../../../../../../../../css/custom.css><script>__md_scope=new URL("../../../../../../../../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script></head> <body dir=ltr data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer></label> <div data-md-component=skip> <a href=#client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <div data-md-color-scheme=default data-md-component=outdated hidden> </div> <header class="md-header md-header--shadow" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=../../../../../../../../../../../../index.html title=ayon-deadline class="md-header__button md-logo" aria-label=ayon-deadline data-md-component=logo> <img src=../../../../../../../../../../../../img/ay-symbol-blackw-full.png alt=logo> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> ayon-deadline </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> mrq_cli_modes </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to light mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg> </label> <input class=md-option data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to dark mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg> </label> </form> <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> </label> <div class=md-search data-md-component=search role=dialog> <label class=md-search__overlay for=__search></label> <div class=md-search__inner role=search> <form class=md-search__form name=search> <input type=text class=md-search__input name=query aria-label=Search placeholder=Search autocapitalize=off autocorrect=off autocomplete=off spellcheck=false data-md-component=search-query required> <label class="md-search__icon md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg> </label> <nav class=md-search__options aria-label=Search> <button type=reset class="md-search__icon md-icon" title=Clear aria-label=Clear tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg> </button> </nav> </form> <div class=md-search__output> <div class=md-search__scrollwrap tabindex=0 data-md-scrollfix> <div class=md-search-result data-md-component=search-result> <div class=md-search-result__meta> Initializing search </div> <ol class=md-search-result__list role=presentation></ol> </div> </div> </div> </div> </div> <div class=md-header__source> <a href=https://github.com/ynput/ayon-deadline title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> GitHub </div> </a> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=../../../../../../../../../../../../index.html title=ayon-deadline class="md-nav__button md-logo" aria-label=ayon-deadline data-md-component=logo> <img src=../../../../../../../../../../../../img/ay-symbol-blackw-full.png alt=logo> </a> ayon-deadline </label> <div class=md-nav__source> <a href=https://github.com/ynput/ayon-deadline title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> GitHub </div> </a> </div> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../../../../../../../../../../../index.html class=md-nav__link> <span class=md-ellipsis> Home </span> </a> </li> <li class=md-nav__item> <a href=../../../../../../../../../../../../license.html class=md-nav__link> <span class=md-ellipsis> License </span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3 checked> <label class=md-nav__link for=__nav_3 id=__nav_3_label tabindex> <span class=md-ellipsis> Reference </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_3_label aria-expanded=true> <label class=md-nav__title for=__nav_3> <span class="md-nav__icon md-icon"></span> Reference </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1 checked> <label class=md-nav__link for=__nav_3_1 id=__nav_3_1_label tabindex=0> <span class=md-ellipsis> client </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_3_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1> <span class="md-nav__icon md-icon"></span> client </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1 checked> <label class=md-nav__link for=__nav_3_1_1 id=__nav_3_1_1_label tabindex=0> <span class=md-ellipsis> ayon_deadline </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=3 aria-labelledby=__nav_3_1_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1> <span class="md-nav__icon md-icon"></span> ayon_deadline </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../../../../../../../../abstract_submit_deadline.html class=md-nav__link> <span class=md-ellipsis> abstract_submit_deadline </span> </a> </li> <li class=md-nav__item> <a href=../../../../../../../../../addon.html class=md-nav__link> <span class=md-ellipsis> addon </span> </a> </li> <li class=md-nav__item> <a href=../../../../../../../../../constants.html class=md-nav__link> <span class=md-ellipsis> constants </span> </a> </li> <li class=md-nav__item> <a href=../../../../../../../../../lib.html class=md-nav__link> <span class=md-ellipsis> lib </span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../../../../../plugins/publish/aftereffects/submit_aftereffects_deadline.html class=md-nav__link> <span class=md-ellipsis> plugins </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6 checked> <label class=md-nav__link for=__nav_3_1_1_6 id=__nav_3_1_1_6_label tabindex=0> <span class=md-ellipsis> repository </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=4 aria-labelledby=__nav_3_1_1_6_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6> <span class="md-nav__icon md-icon"></span> repository </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1 checked> <label class=md-nav__link for=__nav_3_1_1_6_1 id=__nav_3_1_1_6_1_label tabindex=0> <span class=md-ellipsis> custom </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=5 aria-labelledby=__nav_3_1_1_6_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1> <span class="md-nav__icon md-icon"></span> custom </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1 id=__nav_3_1_1_6_1_1_label tabindex=0> <span class=md-ellipsis> plugins </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=6 aria-labelledby=__nav_3_1_1_6_1_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1> <span class="md-nav__icon md-icon"></span> plugins </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../../Ayon/Ayon.html class=md-nav__link> <span class=md-ellipsis> Ayon </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../../CelAction/CelAction.html class=md-nav__link> <span class=md-ellipsis> CelAction </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class=md-nav__item> <a href=../../../../../../GlobalJobPreLoad.html class=md-nav__link> <span class=md-ellipsis> GlobalJobPreLoad </span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../../HarmonyAYON/HarmonyAYON.html class=md-nav__link> <span class=md-ellipsis> HarmonyAYON </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1_5 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1_5 id=__nav_3_1_1_6_1_1_5_label tabindex=0> <span class=md-ellipsis> UnrealEngine5 </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=7 aria-labelledby=__nav_3_1_1_6_1_1_5_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1_5> <span class="md-nav__icon md-icon"></span> UnrealEngine5 </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../../../../DeadlineRPC.html class=md-nav__link> <span class=md-ellipsis> DeadlineRPC </span> </a> </li> <li class=md-nav__item> <a href=../../../../../JobPreLoad.html class=md-nav__link> <span class=md-ellipsis> JobPreLoad </span> </a> </li> <li class=md-nav__item> <a href=../../../../../PluginPreLoad.html class=md-nav__link> <span class=md-ellipsis> PluginPreLoad </span> </a> </li> <li class=md-nav__item> <a href=../../../../../UnrealEngine5.html class=md-nav__link> <span class=md-ellipsis> UnrealEngine5 </span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1_5_5 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1_5_5 id=__nav_3_1_1_6_1_1_5_5_label tabindex=0> <span class=md-ellipsis> UnrealEnginePlugins </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=8 aria-labelledby=__nav_3_1_1_6_1_1_5_5_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1_5_5> <span class="md-nav__icon md-icon"></span> UnrealEnginePlugins </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1_5_5_1 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1_5_5_1 id=__nav_3_1_1_6_1_1_5_5_1_label tabindex=0> <span class=md-ellipsis> MoviePipelineDeadline </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=9 aria-labelledby=__nav_3_1_1_6_1_1_5_5_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1_5_5_1> <span class="md-nav__icon md-icon"></span> MoviePipelineDeadline </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1_5_5_1_1 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1_5_5_1_1 id=__nav_3_1_1_6_1_1_5_5_1_1_label tabindex=0> <span class=md-ellipsis> Content </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=10 aria-labelledby=__nav_3_1_1_6_1_1_5_5_1_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1_5_5_1_1> <span class="md-nav__icon md-icon"></span> Content </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1_5_5_1_1_1 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1_5_5_1_1_1 id=__nav_3_1_1_6_1_1_5_5_1_1_1_label tabindex=0> <span class=md-ellipsis> Python </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=11 aria-labelledby=__nav_3_1_1_6_1_1_5_5_1_1_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1_5_5_1_1_1> <span class="md-nav__icon md-icon"></span> Python </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../init_unreal.html class=md-nav__link> <span class=md-ellipsis> init_unreal </span> </a> </li> <li class=md-nav__item> <a href=../mrq_cli.html class=md-nav__link> <span class=md-ellipsis> mrq_cli </span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_6_1_1_5_5_1_1_1_3 checked> <label class=md-nav__link for=__nav_3_1_1_6_1_1_5_5_1_1_1_3 id=__nav_3_1_1_6_1_1_5_5_1_1_1_3_label tabindex=0> <span class=md-ellipsis> mrq_cli_modes </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=12 aria-labelledby=__nav_3_1_1_6_1_1_5_5_1_1_1_3_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_6_1_1_5_5_1_1_1_3> <span class="md-nav__icon md-icon"></span> mrq_cli_modes </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=render_manifest.html class=md-nav__link> <span class=md-ellipsis> render_manifest </span> </a> </li> <li class=md-nav__item> <a href=render_queue.html class=md-nav__link> <span class=md-ellipsis> render_queue </span> </a> </li> <li class=md-nav__item> <a href=render_queue_jobs.html class=md-nav__link> <span class=md-ellipsis> render_queue_jobs </span> </a> </li> <li class=md-nav__item> <a href=render_sequence.html class=md-nav__link> <span class=md-ellipsis> render_sequence </span> </a> </li> <li class=md-nav__item> <a href=utils.html class=md-nav__link> <span class=md-ellipsis> utils </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../mrq_rpc.html class=md-nav__link> <span class=md-ellipsis> mrq_rpc </span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../pipeline_actions/render_queue_action.html class=md-nav__link> <span class=md-ellipsis> pipeline_actions </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class=md-nav__item> <a href=../remote_executor.html class=md-nav__link> <span class=md-ellipsis> remote_executor </span> </a> </li> </ul> </nav> </li> </ul> </nav> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../UnrealDeadlineService/Content/Python/deadline_command.html class=md-nav__link> <span class=md-ellipsis> UnrealDeadlineService </span> <span class="md-nav__icon md-icon"></span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../../../../../UnrealSyncUtil.html class=md-nav__link> <span class=md-ellipsis> UnrealSyncUtil </span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../ue_utils/rpc/base_server.html class=md-nav__link> <span class=md-ellipsis> ue_utils </span> <span class="md-nav__icon md-icon"></span> </a> </li> </ul> </nav> </li> </ul> </nav> </li> </ul> </nav> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../../../../../scripts/remote_publish.html class=md-nav__link> <span class=md-ellipsis> scripts </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class=md-nav__item> <a href=../../../../../../../../../version.html class=md-nav__link> <span class=md-ellipsis> version </span> </a> </li> </ul> </nav> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../../../../../../../../../server/settings/main.html class=md-nav__link> <span class=md-ellipsis> server </span> <span class="md-nav__icon md-icon"></span> </a> </li> </ul> </nav> </li> </ul> </nav> </div> </div> </div> <div class="md-sidebar md-sidebar--secondary" data-md-component=sidebar data-md-type=toc> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--secondary" aria-label="Table of contents"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> Table of contents </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes class=md-nav__link> <span class=md-ellipsis> mrq_cli_modes </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_current_sequence class=md-nav__link> <span class=md-ellipsis> render_current_sequence </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_jobs class=md-nav__link> <span class=md-ellipsis> render_jobs </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_queue_asset class=md-nav__link> <span class=md-ellipsis> render_queue_asset </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_queue_manifest class=md-nav__link> <span class=md-ellipsis> render_queue_manifest </span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <h1>mrq_cli_modes</h1> <div class="doc doc-object doc-module"> <a id=client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes></a> <div class="doc doc-contents first"> <div class="doc doc-children"> <div class="doc doc-object doc-function"> <h2 id=client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_current_sequence class="doc doc-heading"> <code class="highlight language-python"><span class=n>render_current_sequence</span><span class=p>(</span><span class=n>sequence_name</span><span class=p>,</span> <span class=n>sequence_map</span><span class=p>,</span> <span class=n>mrq_preset</span><span class=p>,</span> <span class=n>user</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>shots</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Renders a sequence with a map and mrq preset</p> <p>:param str sequence_name: Sequence to render :param str sequence_map: Map to load sequence :param str mrq_preset: MRQ preset for rendering sequence :param str user: Render user :param list shots: Shots to render :param bool is_remote: Flag to determine if the job should be executed remotely :param bool is_cmdline: Flag to determine if the render was executed via commandline :param str remote_batch_name: Remote render batch name :param str remote_job_preset: deadline job Preset Library :param executor_instance: Movie Pipeline executor Instance :param str output_dir_override: Movie Pipeline output directory override :param str output_filename_override: Movie Pipeline filename format override :return: MRQ executor</p> <details class=quote> <summary>Source code in <code>client/ayon_deadline/repository/custom/plugins/UnrealEngine5/UnrealEnginePlugins/MoviePipelineDeadline/Content/Python/mrq_cli_modes/render_sequence.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal> 46</span>
+<span class=normal> 47</span>
+<span class=normal> 48</span>
+<span class=normal> 49</span>
+<span class=normal> 50</span>
+<span class=normal> 51</span>
+<span class=normal> 52</span>
+<span class=normal> 53</span>
+<span class=normal> 54</span>
+<span class=normal> 55</span>
+<span class=normal> 56</span>
+<span class=normal> 57</span>
+<span class=normal> 58</span>
+<span class=normal> 59</span>
+<span class=normal> 60</span>
+<span class=normal> 61</span>
+<span class=normal> 62</span>
+<span class=normal> 63</span>
+<span class=normal> 64</span>
+<span class=normal> 65</span>
+<span class=normal> 66</span>
+<span class=normal> 67</span>
+<span class=normal> 68</span>
+<span class=normal> 69</span>
+<span class=normal> 70</span>
+<span class=normal> 71</span>
+<span class=normal> 72</span>
+<span class=normal> 73</span>
+<span class=normal> 74</span>
+<span class=normal> 75</span>
+<span class=normal> 76</span>
+<span class=normal> 77</span>
+<span class=normal> 78</span>
+<span class=normal> 79</span>
+<span class=normal> 80</span>
+<span class=normal> 81</span>
+<span class=normal> 82</span>
+<span class=normal> 83</span>
+<span class=normal> 84</span>
+<span class=normal> 85</span>
+<span class=normal> 86</span>
+<span class=normal> 87</span>
+<span class=normal> 88</span>
+<span class=normal> 89</span>
+<span class=normal> 90</span>
+<span class=normal> 91</span>
+<span class=normal> 92</span>
+<span class=normal> 93</span>
+<span class=normal> 94</span>
+<span class=normal> 95</span>
+<span class=normal> 96</span>
+<span class=normal> 97</span>
+<span class=normal> 98</span>
+<span class=normal> 99</span>
+<span class=normal>100</span>
+<span class=normal>101</span>
+<span class=normal>102</span>
+<span class=normal>103</span>
+<span class=normal>104</span>
+<span class=normal>105</span>
+<span class=normal>106</span>
+<span class=normal>107</span>
+<span class=normal>108</span>
+<span class=normal>109</span>
+<span class=normal>110</span>
+<span class=normal>111</span>
+<span class=normal>112</span>
+<span class=normal>113</span>
+<span class=normal>114</span>
+<span class=normal>115</span>
+<span class=normal>116</span>
+<span class=normal>117</span>
+<span class=normal>118</span>
+<span class=normal>119</span>
+<span class=normal>120</span>
+<span class=normal>121</span>
+<span class=normal>122</span>
+<span class=normal>123</span>
+<span class=normal>124</span>
+<span class=normal>125</span>
+<span class=normal>126</span>
+<span class=normal>127</span>
+<span class=normal>128</span>
+<span class=normal>129</span>
+<span class=normal>130</span>
+<span class=normal>131</span>
+<span class=normal>132</span>
+<span class=normal>133</span>
+<span class=normal>134</span>
+<span class=normal>135</span>
+<span class=normal>136</span>
+<span class=normal>137</span>
+<span class=normal>138</span>
+<span class=normal>139</span>
+<span class=normal>140</span>
+<span class=normal>141</span>
+<span class=normal>142</span>
+<span class=normal>143</span>
+<span class=normal>144</span>
+<span class=normal>145</span>
+<span class=normal>146</span>
+<span class=normal>147</span>
+<span class=normal>148</span>
+<span class=normal>149</span>
+<span class=normal>150</span>
+<span class=normal>151</span>
+<span class=normal>152</span>
+<span class=normal>153</span>
+<span class=normal>154</span>
+<span class=normal>155</span>
+<span class=normal>156</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>render_current_sequence</span><span class=p>(</span>
+    <span class=n>sequence_name</span><span class=p>,</span>
+    <span class=n>sequence_map</span><span class=p>,</span>
+    <span class=n>mrq_preset</span><span class=p>,</span>
+    <span class=n>user</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>shots</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span>
+<span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Renders a sequence with a map and mrq preset</span>
+
+<span class=sd>    :param str sequence_name: Sequence to render</span>
+<span class=sd>    :param str sequence_map: Map to load sequence</span>
+<span class=sd>    :param str mrq_preset: MRQ preset for rendering sequence</span>
+<span class=sd>    :param str user: Render user</span>
+<span class=sd>    :param list shots: Shots to render</span>
+<span class=sd>    :param bool is_remote: Flag to determine if the job should be executed remotely</span>
+<span class=sd>    :param bool is_cmdline: Flag to determine if the render was executed via commandline</span>
+<span class=sd>    :param str remote_batch_name: Remote render batch name</span>
+<span class=sd>    :param str remote_job_preset:  deadline job Preset Library</span>
+<span class=sd>    :param executor_instance: Movie Pipeline executor Instance</span>
+<span class=sd>    :param str output_dir_override: Movie Pipeline output directory override</span>
+<span class=sd>    :param str output_filename_override: Movie Pipeline filename format override</span>
+<span class=sd>    :return: MRQ executor</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+
+    <span class=c1># The queue subsystem behaves like a singleton so</span>
+    <span class=c1># clear all the jobs in the current queue.</span>
+    <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>delete_all_jobs</span><span class=p>()</span>
+
+    <span class=n>render_job</span> <span class=o>=</span> <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>allocate_new_job</span><span class=p>(</span>
+        <span class=n>unreal</span><span class=o>.</span><span class=n>SystemLibrary</span><span class=o>.</span><span class=n>conv_soft_class_path_to_soft_class_ref</span><span class=p>(</span>
+            <span class=n>project_settings</span><span class=o>.</span><span class=n>default_executor_job</span>
+        <span class=p>)</span>
+    <span class=p>)</span>
+
+    <span class=c1># Set the author on the job</span>
+    <span class=n>render_job</span><span class=o>.</span><span class=n>author</span> <span class=o>=</span> <span class=n>user</span> <span class=ow>or</span> <span class=n>getuser</span><span class=p>()</span>
+
+    <span class=n>sequence_data_asset</span> <span class=o>=</span> <span class=n>get_asset_data</span><span class=p>(</span><span class=n>sequence_name</span><span class=p>,</span> <span class=s2>&quot;LevelSequence&quot;</span><span class=p>)</span>
+
+    <span class=c1># Create a job in the queue</span>
+    <span class=n>unreal</span><span class=o>.</span><span class=n>log</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Creating render job for `</span><span class=si>{</span><span class=n>sequence_data_asset</span><span class=o>.</span><span class=n>asset_name</span><span class=si>}</span><span class=s2>`&quot;</span><span class=p>)</span>
+    <span class=n>render_job</span><span class=o>.</span><span class=n>job_name</span> <span class=o>=</span> <span class=n>sequence_data_asset</span><span class=o>.</span><span class=n>asset_name</span>
+
+    <span class=n>unreal</span><span class=o>.</span><span class=n>log</span><span class=p>(</span>
+        <span class=sa>f</span><span class=s2>&quot;Setting the job sequence to `</span><span class=si>{</span><span class=n>sequence_data_asset</span><span class=o>.</span><span class=n>asset_name</span><span class=si>}</span><span class=s2>`&quot;</span>
+    <span class=p>)</span>
+    <span class=n>render_job</span><span class=o>.</span><span class=n>sequence</span> <span class=o>=</span> <span class=n>sequence_data_asset</span><span class=o>.</span><span class=n>to_soft_object_path</span><span class=p>()</span>
+
+    <span class=n>map_data_asset</span> <span class=o>=</span> <span class=n>get_asset_data</span><span class=p>(</span><span class=n>sequence_map</span><span class=p>,</span> <span class=s2>&quot;World&quot;</span><span class=p>)</span>
+    <span class=n>unreal</span><span class=o>.</span><span class=n>log</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Setting the job map to `</span><span class=si>{</span><span class=n>map_data_asset</span><span class=o>.</span><span class=n>asset_name</span><span class=si>}</span><span class=s2>`&quot;</span><span class=p>)</span>
+    <span class=n>render_job</span><span class=o>.</span><span class=n>map</span> <span class=o>=</span> <span class=n>map_data_asset</span><span class=o>.</span><span class=n>to_soft_object_path</span><span class=p>()</span>
+
+    <span class=n>mrq_preset_data_asset</span> <span class=o>=</span> <span class=n>get_asset_data</span><span class=p>(</span>
+        <span class=n>mrq_preset</span><span class=p>,</span> <span class=s2>&quot;MoviePipelineMasterConfig&quot;</span>
+    <span class=p>)</span>
+    <span class=n>unreal</span><span class=o>.</span><span class=n>log</span><span class=p>(</span>
+        <span class=sa>f</span><span class=s2>&quot;Setting the movie pipeline preset to `</span><span class=si>{</span><span class=n>mrq_preset_data_asset</span><span class=o>.</span><span class=n>asset_name</span><span class=si>}</span><span class=s2>`&quot;</span>
+    <span class=p>)</span>
+    <span class=n>render_job</span><span class=o>.</span><span class=n>set_configuration</span><span class=p>(</span><span class=n>mrq_preset_data_asset</span><span class=o>.</span><span class=n>get_asset</span><span class=p>())</span>
+
+    <span class=c1># MRQ added the ability to enable and disable jobs. Check to see is a job</span>
+    <span class=c1># is disabled and enable it. The assumption is we want to render this</span>
+    <span class=c1># particular job.</span>
+    <span class=c1># Note this try/except block is for backwards compatibility</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=k>if</span> <span class=ow>not</span> <span class=n>render_job</span><span class=o>.</span><span class=n>enabled</span><span class=p>:</span>
+            <span class=n>render_job</span><span class=o>.</span><span class=n>enabled</span> <span class=o>=</span> <span class=kc>True</span>
+    <span class=k>except</span> <span class=ne>AttributeError</span><span class=p>:</span>
+        <span class=k>pass</span>
+
+    <span class=c1># If we have a shot list, iterate over the shots in the sequence</span>
+    <span class=c1># and disable anything that&#39;s not in the shot list. If no shot list is</span>
+    <span class=c1># provided render all the shots in the sequence</span>
+    <span class=k>if</span> <span class=n>shots</span><span class=p>:</span>
+        <span class=k>for</span> <span class=n>shot</span> <span class=ow>in</span> <span class=n>render_job</span><span class=o>.</span><span class=n>shot_info</span><span class=p>:</span>
+            <span class=k>if</span> <span class=n>shot</span><span class=o>.</span><span class=n>inner_name</span> <span class=ow>in</span> <span class=n>shots</span> <span class=ow>or</span> <span class=p>(</span><span class=n>shot</span><span class=o>.</span><span class=n>outer_name</span> <span class=ow>in</span> <span class=n>shots</span><span class=p>):</span>
+                <span class=n>shot</span><span class=o>.</span><span class=n>enabled</span> <span class=o>=</span> <span class=kc>True</span>
+            <span class=k>else</span><span class=p>:</span>
+                <span class=n>unreal</span><span class=o>.</span><span class=n>log_warning</span><span class=p>(</span>
+                    <span class=sa>f</span><span class=s2>&quot;Disabling shot `</span><span class=si>{</span><span class=n>shot</span><span class=o>.</span><span class=n>inner_name</span><span class=si>}</span><span class=s2>` from current render job `</span><span class=si>{</span><span class=n>render_job</span><span class=o>.</span><span class=n>job_name</span><span class=si>}</span><span class=s2>`&quot;</span>
+                <span class=p>)</span>
+                <span class=n>shot</span><span class=o>.</span><span class=n>enabled</span> <span class=o>=</span> <span class=kc>False</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># Execute the render. This will execute the render based on whether</span>
+        <span class=c1># its remote or local</span>
+        <span class=n>executor</span> <span class=o>=</span> <span class=n>render_jobs</span><span class=p>(</span>
+            <span class=n>is_remote</span><span class=p>,</span>
+            <span class=n>remote_batch_name</span><span class=o>=</span><span class=n>remote_batch_name</span><span class=p>,</span>
+            <span class=n>remote_job_preset</span><span class=o>=</span><span class=n>remote_job_preset</span><span class=p>,</span>
+            <span class=n>is_cmdline</span><span class=o>=</span><span class=n>is_cmdline</span><span class=p>,</span>
+            <span class=n>executor_instance</span><span class=o>=</span><span class=n>executor_instance</span><span class=p>,</span>
+            <span class=n>output_dir_override</span><span class=o>=</span><span class=n>output_dir_override</span><span class=p>,</span>
+            <span class=n>output_filename_override</span><span class=o>=</span><span class=n>output_filename_override</span>
+        <span class=p>)</span>
+
+    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>err</span><span class=p>:</span>
+        <span class=n>unreal</span><span class=o>.</span><span class=n>log_error</span><span class=p>(</span>
+            <span class=sa>f</span><span class=s2>&quot;An error occurred executing the render.</span><span class=se>\n\t</span><span class=s2>Error: </span><span class=si>{</span><span class=n>err</span><span class=si>}</span><span class=s2>&quot;</span>
+        <span class=p>)</span>
+        <span class=k>raise</span>
+
+    <span class=k>return</span> <span class=n>executor</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_jobs class="doc doc-heading"> <code class="highlight language-python"><span class=n>render_jobs</span><span class=p>(</span><span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>This renders the current state of the queue</p> <p>:param bool is_remote: Is this a remote render :param bool is_cmdline: Is this a commandline render :param executor_instance: Movie Pipeline Executor instance :param str remote_batch_name: Batch name for remote renders :param str remote_job_preset: Remote render job preset :param str output_dir_override: Movie Pipeline output directory override :param str output_filename_override: Movie Pipeline filename format override :return: MRQ executor</p> <details class=quote> <summary>Source code in <code>client/ayon_deadline/repository/custom/plugins/UnrealEngine5/UnrealEnginePlugins/MoviePipelineDeadline/Content/Python/mrq_cli_modes/render_queue_jobs.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>27</span>
+<span class=normal>28</span>
+<span class=normal>29</span>
+<span class=normal>30</span>
+<span class=normal>31</span>
+<span class=normal>32</span>
+<span class=normal>33</span>
+<span class=normal>34</span>
+<span class=normal>35</span>
+<span class=normal>36</span>
+<span class=normal>37</span>
+<span class=normal>38</span>
+<span class=normal>39</span>
+<span class=normal>40</span>
+<span class=normal>41</span>
+<span class=normal>42</span>
+<span class=normal>43</span>
+<span class=normal>44</span>
+<span class=normal>45</span>
+<span class=normal>46</span>
+<span class=normal>47</span>
+<span class=normal>48</span>
+<span class=normal>49</span>
+<span class=normal>50</span>
+<span class=normal>51</span>
+<span class=normal>52</span>
+<span class=normal>53</span>
+<span class=normal>54</span>
+<span class=normal>55</span>
+<span class=normal>56</span>
+<span class=normal>57</span>
+<span class=normal>58</span>
+<span class=normal>59</span>
+<span class=normal>60</span>
+<span class=normal>61</span>
+<span class=normal>62</span>
+<span class=normal>63</span>
+<span class=normal>64</span>
+<span class=normal>65</span>
+<span class=normal>66</span>
+<span class=normal>67</span>
+<span class=normal>68</span>
+<span class=normal>69</span>
+<span class=normal>70</span>
+<span class=normal>71</span>
+<span class=normal>72</span>
+<span class=normal>73</span>
+<span class=normal>74</span>
+<span class=normal>75</span>
+<span class=normal>76</span>
+<span class=normal>77</span>
+<span class=normal>78</span>
+<span class=normal>79</span>
+<span class=normal>80</span>
+<span class=normal>81</span>
+<span class=normal>82</span>
+<span class=normal>83</span>
+<span class=normal>84</span>
+<span class=normal>85</span>
+<span class=normal>86</span>
+<span class=normal>87</span>
+<span class=normal>88</span>
+<span class=normal>89</span>
+<span class=normal>90</span>
+<span class=normal>91</span>
+<span class=normal>92</span>
+<span class=normal>93</span>
+<span class=normal>94</span>
+<span class=normal>95</span>
+<span class=normal>96</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>render_jobs</span><span class=p>(</span>
+    <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span>
+<span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    This renders the current state of the queue</span>
+
+<span class=sd>    :param bool is_remote: Is this a remote render</span>
+<span class=sd>    :param bool is_cmdline: Is this a commandline render</span>
+<span class=sd>    :param executor_instance: Movie Pipeline Executor instance</span>
+<span class=sd>    :param str remote_batch_name: Batch name for remote renders</span>
+<span class=sd>    :param str remote_job_preset: Remote render job preset</span>
+<span class=sd>    :param str output_dir_override: Movie Pipeline output directory override</span>
+<span class=sd>    :param str output_filename_override: Movie Pipeline filename format override</span>
+<span class=sd>    :return: MRQ executor</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+
+    <span class=k>if</span> <span class=ow>not</span> <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>get_jobs</span><span class=p>():</span>
+        <span class=c1># Make sure we have jobs in the queue to work with</span>
+        <span class=k>raise</span> <span class=ne>RuntimeError</span><span class=p>(</span><span class=s2>&quot;There are no jobs in the queue!!&quot;</span><span class=p>)</span>
+
+    <span class=c1># Update the job</span>
+    <span class=k>for</span> <span class=n>job</span> <span class=ow>in</span> <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>get_jobs</span><span class=p>():</span>
+
+        <span class=c1># If we have output job overrides and filename overrides, update it on</span>
+        <span class=c1># the job</span>
+        <span class=k>if</span> <span class=n>output_dir_override</span> <span class=ow>or</span> <span class=n>output_filename_override</span><span class=p>:</span>
+            <span class=n>update_render_output</span><span class=p>(</span>
+                <span class=n>job</span><span class=p>,</span>
+                <span class=n>output_dir</span><span class=o>=</span><span class=n>output_dir_override</span><span class=p>,</span>
+                <span class=n>output_filename</span><span class=o>=</span><span class=n>output_filename_override</span>
+            <span class=p>)</span>
+
+        <span class=c1># Get the job output settings</span>
+        <span class=n>output_setting</span> <span class=o>=</span> <span class=n>job</span><span class=o>.</span><span class=n>get_configuration</span><span class=p>()</span><span class=o>.</span><span class=n>find_setting_by_class</span><span class=p>(</span>
+            <span class=n>unreal</span><span class=o>.</span><span class=n>MoviePipelineOutputSetting</span>
+        <span class=p>)</span>
+
+        <span class=c1># Allow flushing flies to disk per shot.</span>
+        <span class=c1># Required for the OnIndividualShotFinishedCallback to get called.</span>
+        <span class=n>output_setting</span><span class=o>.</span><span class=n>flush_disk_writes_per_shot</span> <span class=o>=</span> <span class=kc>True</span>
+
+    <span class=k>if</span> <span class=n>is_remote</span><span class=p>:</span>
+        <span class=n>setup_remote_render_jobs</span><span class=p>(</span>
+            <span class=n>remote_batch_name</span><span class=p>,</span>
+            <span class=n>remote_job_preset</span><span class=p>,</span>
+            <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>get_jobs</span><span class=p>(),</span>
+        <span class=p>)</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># Execute the render.</span>
+        <span class=c1># This will execute the render based on whether its remote or local</span>
+        <span class=n>executor</span> <span class=o>=</span> <span class=n>execute_render</span><span class=p>(</span>
+            <span class=n>is_remote</span><span class=p>,</span>
+            <span class=n>executor_instance</span><span class=o>=</span><span class=n>executor_instance</span><span class=p>,</span>
+            <span class=n>is_cmdline</span><span class=o>=</span><span class=n>is_cmdline</span><span class=p>,</span>
+        <span class=p>)</span>
+
+    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>err</span><span class=p>:</span>
+        <span class=n>unreal</span><span class=o>.</span><span class=n>log_error</span><span class=p>(</span>
+            <span class=sa>f</span><span class=s2>&quot;An error occurred executing the render.</span><span class=se>\n\t</span><span class=s2>Error: </span><span class=si>{</span><span class=n>err</span><span class=si>}</span><span class=s2>&quot;</span>
+        <span class=p>)</span>
+        <span class=k>raise</span>
+
+    <span class=k>return</span> <span class=n>executor</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_queue_asset class="doc doc-heading"> <code class="highlight language-python"><span class=n>render_queue_asset</span><span class=p>(</span><span class=n>queue_name</span><span class=p>,</span> <span class=n>only_load</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>shots</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>jobs</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>all_shots</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>user</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Render using a Movie Render Queue asset</p> <p>:param str queue_name: The name of the Queue asset :param bool only_load: Only load the queue asset. This is usually used when you need to process intermediary steps before rendering :param list shots: Shots to render from the queue. :param list jobs: The list job to render in the Queue asset. :param bool all_shots: Flag to render all shots in a job in the queue. :param bool is_cmdline: Flag to determine if the job is a commandline job :param bool is_remote: Flag to determine if the jobs should be rendered remote :param str user: Render user :param str remote_batch_name: Batch name for remote renders :param str remote_job_preset: Remote render job preset :param executor_instance: Movie Pipeline executor instance :param str output_dir_override: Movie Pipeline output directory override :param str output_filename_override: Movie Pipeline filename format override :return: MRQ Executor</p> <details class=quote> <summary>Source code in <code>client/ayon_deadline/repository/custom/plugins/UnrealEngine5/UnrealEnginePlugins/MoviePipelineDeadline/Content/Python/mrq_cli_modes/render_queue.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal> 51</span>
+<span class=normal> 52</span>
+<span class=normal> 53</span>
+<span class=normal> 54</span>
+<span class=normal> 55</span>
+<span class=normal> 56</span>
+<span class=normal> 57</span>
+<span class=normal> 58</span>
+<span class=normal> 59</span>
+<span class=normal> 60</span>
+<span class=normal> 61</span>
+<span class=normal> 62</span>
+<span class=normal> 63</span>
+<span class=normal> 64</span>
+<span class=normal> 65</span>
+<span class=normal> 66</span>
+<span class=normal> 67</span>
+<span class=normal> 68</span>
+<span class=normal> 69</span>
+<span class=normal> 70</span>
+<span class=normal> 71</span>
+<span class=normal> 72</span>
+<span class=normal> 73</span>
+<span class=normal> 74</span>
+<span class=normal> 75</span>
+<span class=normal> 76</span>
+<span class=normal> 77</span>
+<span class=normal> 78</span>
+<span class=normal> 79</span>
+<span class=normal> 80</span>
+<span class=normal> 81</span>
+<span class=normal> 82</span>
+<span class=normal> 83</span>
+<span class=normal> 84</span>
+<span class=normal> 85</span>
+<span class=normal> 86</span>
+<span class=normal> 87</span>
+<span class=normal> 88</span>
+<span class=normal> 89</span>
+<span class=normal> 90</span>
+<span class=normal> 91</span>
+<span class=normal> 92</span>
+<span class=normal> 93</span>
+<span class=normal> 94</span>
+<span class=normal> 95</span>
+<span class=normal> 96</span>
+<span class=normal> 97</span>
+<span class=normal> 98</span>
+<span class=normal> 99</span>
+<span class=normal>100</span>
+<span class=normal>101</span>
+<span class=normal>102</span>
+<span class=normal>103</span>
+<span class=normal>104</span>
+<span class=normal>105</span>
+<span class=normal>106</span>
+<span class=normal>107</span>
+<span class=normal>108</span>
+<span class=normal>109</span>
+<span class=normal>110</span>
+<span class=normal>111</span>
+<span class=normal>112</span>
+<span class=normal>113</span>
+<span class=normal>114</span>
+<span class=normal>115</span>
+<span class=normal>116</span>
+<span class=normal>117</span>
+<span class=normal>118</span>
+<span class=normal>119</span>
+<span class=normal>120</span>
+<span class=normal>121</span>
+<span class=normal>122</span>
+<span class=normal>123</span>
+<span class=normal>124</span>
+<span class=normal>125</span>
+<span class=normal>126</span>
+<span class=normal>127</span>
+<span class=normal>128</span>
+<span class=normal>129</span>
+<span class=normal>130</span>
+<span class=normal>131</span>
+<span class=normal>132</span>
+<span class=normal>133</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>render_queue_asset</span><span class=p>(</span>
+    <span class=n>queue_name</span><span class=p>,</span>
+    <span class=n>only_load</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>shots</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>jobs</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>all_shots</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>user</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span>
+<span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Render using a Movie Render Queue asset</span>
+
+<span class=sd>    :param str queue_name: The name of the Queue asset</span>
+<span class=sd>    :param bool only_load: Only load the queue asset. This is usually used when you need to process intermediary steps before rendering</span>
+<span class=sd>    :param list shots: Shots to render from the queue.</span>
+<span class=sd>    :param list jobs: The list job to render in the Queue asset.</span>
+<span class=sd>    :param bool all_shots: Flag to render all shots in a job in the queue.</span>
+<span class=sd>    :param bool is_cmdline: Flag to determine if the job is a commandline job</span>
+<span class=sd>    :param bool is_remote: Flag to determine if the jobs should be rendered remote</span>
+<span class=sd>    :param str user: Render user</span>
+<span class=sd>    :param str remote_batch_name: Batch name for remote renders</span>
+<span class=sd>    :param str remote_job_preset: Remote render job preset</span>
+<span class=sd>    :param executor_instance: Movie Pipeline executor instance</span>
+<span class=sd>    :param str output_dir_override: Movie Pipeline output directory override</span>
+<span class=sd>    :param str output_filename_override: Movie Pipeline filename format override</span>
+<span class=sd>    :return: MRQ Executor</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+
+    <span class=c1># The queue subsystem behaves like a singleton so</span>
+    <span class=c1># clear all the jobs in the current queue.</span>
+    <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>delete_all_jobs</span><span class=p>()</span>
+
+    <span class=c1># Get the queue data asset package path by name or by path</span>
+    <span class=c1># Create a new queue from the queue asset</span>
+    <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>copy_from</span><span class=p>(</span>
+        <span class=n>get_asset_data</span><span class=p>(</span><span class=n>queue_name</span><span class=p>,</span> <span class=s2>&quot;MoviePipelineQueue&quot;</span><span class=p>)</span><span class=o>.</span><span class=n>get_asset</span><span class=p>()</span>
+    <span class=p>)</span>
+
+    <span class=c1># If we only want to load the queue asset, then exit after loading.</span>
+    <span class=c1># If we want to shut down the editor as well, then do so</span>
+    <span class=k>if</span> <span class=n>only_load</span><span class=p>:</span>
+
+        <span class=k>if</span> <span class=n>is_cmdline</span><span class=p>:</span>
+            <span class=n>unreal</span><span class=o>.</span><span class=n>SystemLibrary</span><span class=o>.</span><span class=n>quit_editor</span><span class=p>()</span>
+
+        <span class=k>return</span> <span class=kc>None</span>
+
+    <span class=k>if</span> <span class=ow>not</span> <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>get_jobs</span><span class=p>():</span>
+        <span class=c1># Make sure we have jobs in the queue to work with</span>
+        <span class=k>raise</span> <span class=ne>RuntimeError</span><span class=p>(</span><span class=s2>&quot;There are no jobs in the queue!!&quot;</span><span class=p>)</span>
+
+    <span class=c1># Allow executing the render queue in its current loaded state</span>
+    <span class=k>if</span> <span class=n>all_shots</span> <span class=ow>or</span> <span class=p>(</span><span class=nb>any</span><span class=p>([</span><span class=n>shots</span><span class=p>,</span> <span class=n>jobs</span><span class=p>])):</span>
+        <span class=n>update_queue</span><span class=p>(</span>
+            <span class=n>jobs</span><span class=o>=</span><span class=n>jobs</span><span class=p>,</span>
+            <span class=n>shots</span><span class=o>=</span><span class=n>shots</span><span class=p>,</span>
+            <span class=n>all_shots</span><span class=o>=</span><span class=n>all_shots</span><span class=p>,</span>
+            <span class=n>user</span><span class=o>=</span><span class=n>user</span>
+        <span class=p>)</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># Execute the render. This will execute the render based on whether</span>
+        <span class=c1># its remote or local</span>
+        <span class=n>executor</span> <span class=o>=</span> <span class=n>render_jobs</span><span class=p>(</span>
+            <span class=n>is_remote</span><span class=p>,</span>
+            <span class=n>remote_batch_name</span><span class=o>=</span><span class=n>remote_batch_name</span><span class=p>,</span>
+            <span class=n>remote_job_preset</span><span class=o>=</span><span class=n>remote_job_preset</span><span class=p>,</span>
+            <span class=n>is_cmdline</span><span class=o>=</span><span class=n>is_cmdline</span><span class=p>,</span>
+            <span class=n>executor_instance</span><span class=o>=</span><span class=n>executor_instance</span><span class=p>,</span>
+            <span class=n>output_dir_override</span><span class=o>=</span><span class=n>output_dir_override</span><span class=p>,</span>
+            <span class=n>output_filename_override</span><span class=o>=</span><span class=n>output_filename_override</span>
+        <span class=p>)</span>
+
+    <span class=k>except</span> <span class=ne>Exception</span><span class=p>:</span>
+        <span class=k>raise</span>
+
+    <span class=k>return</span> <span class=n>executor</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_deadline.repository.custom.plugins.UnrealEngine5.UnrealEnginePlugins.MoviePipelineDeadline.Content.Python.mrq_cli_modes.render_queue_manifest class="doc doc-heading"> <code class="highlight language-python"><span class=n>render_queue_manifest</span><span class=p>(</span><span class=n>manifest</span><span class=p>,</span> <span class=n>load_only</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>shots</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>user</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span> <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span> <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Function to execute a render using a manifest file</p> <p>:param str manifest: Manifest file to render :param bool load_only: Only load the manifest file :param list shots: Shots to render from the queue :param str user: Render user :param bool is_remote: Flag to determine if the jobs should be rendered remote :param bool is_cmdline: Flag to determine if the job is a commandline job :param str remote_batch_name: Batch name for remote renders :param str remote_job_preset: Remote render preset library :param executor_instance: Movie Pipeline executor instance :param str output_dir_override: Movie Pipeline output directory override :param str output_filename_override: Movie Pipeline filename format override :return: MRQ Executor</p> <details class=quote> <summary>Source code in <code>client/ayon_deadline/repository/custom/plugins/UnrealEngine5/UnrealEnginePlugins/MoviePipelineDeadline/Content/Python/mrq_cli_modes/render_manifest.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal> 39</span>
+<span class=normal> 40</span>
+<span class=normal> 41</span>
+<span class=normal> 42</span>
+<span class=normal> 43</span>
+<span class=normal> 44</span>
+<span class=normal> 45</span>
+<span class=normal> 46</span>
+<span class=normal> 47</span>
+<span class=normal> 48</span>
+<span class=normal> 49</span>
+<span class=normal> 50</span>
+<span class=normal> 51</span>
+<span class=normal> 52</span>
+<span class=normal> 53</span>
+<span class=normal> 54</span>
+<span class=normal> 55</span>
+<span class=normal> 56</span>
+<span class=normal> 57</span>
+<span class=normal> 58</span>
+<span class=normal> 59</span>
+<span class=normal> 60</span>
+<span class=normal> 61</span>
+<span class=normal> 62</span>
+<span class=normal> 63</span>
+<span class=normal> 64</span>
+<span class=normal> 65</span>
+<span class=normal> 66</span>
+<span class=normal> 67</span>
+<span class=normal> 68</span>
+<span class=normal> 69</span>
+<span class=normal> 70</span>
+<span class=normal> 71</span>
+<span class=normal> 72</span>
+<span class=normal> 73</span>
+<span class=normal> 74</span>
+<span class=normal> 75</span>
+<span class=normal> 76</span>
+<span class=normal> 77</span>
+<span class=normal> 78</span>
+<span class=normal> 79</span>
+<span class=normal> 80</span>
+<span class=normal> 81</span>
+<span class=normal> 82</span>
+<span class=normal> 83</span>
+<span class=normal> 84</span>
+<span class=normal> 85</span>
+<span class=normal> 86</span>
+<span class=normal> 87</span>
+<span class=normal> 88</span>
+<span class=normal> 89</span>
+<span class=normal> 90</span>
+<span class=normal> 91</span>
+<span class=normal> 92</span>
+<span class=normal> 93</span>
+<span class=normal> 94</span>
+<span class=normal> 95</span>
+<span class=normal> 96</span>
+<span class=normal> 97</span>
+<span class=normal> 98</span>
+<span class=normal> 99</span>
+<span class=normal>100</span>
+<span class=normal>101</span>
+<span class=normal>102</span>
+<span class=normal>103</span>
+<span class=normal>104</span>
+<span class=normal>105</span>
+<span class=normal>106</span>
+<span class=normal>107</span>
+<span class=normal>108</span>
+<span class=normal>109</span>
+<span class=normal>110</span>
+<span class=normal>111</span>
+<span class=normal>112</span>
+<span class=normal>113</span>
+<span class=normal>114</span>
+<span class=normal>115</span>
+<span class=normal>116</span>
+<span class=normal>117</span>
+<span class=normal>118</span>
+<span class=normal>119</span>
+<span class=normal>120</span>
+<span class=normal>121</span>
+<span class=normal>122</span>
+<span class=normal>123</span>
+<span class=normal>124</span>
+<span class=normal>125</span>
+<span class=normal>126</span>
+<span class=normal>127</span>
+<span class=normal>128</span>
+<span class=normal>129</span>
+<span class=normal>130</span>
+<span class=normal>131</span>
+<span class=normal>132</span>
+<span class=normal>133</span>
+<span class=normal>134</span>
+<span class=normal>135</span>
+<span class=normal>136</span>
+<span class=normal>137</span>
+<span class=normal>138</span>
+<span class=normal>139</span>
+<span class=normal>140</span>
+<span class=normal>141</span>
+<span class=normal>142</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>render_queue_manifest</span><span class=p>(</span>
+    <span class=n>manifest</span><span class=p>,</span>
+    <span class=n>load_only</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>shots</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>user</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>is_remote</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>is_cmdline</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+    <span class=n>remote_batch_name</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>remote_job_preset</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>executor_instance</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_dir_override</span><span class=o>=</span><span class=kc>None</span><span class=p>,</span>
+    <span class=n>output_filename_override</span><span class=o>=</span><span class=kc>None</span>
+<span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Function to execute a render using a manifest file</span>
+
+<span class=sd>    :param str manifest: Manifest file to render</span>
+<span class=sd>    :param bool load_only: Only load the manifest file</span>
+<span class=sd>    :param list shots: Shots to render from the queue</span>
+<span class=sd>    :param str user: Render user</span>
+<span class=sd>    :param bool is_remote: Flag to determine if the jobs should be rendered remote</span>
+<span class=sd>    :param bool is_cmdline: Flag to determine if the job is a commandline job</span>
+<span class=sd>    :param str remote_batch_name: Batch name for remote renders</span>
+<span class=sd>    :param str remote_job_preset: Remote render preset library</span>
+<span class=sd>    :param executor_instance: Movie Pipeline executor instance</span>
+<span class=sd>    :param str output_dir_override: Movie Pipeline output directory override</span>
+<span class=sd>    :param str output_filename_override: Movie Pipeline filename format override</span>
+<span class=sd>    :return: MRQ Executor</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=c1># The queue subsystem behaves like a singleton so</span>
+    <span class=c1># clear all the jobs in the current queue.</span>
+    <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>delete_all_jobs</span><span class=p>()</span>
+
+    <span class=c1># Manifest args returns a Pathlib object, get the results as a string and</span>
+    <span class=c1># load the manifest</span>
+    <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>copy_from</span><span class=p>(</span>
+        <span class=n>unreal</span><span class=o>.</span><span class=n>MoviePipelineLibrary</span><span class=o>.</span><span class=n>load_manifest_file_from_string</span><span class=p>(</span><span class=n>manifest</span><span class=p>)</span>
+    <span class=p>)</span>
+
+    <span class=c1># If we only want to load the manifest file, then exit after loading</span>
+    <span class=c1># the manifest.</span>
+    <span class=c1># If we want to shut down the editor as well, then do so</span>
+    <span class=k>if</span> <span class=n>load_only</span><span class=p>:</span>
+
+        <span class=k>if</span> <span class=n>is_cmdline</span><span class=p>:</span>
+            <span class=n>unreal</span><span class=o>.</span><span class=n>SystemLibrary</span><span class=o>.</span><span class=n>quit_editor</span><span class=p>()</span>
+
+        <span class=k>return</span> <span class=kc>None</span>
+
+    <span class=c1># Manifest files are a per job configuration. So there should only be one</span>
+    <span class=c1># job in a manifest file</span>
+
+    <span class=c1># Todo: Make sure there are always only one job in the manifest file</span>
+    <span class=k>if</span> <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>get_jobs</span><span class=p>():</span>
+        <span class=n>render_job</span> <span class=o>=</span> <span class=n>movie_pipeline_queue</span><span class=o>.</span><span class=n>get_jobs</span><span class=p>()[</span><span class=mi>0</span><span class=p>]</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=k>raise</span> <span class=ne>RuntimeError</span><span class=p>(</span><span class=s2>&quot;There are no jobs in the queue!!&quot;</span><span class=p>)</span>
+
+    <span class=c1># MRQ added the ability to enable and disable jobs. Check to see if a job</span>
+    <span class=c1># is disabled and enable it.</span>
+    <span class=c1># The assumption is we want to render this particular job.</span>
+    <span class=c1># Note this try except block is for backwards compatibility</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=k>if</span> <span class=ow>not</span> <span class=n>render_job</span><span class=o>.</span><span class=n>enabled</span><span class=p>:</span>
+            <span class=n>render_job</span><span class=o>.</span><span class=n>enabled</span> <span class=o>=</span> <span class=kc>True</span>
+    <span class=k>except</span> <span class=ne>AttributeError</span><span class=p>:</span>
+        <span class=k>pass</span>
+
+    <span class=c1># Set the author on the job</span>
+    <span class=n>render_job</span><span class=o>.</span><span class=n>author</span> <span class=o>=</span> <span class=n>user</span> <span class=ow>or</span> <span class=n>getuser</span><span class=p>()</span>
+
+    <span class=c1># If we have a shot list, iterate over the shots in the sequence</span>
+    <span class=c1># and disable anything that&#39;s not in the shot list. If no shot list is</span>
+    <span class=c1># provided render all the shots in the sequence</span>
+    <span class=k>if</span> <span class=n>shots</span><span class=p>:</span>
+        <span class=k>for</span> <span class=n>shot</span> <span class=ow>in</span> <span class=n>render_job</span><span class=o>.</span><span class=n>shot_info</span><span class=p>:</span>
+            <span class=k>if</span> <span class=n>shot</span><span class=o>.</span><span class=n>inner_name</span> <span class=ow>in</span> <span class=n>shots</span> <span class=ow>or</span> <span class=p>(</span><span class=n>shot</span><span class=o>.</span><span class=n>outer_name</span> <span class=ow>in</span> <span class=n>shots</span><span class=p>):</span>
+                <span class=n>shot</span><span class=o>.</span><span class=n>enabled</span> <span class=o>=</span> <span class=kc>True</span>
+            <span class=k>else</span><span class=p>:</span>
+                <span class=n>unreal</span><span class=o>.</span><span class=n>log_warning</span><span class=p>(</span>
+                    <span class=sa>f</span><span class=s2>&quot;Disabling shot `</span><span class=si>{</span><span class=n>shot</span><span class=o>.</span><span class=n>inner_name</span><span class=si>}</span><span class=s2>` from current render job `</span><span class=si>{</span><span class=n>render_job</span><span class=o>.</span><span class=n>job_name</span><span class=si>}</span><span class=s2>`&quot;</span>
+                <span class=p>)</span>
+                <span class=n>shot</span><span class=o>.</span><span class=n>enabled</span> <span class=o>=</span> <span class=kc>False</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># Execute the render.</span>
+        <span class=c1># This will execute the render based on whether its remote or local</span>
+        <span class=n>executor</span> <span class=o>=</span> <span class=n>render_jobs</span><span class=p>(</span>
+            <span class=n>is_remote</span><span class=p>,</span>
+            <span class=n>remote_batch_name</span><span class=o>=</span><span class=n>remote_batch_name</span><span class=p>,</span>
+            <span class=n>remote_job_preset</span><span class=o>=</span><span class=n>remote_job_preset</span><span class=p>,</span>
+            <span class=n>executor_instance</span><span class=o>=</span><span class=n>executor_instance</span><span class=p>,</span>
+            <span class=n>is_cmdline</span><span class=o>=</span><span class=n>is_cmdline</span><span class=p>,</span>
+            <span class=n>output_dir_override</span><span class=o>=</span><span class=n>output_dir_override</span><span class=p>,</span>
+            <span class=n>output_filename_override</span><span class=o>=</span><span class=n>output_filename_override</span>
+        <span class=p>)</span>
+
+    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>err</span><span class=p>:</span>
+        <span class=n>unreal</span><span class=o>.</span><span class=n>log_error</span><span class=p>(</span>
+            <span class=sa>f</span><span class=s2>&quot;An error occurred executing the render.</span><span class=se>\n\t</span><span class=s2>Error: </span><span class=si>{</span><span class=n>err</span><span class=si>}</span><span class=s2>&quot;</span>
+        <span class=p>)</span>
+        <span class=k>raise</span>
+
+    <span class=k>return</span> <span class=n>executor</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div> </article> </div> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> </main> <footer class=md-footer> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> Made with <a href=https://squidfunk.github.io/mkdocs-material/ target=_blank rel=noopener> Material for MkDocs </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <script id=__config type=application/json>{"base": "../../../../../../../../../../../..", "features": ["navigation.sections", "navigation.path", "navigation.prune"], "search": "../../../../../../../../../../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script> <script src=../../../../../../../../../../../../assets/javascripts/bundle.f55a23d4.min.js></script> </body> </html>
