@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from datetime import datetime
+from typing import Optional
 
 import pyblish.api
 from ayon_core.lib import (
@@ -157,7 +158,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         job_info.Frames = None
         job_info.reuse_last_version = False
         use_custom_frames = self._is_custom_frames_used(
-            attr_values["use_custom_frames"]
+            attr_values.get("use_custom_frames")
         )
         if use_custom_frames:
             if not attr_values["frames"]:
@@ -454,11 +455,14 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             instance.set_publish_plugin_attr_defs(cls.__name__, new_attrs)
 
     @classmethod
-    def _is_custom_frames_used(cls, value):
+    def _is_custom_frames_used(cls, value) -> bool:
         return value in ["custom_only", "reuse_last_version"]
 
     @classmethod
-    def _get_publish_use_custom_frames_value(cls, instance_data):
+    def _get_publish_use_custom_frames_value(
+        cls,
+        instance_data
+    ) -> Optional[str]:
         return (
             instance_data.get("publish_attributes", {})
                          .get("CollectJobInfo", {})
