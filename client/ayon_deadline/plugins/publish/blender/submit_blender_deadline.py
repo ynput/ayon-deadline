@@ -4,7 +4,7 @@
 import os
 from dataclasses import dataclass, field, asdict
 
-from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.pipeline.publish import AYONPyblishPluginMixin, PublishError
 from ayon_core.pipeline.farm.tools import iter_expected_files
 
 from ayon_deadline import abstract_submit_deadline
@@ -24,17 +24,96 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     families = ["render"]  # TODO this should be farm specific as render.farm
     settings_category = "deadline"
 
-    def get_job_info(self, job_info=None):
+    def process(self, instance):
+        if not instance.data.get("farm"):
+            self.log.debug("Render on farm is disabled. "
+                           "Skipping deadline submission.")
+            return
+
+        # Always set instance output directory to the expected
+        expected_files = instance.data["expectedFiles"]
+        if not expected_files:
+            raise PublishError(
+                message="No Render Elements found.",
+                title="No Render Elements found.",
+                description="Expected files for render elements are empty."
+            )
+
+        first_file = next(iter_expected_files(expected_files))
+        output_dir = os.path.dirname(first_file)
+        instance.data["outputDir"] = output_dir
+        instance.data["toBeRenderedOn"] = "deadline"
+
+        # We are submitting a farm job not per instance - but once per Blender
+        # scene. This is a hack to avoid submitting multiple jobs for each
+        # comp file output because the Deadline job will always render all
+        # active ones anyway (and the relevant view layers).
+        context = instance.context
+        key = f"__hasRun{self.__class__.__name__}"
+        if context.data.get(key, False):
+            return
+
+        context.data[key] = True
+
+        # Collect all saver instances in context that are to be rendered
+        render_instances = []
+        for inst in context:
+            if inst.data["productType"] != "render":
+                # Allow only render instances
+                continue
+
+            if not inst.data.get("publish", True):
+                # Skip inactive instances
+                continue
+
+            if not inst.data.get("farm"):
+                # Only consider instances that are also set to be rendered on
+                # farm
+                continue
+
+            render_instances.append(inst)
+
+        if not render_instances:
+            raise PublishError("No instances found for Deadline submission")
+
+        instance.data["_farmRenderInstances"] = render_instances
+
+        super().process(instance)
+
+        # Store the response for dependent job submission plug-ins for all
+        # the instances
+        transfer_keys = ["deadlineSubmissionJob", "deadline"]
+        for render_instance in render_instances:
+            for key in transfer_keys:
+                render_instance.data[key] = instance.data[key]
+
+        # Remove this data which we only added to get access to the data
+        # in the inherited `self.get_job_info()` method.
+        instance.data.pop("_farmRenderInstances", None)
+
+    def get_job_info(self, job_info=None, **kwargs):
         instance = self._instance
         job_info.Plugin = instance.data.get("blenderRenderPlugin", "Blender")
 
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}x{step}".format(
-            start=int(instance.data["frameStartHandle"]),
-            end=int(instance.data["frameEndHandle"]),
-            step=int(instance.data["byFrameStep"]),
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}x{step}".format(
+                start=int(instance.data["frameStartHandle"]),
+                end=int(instance.data["frameEndHandle"]),
+                step=int(instance.data["byFrameStep"]),
+            )
+            job_info.Frames = frames
+
+        # We override the default behavior of AbstractSubmitDeadline here to
+        # include the output directory and output filename for each individual
+        # render instance, instead of only the current instance, because we're
+        # submitting one job for multiple render instances.
+        for render_instance in instance.data["_farmRenderInstances"]:
+            if render_instance is instance:
+                continue
+
+            self._append_job_output_paths(render_instance, job_info)
 
         return job_info
 
@@ -53,17 +132,6 @@ class BlenderSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return plugin_payload
 
     def process_submission(self, auth=None):
-        instance = self._instance
-
-        expected_files = instance.data["expectedFiles"]
-        if not expected_files:
-            raise RuntimeError("No Render Elements found!")
-
-        first_file = next(iter_expected_files(expected_files))
-        output_dir = os.path.dirname(first_file)
-        instance.data["outputDir"] = output_dir
-        instance.data["toBeRenderedOn"] = "deadline"
-
         payload = self.assemble_payload()
         auth = self._instance.data["deadline"]["auth"]
         verify = self._instance.data["deadline"]["verify"]

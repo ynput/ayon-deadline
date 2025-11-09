@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from datetime import datetime
+from typing import Optional
 
 import pyblish.api
 from ayon_core.lib import (
@@ -10,6 +11,7 @@ from ayon_core.lib import (
     TextDef,
     UISeparatorDef
 )
+from ayon_core.pipeline import KnownPublishError
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin,
     PublishError
@@ -64,6 +66,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         self._handle_machine_list(attr_values, job_info)
         self._handle_job_delay(attr_values, job_info)
+        self._handle_custom_frames(attr_values, job_info)
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
@@ -97,7 +100,10 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         # 'publish.hou' has different submit job plugin
         # TODO find out if we need separate submit publish job plugin
-        if "publish.hou" in all_families:
+        if (
+            "publish.hou" in all_families
+            or "remote_publish_on_farm" in all_families
+        ):
             return
 
         # Add submit publish job family
@@ -146,6 +152,20 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "'dd:hh:mm:ss' format"
             )
             job_info.JobDelay = None
+
+    def _handle_custom_frames(self, attr_values, job_info):
+        """Fill JobInfo.Frames only if dropdown says so."""
+        job_info.Frames = None
+        job_info.reuse_last_version = False
+        use_custom_frames = self._is_custom_frames_used(
+            attr_values.get("use_custom_frames")
+        )
+        if use_custom_frames:
+            if not attr_values["frames"]:
+                raise KnownPublishError("Please fill `Custom Frames` value")
+            job_info.Frames = attr_values["frames"]
+            if attr_values["use_custom_frames"] == "reuse_last_version":
+                job_info.reuse_last_version = True
 
     @classmethod
     def apply_settings(cls, project_settings):
@@ -241,13 +261,32 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
+        use_custom_frames = (
+            cls._get_publish_use_custom_frames_value(instance.data) or "none"
+        )
+
         # explicit frames to render - for test renders
+        use_custom_frames_enum_values = [
+            {"value": "none", "label": "Task Frame Range"},
+            {"value": "custom_only", "label": "Custom Frames Only"},
+            {"value": "reuse_last_version", "label": "Reuse from Last Version"}
+        ]
+        defs.append(
+            EnumDef(
+                "use_custom_frames",
+                label="Use Custom Frames",
+                default=use_custom_frames,
+                items=use_custom_frames_enum_values,
+            )
+        )
+        custom_frames_visible = cls._is_custom_frames_used(use_custom_frames)
         defs.append(
             TextDef(
                 "frames",
-                label="Frames",
+                label="Custom Frames",
                 default="",
-                tooltip="Explicit frames to be rendered. (1, 3-4)"
+                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)",
+                visible=custom_frames_visible
             )
         )
 
@@ -300,6 +339,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "chunk_size",
                 label="Frames Per Task",
                 default=default_values.get("chunk_size"),
+                decimals=0,
+                minimum=1,
+                maximum=1000
+            ),
+            NumberDef(
+                "concurrent_tasks",
+                label="Concurrent Tasks",
+                tooltip="Number of concurrent tasks to run per render node",
+                default=default_values.get("concurrent_tasks"),
                 decimals=0,
                 minimum=1,
                 maximum=1000
@@ -385,11 +433,16 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
     @classmethod
     def on_values_changed(cls, event):
         for instance_change in event["changes"]:
+            custom_frame_change = cls._get_publish_use_custom_frames_value(
+                instance_change["changes"]
+            )
+
             instance = instance_change["instance"]
             #recalculate only if context changes
             if (
                 "task" not in instance_change
                 and "folderPath" not in instance_change
+                and not custom_frame_change
             ):
                 continue
 
@@ -400,6 +453,21 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 event["create_context"], instance
             )
             instance.set_publish_plugin_attr_defs(cls.__name__, new_attrs)
+
+    @classmethod
+    def _is_custom_frames_used(cls, value) -> bool:
+        return value in ["custom_only", "reuse_last_version"]
+
+    @classmethod
+    def _get_publish_use_custom_frames_value(
+        cls,
+        instance_data
+    ) -> Optional[str]:
+        return (
+            instance_data.get("publish_attributes", {})
+                         .get("CollectJobInfo", {})
+                         .get("use_custom_frames")
+        )
 
     def _get_jobinfo_defaults(self, instance):
         """Queries project setting for profile with default values

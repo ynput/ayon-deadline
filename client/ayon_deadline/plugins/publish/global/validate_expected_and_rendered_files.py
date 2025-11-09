@@ -23,6 +23,9 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         """Process all the nodes in the instance"""
+        if instance.data.get("hasExplicitFrames"):
+            self.log.debug("Explicit frames rendered, skipping check")
+            return
 
         # get dependency jobs ids for retrieving frame list
         dependent_job_ids = self._get_dependent_job_ids(instance)
@@ -40,6 +43,7 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
             expected_files = self._get_expected_files(repre)
 
             staging_dir = repre["stagingDir"]
+            self.log.debug(f"Validating files in directory: {staging_dir}")
             existing_files = self._get_existing_files(staging_dir)
 
             is_image = f'.{repre["ext"]}' in IMAGE_EXTENSIONS
