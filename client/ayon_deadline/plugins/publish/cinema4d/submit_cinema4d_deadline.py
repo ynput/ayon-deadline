@@ -38,9 +38,13 @@ class Cinema4DSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         take: c4d.modules.takesystem.BaseTake = (
             self._instance.data["transientData"]["take"]
         )
+
+        c4d_version: int = c4d.GetC4DVersion()
+        c4d_major_version: int = c4d_version // 1000
+
         plugin_info = Cinema4DPluginInfo(
             SceneFile=self.scene_path,
-            Version=c4d.GetC4DVersion(),
+            Version=c4d_major_version,
             Take=take.GetName(),
         )
         return asdict(plugin_info)
