@@ -3,8 +3,6 @@ from dataclasses import dataclass, field, asdict
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 from ayon_deadline import abstract_submit_deadline
 
-import c4d
-
 
 @dataclass
 class Cinema4DPluginInfo:
@@ -35,6 +33,9 @@ class Cinema4DSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return job_info
 
     def get_plugin_info(self):
+        # Import here to avoid errors during publish job
+        import c4d
+
         take: c4d.modules.takesystem.BaseTake = (
             self._instance.data["transientData"]["take"]
         )
