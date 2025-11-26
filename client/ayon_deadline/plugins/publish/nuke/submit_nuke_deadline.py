@@ -20,6 +20,7 @@ class NukePluginInfo:
     OutputFilePath: str = field(default=None)
     UseGpu: bool = field(default=True)
     WriteNode: str = field(default=None)
+    ContinueOnError: bool = field(default=False)
 
 
 class NukeSubmitDeadline(
@@ -42,6 +43,7 @@ class NukeSubmitDeadline(
     settings_category = "deadline"
 
     use_gpu = None
+    continue_on_error: bool = False
     node_class_limit_groups = {}
 
     def process(self, instance):
@@ -175,7 +177,8 @@ class NukeSubmitDeadline(
             OutputFilePath=render_dir.replace("\\", "/"),
             ProjectPath=scene_path,
             UseGpu=attribute_values["use_gpu"],
-            WriteNode=write_node_name
+            WriteNode=write_node_name,
+            ContinueOnError=attribute_values["continue_on_error"],
         )
 
         plugin_payload: dict = asdict(plugin_info)
@@ -188,6 +191,11 @@ class NukeSubmitDeadline(
                 "use_gpu",
                 label="Use GPU",
                 default=cls.use_gpu,
+            ),
+            BoolDef(
+                "continue_on_error",
+                label="Continue on Error",
+                default=cls.continue_on_error,
             ),
         ]
 
