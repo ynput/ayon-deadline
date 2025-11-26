@@ -102,18 +102,18 @@ class NukeSubmitDeadline(
             instance.data["outputDir"] = os.path.dirname(
                 render_path).replace("\\", "/")
 
+        render_job_data = instance.data.get("deadlineSubmissionJob", {})
+        render_job_id = render_job_data.get("_id")
+
         if instance.data.get("bakingNukeScripts"):
             for baking_script in instance.data["bakingNukeScripts"]:
                 self.job_info = copy.deepcopy(self.job_info)
                 self.job_info.JobType = "Normal"
 
-                response_data = instance.data.get("deadlineSubmissionJob", {})
-                response_id = response_data.get("_id")
                 # frames_farm instance doesn't have render submission
-                if response_id:
-                    self.job_info.BatchName = response_data["Props"]["Batch"]
-                    if response_id not in instance.data.get("bakingSubmissionJobs", []):
-                        self.job_info.JobDependencies.append(response_id)
+                if render_job_id:
+                    self.job_info.BatchName = render_job_data["Props"]["Batch"]
+                    self.job_info.JobDependencies.append(render_job_id)
 
                 render_path = baking_script["bakeRenderPath"]
                 scene_path = baking_script["bakeScriptPath"]
