@@ -128,6 +128,7 @@ class AbstractSubmitDeadline(
         local_export_farm_render = (
             creator_attr.get("render_target") == "local_export_farm_render"
         )
+        job_id = None
         if not local_export_farm_render:
             job_id = self.process_submission()
             self.log.info(f"Submitted job to Deadline: {job_id}.")
@@ -137,11 +138,12 @@ class AbstractSubmitDeadline(
         # TODO: Find a way that's more generic and not render type specific
         if instance.data.get("splitRender"):
             self.log.info("Splitting export and render in two jobs")
-            self.log.info("Export job id: %s", job_id)
-            render_job_info = self.job_info
-            if not local_export_farm_render:
-                render_job_info = self.get_job_info(
-                    job_info=job_info, dependency_job_ids=[job_id])
+            dependency_job_ids = []
+            if job_id:
+                self.log.info("Export job id: %s", job_id)
+                dependency_job_ids = [job_id]
+            render_job_info = self.get_job_info(
+                job_info=job_info, dependency_job_ids=dependency_job_ids)
             render_plugin_info = self.get_plugin_info(job_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,
