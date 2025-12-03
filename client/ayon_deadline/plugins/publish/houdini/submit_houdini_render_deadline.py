@@ -240,7 +240,8 @@ class HoudiniSubmitDeadline(
             job_info.OutputFilename += fname
 
         # Add dependencies if given
-        if dependency_job_ids:
+        # Check if dependencies is not a list of None
+        if dependency_job_ids and all(dependency_job_ids):
             job_info.JobDependencies = dependency_job_ids
 
         return job_info
