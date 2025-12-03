@@ -116,7 +116,17 @@ class AbstractSubmitDeadline(
                 instance,
                 self.job_info
             )
-        self.plugin_info = self.get_plugin_info()
+
+        # If the render file export happens locally,
+        # get the plugin info directly as a render job type.
+        creator_attribute = instance.data.get("creator_attributes")
+        if (
+            creator_attribute.get("render_target")
+            == "local_export_farm_render"
+        ):
+            self.plugin_info = self.get_plugin_info(job_type="render")
+        else:
+            self.plugin_info = self.get_plugin_info()
 
         self.aux_files = self.get_aux_files()
 

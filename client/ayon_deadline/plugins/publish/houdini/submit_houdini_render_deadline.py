@@ -159,6 +159,14 @@ class HoudiniSubmitDeadline(
         if dependency_job_ids:
             is_export_job = False
 
+        # If the render file export happens locally,
+        # override 'split_render_job' and 'is_export_job'
+        # to get the correct render plugin later on
+        creator_attr = instance.data["creator_attributes"]
+        if creator_attr.get("render_target") == "local_export_farm_render":
+            split_render_job = True
+            is_export_job = False
+
         job_type = "[RENDER]"
         if split_render_job and not is_export_job:
             families = self._get_families(instance)
