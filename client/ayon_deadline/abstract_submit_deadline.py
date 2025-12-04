@@ -124,9 +124,12 @@ class AbstractSubmitDeadline(
         if plugin_info_data:
             self.apply_additional_plugin_info(plugin_info_data)
 
-        creator_attr = instance.data["creator_attributes"]
+        # Some DCC -Houdini atm- have `render_target` in `creator_attributes`.
+        # When `render_target` is set `local_export_farm_render`, we want to
+        # skip submitting the first job which is an export job.
+        creator_attr = instance.data.get("creator_attributes", {})
         local_export_farm_render = (
-            creator_attr.get("render_target") == "local_export_farm_render"
+            creator_attr.get("render_target", "") == "local_export_farm_render"
         )
         job_id = None
         if not local_export_farm_render:
