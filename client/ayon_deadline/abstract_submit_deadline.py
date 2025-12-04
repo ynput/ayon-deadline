@@ -138,10 +138,15 @@ class AbstractSubmitDeadline(
         # TODO: Find a way that's more generic and not render type specific
         if instance.data.get("splitRender"):
             self.log.info("Splitting export and render in two jobs")
+            dependency_job_ids = []
             if job_id:
                 self.log.info("Export job id: %s", job_id)
+                dependency_job_ids = [job_id]
             render_job_info = self.get_job_info(
-                job_info=job_info, dependency_job_ids=[job_id])
+                job_info=job_info,
+                dependency_job_ids=dependency_job_ids,
+                use_dcc_plugin=False
+            )
             render_plugin_info = self.get_plugin_info(job_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,
