@@ -263,16 +263,31 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         renderer = instance.data["renderer"]
         # Max does not support edit render settings in the headless mode
         # so we would not use published scene for renderers.
-        if renderer == "Redshift_Renderer" or (
-            renderer.startswith("Arnold") or
-            renderer.startswith("V_Ray_")
-        ):
+        if self._is_unsupported_renderer_for_published_scene(renderer):
             self.log.debug(
                 f"Using {renderer}...published scene wont be used.."
             )
             replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
+
+    @staticmethod
+    def _is_unsupported_renderer_for_published_scene(renderer):
+        """Check if renderer doesn't support published scene files."""
+        unsupported_renderers = (
+            "Redshift_Renderer",
+        )
+        unsupported_prefixes = (
+            "Arnold",
+            "V_Ray_",
+        )
+        return (
+            renderer in unsupported_renderers
+            or any(
+                renderer.startswith(prefix)
+                for prefix in unsupported_prefixes
+            )
+        )
 
     @staticmethod
     def _collect_render_output(renderer, dir, plugin_data):
