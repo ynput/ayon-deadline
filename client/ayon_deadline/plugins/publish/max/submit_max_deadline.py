@@ -261,6 +261,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     def from_published_scene(self, replace_in_path=True):
         instance = self._instance
         renderer = instance.data["renderer"]
+        # Max does not support edit render settings in the headless mode
+        # so we would not use published scene for renderers.
         if renderer == "Redshift_Renderer" or (
             renderer.startswith("Arnold") or
             renderer.startswith("V_Ray_")
