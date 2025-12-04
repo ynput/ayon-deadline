@@ -17,12 +17,13 @@ from .publish_plugins import (
 
 async def defined_deadline_ws_name_enum_resolver(
     addon: "BaseServerAddon",
+    settings_variant: str = None,
 ) -> list[str]:
     """Provides list of names of configured Deadline webservice urls."""
     if addon is None:
         return []
 
-    settings = await addon.get_studio_settings()
+    settings = await addon.get_studio_settings(variant=settings_variant)
 
     ws_server_name = []
     for deadline_url_item in settings.deadline_urls:
