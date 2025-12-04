@@ -117,6 +117,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             get_current_renderer,
             get_multipass_setting
         )
+        from pymxs import runtime as rt
         instance = self._instance
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
@@ -150,6 +151,11 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_info["Camera0"] = camera
             plugin_info["Camera"] = camera
             plugin_info["Camera1"] = camera
+
+        plugin_info["RenderWidth"] = instance.data.get(
+            "resolutionWidth", rt.renderWidth)
+        plugin_info["RenderHeight"] = instance.data.get(
+            "resolutionHeight", rt.renderHeight)
 
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
@@ -252,16 +258,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return job_info_list, plugin_info_list
 
-    def from_published_scene(self, replace_in_path=True):
+    def from_published_scene(self, replace_in_path=False):
         instance = self._instance
-        renderer = instance.data["renderer"]
-        if renderer == "Redshift_Renderer" or (
-            renderer.startswith("V_Ray_")
-        ):
-            self.log.debug(
-                f"Using {renderer}...published scene wont be used.."
-            )
-            replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
 
