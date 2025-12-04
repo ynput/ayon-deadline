@@ -258,8 +258,17 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return job_info_list, plugin_info_list
 
-    def from_published_scene(self, replace_in_path=False):
+    def from_published_scene(self, replace_in_path=True):
         instance = self._instance
+        renderer = instance.data["renderer"]
+        if renderer == "Redshift_Renderer" or (
+            renderer.startswith("Arnold") or
+            renderer.startswith("V_Ray_")
+        ):
+            self.log.debug(
+                f"Using {renderer}...published scene wont be used.."
+            )
+            replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
 
