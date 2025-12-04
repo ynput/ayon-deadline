@@ -140,9 +140,9 @@ class AbstractSubmitDeadline(
 
         # TODO: Find a way that's more generic and not render type specific
         if instance.data.get("splitRender"):
-            self.log.info("Splitting export and render in two jobs")
             dependency_job_ids = []
             if job_id:
+                self.log.info("Splitting export and render in two jobs")
                 self.log.info("Export job id: %s", job_id)
                 dependency_job_ids = [job_id]
             # When submitting a render job separate from the export job,
