@@ -19,7 +19,7 @@ from Deadline.Scripting import (
 )
 
 
-__version__ = "1.2.3"
+__version__ = "1.2.4"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -440,9 +440,15 @@ def inject_ayon_environment(deadlinePlugin):
         print("--- AYON executable: {}".format(exe))
 
         ayon_bundle_name = job.GetJobEnvironmentKeyValue("AYON_BUNDLE_NAME")
-        if not ayon_bundle_name:
+        ayon_studio_bundle_name = job.GetJobEnvironmentKeyValue(
+            "AYON_STUDIO_BUNDLE_NAME"
+        )
+        if not ayon_studio_bundle_name:
+            ayon_studio_bundle_name = ayon_bundle_name
+
+        if not ayon_studio_bundle_name:
             raise RuntimeError(
-                "Missing env var in job properties AYON_BUNDLE_NAME"
+                "Missing env var in job properties AYON_STUDIO_BUNDLE_NAME"
             )
 
         ayon_server_url, ayon_api_key = handle_credentials(job)
@@ -492,6 +498,7 @@ def inject_ayon_environment(deadlinePlugin):
                 _extract_environments(
                     ayon_server_url,
                     ayon_api_key,
+                    ayon_studio_bundle_name,
                     ayon_bundle_name,
                     deadlinePlugin,
                     exe,
@@ -596,6 +603,7 @@ def _get_output_dir(job):
 def _extract_environments(
     ayon_server_url,
     ayon_api_key,
+    ayon_studio_bundle_name,
     ayon_bundle_name,
     deadlinePlugin,
     exe,
@@ -654,6 +662,7 @@ def _extract_environments(
     environment = {
         "AYON_SERVER_URL": ayon_server_url,
         "AYON_API_KEY": ayon_api_key,
+        "AYON_STUDIO_BUNDLE_NAME": ayon_studio_bundle_name,
         "AYON_BUNDLE_NAME": ayon_bundle_name,
     }
 

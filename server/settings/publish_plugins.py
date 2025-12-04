@@ -255,6 +255,14 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     """Nuke-specific settings"""
 
     use_gpu: bool = SettingsField(True, title="Use GPU")
+    continue_on_error: bool = SettingsField(
+        False,
+        title="Continue On Error",
+        description=(
+            "Whether to enable continue on error on Deadline's Nuke plug-in"
+            " submission info by default in publish instance attributes."
+        )
+    )
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
         default_factory=list,
         title="Node based Limit Groups",
@@ -507,7 +515,8 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "scene_patches": []
     },
     "NukeSubmitDeadline": {
-        "use_gpu": True
+        "use_gpu": True,
+        "continue_on_error": False,
     },
     "ProcessSubmittedCacheJobOnFarm": {
         "deadline_priority": 50,
