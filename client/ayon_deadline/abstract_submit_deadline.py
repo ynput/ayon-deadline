@@ -145,6 +145,12 @@ class AbstractSubmitDeadline(
             if job_id:
                 self.log.info("Export job id: %s", job_id)
                 dependency_job_ids = [job_id]
+            # When submitting a render job separate from the export job,
+            # we do not want to use the DCC's DL plugin. Instead, we
+            # want to use the renderer's dedicated DL plugin.
+            # The `get_job_info` method should be responsible for setting
+            # the correct DL plugin for the render job. For implementation
+            # examples, check `HoudiniSubmitDeadline.get_job_info`.
             render_job_info = self.get_job_info(
                 job_info=job_info,
                 dependency_job_ids=dependency_job_ids,
