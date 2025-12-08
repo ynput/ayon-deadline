@@ -326,7 +326,7 @@ class HoudiniSubmitDeadline(
                            "Skipping deadline submission.")
             return
 
-        super(HoudiniSubmitDeadline, self).process(instance)
+        super().process(instance)
 
         # TODO: Avoid the need for this logic here, needed for submit publish
         # Store output dir for unified publisher (filesequence)
