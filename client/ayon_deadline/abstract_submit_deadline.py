@@ -124,17 +124,39 @@ class AbstractSubmitDeadline(
         if plugin_info_data:
             self.apply_additional_plugin_info(plugin_info_data)
 
-        job_id = self.process_submission()
-        self.log.info(f"Submitted job to Deadline: {job_id}.")
+        # Houdini has  `render_target` in `creator_attributes`.
+        # When `render_target` is set `local_export_farm_render`, we want to
+        # skip submitting the first job which is an export job.
+        creator_attr = instance.data.get("creator_attributes", {})
+        local_export_farm_render = (
+            creator_attr.get("render_target", "") == "local_export_farm_render"
+        )
+        job_id = None
+        if not local_export_farm_render:
+            job_id = self.process_submission()
+            self.log.info(f"Submitted job to Deadline: {job_id}.")
 
         instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
 
         # TODO: Find a way that's more generic and not render type specific
+        #  This is currently only HoudiniSubmitDeadline-specific
         if instance.data.get("splitRender"):
-            self.log.info("Splitting export and render in two jobs")
-            self.log.info("Export job id: %s", job_id)
+            dependency_job_ids = []
+            if job_id:
+                self.log.info("Splitting export and render in two jobs")
+                self.log.info("Export job id: %s", job_id)
+                dependency_job_ids = [job_id]
+            # When submitting a render job separate from the export job,
+            # we do not want to use the DCC's DL plugin. Instead, we
+            # want to use the renderer's dedicated DL plugin.
+            # The `get_job_info` method should be responsible for setting
+            # the correct DL plugin for the render job. For implementation
+            # examples, check `HoudiniSubmitDeadline.get_job_info`.
             render_job_info = self.get_job_info(
-                job_info=job_info, dependency_job_ids=[job_id])
+                job_info=job_info,
+                dependency_job_ids=dependency_job_ids,
+                use_dcc_plugin=False
+            )
             render_plugin_info = self.get_plugin_info(job_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,

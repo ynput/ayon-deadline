@@ -144,8 +144,24 @@ class HoudiniSubmitDeadline(
             ),
         ]
 
-    def get_job_info(self, dependency_job_ids=None, job_info=None):
+    def get_job_info(
+        self,
+        job_info=None,
+        dependency_job_ids=None,
+        use_dcc_plugin=True
+    ):
+        """Houdini specific get_job_info with extra kwargs.
 
+        Arguments:
+            job_info (None | PublishDeadlineJobInfo): dataclass
+                 object with collected values from Settings and
+                 Publisher UI.
+            dependency_job_ids (None | list[str]): Job ids that should
+                become input dependencies to this submission.
+            use_dcc_plugin (bool): Whether to submit using Deadline Houdini
+                plugin or using the renderer-specific standalone render plugin
+                like Husk, Arnold, etc.
+        """
         instance = self._instance
         context = instance.context
 
@@ -153,14 +169,8 @@ class HoudiniSubmitDeadline(
         # (extract + render)
         split_render_job = instance.data.get("splitRender")
 
-        # If there's some dependency job ids we can assume this is a render job
-        # and not an export job
-        is_export_job = True
-        if dependency_job_ids:
-            is_export_job = False
-
         job_type = "[RENDER]"
-        if split_render_job and not is_export_job:
+        if split_render_job and not use_dcc_plugin:
             families = self._get_families(instance)
             family_to_render_plugin = {
                 "arnold_rop": "Arnold",
@@ -210,12 +220,12 @@ class HoudiniSubmitDeadline(
 
         # Make sure we make job frame dependent so render tasks pick up a soon
         # as export tasks are done
-        if split_render_job and not is_export_job:
+        if split_render_job and not use_dcc_plugin:
             job_info.IsFrameDependent = bool(instance.data.get(
                 "splitRenderFrameDependent", True))
 
         attribute_values = self.get_attr_values_from_data(instance.data)
-        if split_render_job and is_export_job:
+        if split_render_job and use_dcc_plugin:
             job_info.Priority = attribute_values.get(
                 "export_priority", self.export_priority
             )
@@ -316,7 +326,7 @@ class HoudiniSubmitDeadline(
                            "Skipping deadline submission.")
             return
 
-        super(HoudiniSubmitDeadline, self).process(instance)
+        super().process(instance)
 
         # TODO: Avoid the need for this logic here, needed for submit publish
         # Store output dir for unified publisher (filesequence)
