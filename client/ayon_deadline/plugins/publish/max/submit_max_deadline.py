@@ -283,10 +283,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         )
         return (
             renderer in unsupported_renderers
-            or any(
-                renderer.startswith(prefix)
-                for prefix in unsupported_prefixes
-            )
+            or renderer.startswith(unsupported_prefixes)
         )
 
     @staticmethod
