@@ -145,9 +145,9 @@ class HoudiniSubmitDeadline(
         ]
 
     def get_job_info(
-        self, 
-        job_info=None, 
-        dependency_job_ids=None, 
+        self,
+        job_info=None,
+        dependency_job_ids=None,
         use_dcc_plugin=True
     ):
         """Houdini specific get_job_info with extra kwargs.
