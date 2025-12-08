@@ -117,6 +117,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             get_current_renderer,
             get_multipass_setting
         )
+        from pymxs import runtime as rt
         instance = self._instance
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
@@ -150,6 +151,11 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_info["Camera0"] = camera
             plugin_info["Camera"] = camera
             plugin_info["Camera1"] = camera
+
+        plugin_info["RenderWidth"] = instance.data.get(
+            "resolutionWidth", rt.renderWidth)
+        plugin_info["RenderHeight"] = instance.data.get(
+            "resolutionHeight", rt.renderHeight)
 
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
@@ -255,15 +261,30 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     def from_published_scene(self, replace_in_path=True):
         instance = self._instance
         renderer = instance.data["renderer"]
-        if renderer == "Redshift_Renderer" or (
-            renderer.startswith("V_Ray_")
-        ):
+        # Max does not support edit render settings in the headless mode
+        # so we would not use published scene for renderers.
+        if self._is_unsupported_renderer_for_published_scene(renderer):
             self.log.debug(
                 f"Using {renderer}...published scene wont be used.."
             )
             replace_in_path = False
         return replace_with_published_scene_path(
             instance, replace_in_path)
+
+    @staticmethod
+    def _is_unsupported_renderer_for_published_scene(renderer):
+        """Check if renderer doesn't support published scene files."""
+        unsupported_renderers = (
+            "Redshift_Renderer",
+        )
+        unsupported_prefixes = (
+            "Arnold",
+            "V_Ray_",
+        )
+        return (
+            renderer in unsupported_renderers
+            or renderer.startswith(unsupported_prefixes)
+        )
 
     @staticmethod
     def _collect_render_output(renderer, dir, plugin_data):
