@@ -144,8 +144,24 @@ class HoudiniSubmitDeadline(
             ),
         ]
 
-    def get_job_info(self, dependency_job_ids=None, job_info=None,
-                     use_dcc_plugin=True):
+    def get_job_info(
+        self, 
+        job_info=None, 
+        dependency_job_ids=None, 
+        use_dcc_plugin=True
+    ):
+        """Houdini specific get_job_info with extra kwargs.
+        
+         Arguments:
+             job_info (None | PublishDeadlineJobInfo): dataclass 
+                object with collected values from Settings and 
+                Publisher UI.
+             dependency_job_ids (None | list[str]): Job ids that should
+               become input dependencies to this submission.
+             use_dcc_plugin (bool): Whether to submit using Houdini
+               or using the renderer-specific standalone render plugin
+               like Husk, Arnold, etc.
+        """
         instance = self._instance
         context = instance.context
 
