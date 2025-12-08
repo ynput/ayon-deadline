@@ -139,6 +139,7 @@ class AbstractSubmitDeadline(
         instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
 
         # TODO: Find a way that's more generic and not render type specific
+        #  This is currently only HoudiniSubmitDeadline-specific
         if instance.data.get("splitRender"):
             dependency_job_ids = []
             if job_id:
