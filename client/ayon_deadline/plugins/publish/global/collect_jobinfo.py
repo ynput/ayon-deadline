@@ -267,7 +267,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         # explicit frames to render - for test renders
         use_custom_frames_enum_values = [
-            {"value": "none", "label": "Task Frame Range"},
+            {"value": "none", "label": "Disabled"},
             {"value": "custom_only", "label": "Custom Frames Only"},
             {"value": "reuse_last_version", "label": "Reuse from Last Version"}
         ]
