@@ -146,6 +146,11 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if renderer == "Redshift_Renderer":
             plugin_data["redshift_SeparateAovFiles"] = instance.data.get(
                 "separateAovFiles")
+
+        elif renderer.startswith("V_Ray_"):
+            # enable this so that V-Ray frame buffer shows up
+            plugin_data["ShowFrameBuffer"] = True
+
         if instance.data["cameras"]:
             camera = instance.data["cameras"][0]
             plugin_info["Camera0"] = camera
