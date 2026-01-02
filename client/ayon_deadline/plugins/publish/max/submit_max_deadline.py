@@ -3,7 +3,8 @@ import copy
 from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline import (
-    AYONPyblishPluginMixin
+    AYONPyblishPluginMixin,
+    tempdir
 )
 from ayon_core.pipeline.publish.lib import (
     replace_with_published_scene_path
@@ -162,6 +163,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         plugin_info["RenderHeight"] = instance.data.get(
             "resolutionHeight", rt.renderHeight)
 
+        published_workfile = os.path.basename(plugin_info["SceneFile"])
+        plugin_info["PostLoadScript"] = tmp_pre_load_max_script(
+            instance,
+            instance.data["original_workfile_pattern"],
+            os.path.splitext(published_workfile)[0],
+        )
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
 
@@ -263,19 +270,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return job_info_list, plugin_info_list
 
-    def from_published_scene(self, replace_in_path=True):
-        instance = self._instance
-        renderer = instance.data["renderer"]
-        # Max does not support edit render settings in the headless mode
-        # so we would not use published scene for renderers.
-        if self._is_unsupported_renderer_for_published_scene(renderer):
-            self.log.debug(
-                f"Using {renderer}...published scene wont be used.."
-            )
-            replace_in_path = False
-        return replace_with_published_scene_path(
-            instance, replace_in_path)
-
     @staticmethod
     def _is_unsupported_renderer_for_published_scene(renderer):
         """Check if renderer doesn't support published scene files."""
@@ -331,3 +325,75 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         else:
             for file in exp:
                 yield file
+
+
+def tmp_pre_load_max_script(instance, original_workfile, publish_workfile):
+    """Temporary function to provide pre-load maxscript for deadline
+    submission. This is a workaround for Deadline issue where it
+    doesn't load the scene properly before rendering.
+
+    Returns:
+        str: Maxscript code as a string.
+    """
+    temp_dir = tempdir.get_temp_dir(
+        instance.context.data["projectName"],
+        use_local_temp=True)
+
+    max_script = f"""
+fn PublishWorkileRenderOutput =
+(
+    rendererName = renderers.production as string
+    original_workfile = "{original_workfile}"
+    publish_workfile = "{publish_workfile}"
+    if matchPattern rendererName pattern:"V_Ray*" then
+    (
+        if matchPattern rendererName pattern:"*GPU*" then
+        (
+            original_filename = renderers.production.V_Ray_settings.output_rawfilename
+            new_filename = substituteString original_filename original_workfile publish_workfile
+            renderers.production.V_Ray_settings.output_rawfilename = new_filename
+            if renderers.production.V_Ray_settings.output_splitgbuffer do (
+                original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
+                new_aovfilename = substituteString original_filename original_workfile publish_workfile
+                renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+            )
+        )
+        else
+        (
+            original_filename = renderers.production.output_rawfilename
+            new_filename = substituteString original_filename original_workfile publish_workfile
+            renderers.production.output_rawfilename = new_filename
+            if renderers.production.output_splitgbuffer do (
+                original_Aovfilename = renderers.production.output_splitfilename
+                new_aovfilename = substituteString original_filename original_workfile publish_workfile
+                renderers.production.output_splitfilename = new_aovfilename
+            )
+        )
+    )
+    else
+    (
+        original_filename = renderOutput
+        new_filename = substituteString original_filename original_workfile publish_workfile
+        renderOutput = new_filename
+        rnMgr = maxOps.GetCurRenderElementMgr()
+        for i = 1 to rnMgr.numrenderelements() do
+        (
+            re = rnMgr.getrenderelement i
+            if re.enabled do
+            (
+                originAovfilename = re.GetRenderElementFileName i
+                newAovfilename = substituteString originAovfilename original_workfile publish_workfile
+                re.SetRenderElementFileName i newAovfilename
+            )
+        )
+    )
+    return true
+)
+renderOutputPublish = PublishWorkileRenderOutput()
+
+""".format(original_workfile=original_workfile, publish_workfile=publish_workfile)
+    script_path =os.path.join(temp_dir, "pre_load_max_script.ms")
+    with open(script_path, "w") as script_file:
+        script_file.write(max_script)
+    print(f"Temporary pre-load maxscript created at: {script_path}")
+    return script_path
