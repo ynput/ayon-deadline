@@ -6,9 +6,6 @@ from ayon_core.pipeline import (
     AYONPyblishPluginMixin,
     tempdir
 )
-from ayon_core.pipeline.publish.lib import (
-    replace_with_published_scene_path
-)
 from ayon_core.pipeline.publish import KnownPublishError
 from ayon_max.api.lib import (
     get_current_renderer,
