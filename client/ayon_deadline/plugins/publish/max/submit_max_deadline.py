@@ -391,7 +391,7 @@ fn PublishWorkileRenderOutput =
 )
 renderOutputPublish = PublishWorkileRenderOutput()
 
-""".format(original_workfile=original_workfile, publish_workfile=publish_workfile)
+""".format(original_workfile=original_workfile, publish_workfile=publish_workfile)  # noqa: E501
     script_path =os.path.join(temp_dir, "pre_load_max_script.ms")
     with open(script_path, "w") as script_file:
         script_file.write(max_script)
