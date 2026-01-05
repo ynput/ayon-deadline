@@ -348,7 +348,6 @@ fn PublishWorkfileRenderOutput =
     (
         if matchPattern rendererName pattern:"*GPU*" then
         (
-            -- Handle V-Ray GPU
             original_filename = renderers.production.V_Ray_settings.output_rawfilename
             new_filename = substituteString original_filename original_workfile publish_workfile
             renderers.production.V_Ray_settings.output_rawfilename = new_filename
@@ -362,7 +361,6 @@ fn PublishWorkfileRenderOutput =
         )
         else
         (
-            -- Handle V-Ray CPU
             original_filename = renderers.production.output_rawfilename
             new_filename = substituteString original_filename original_workfile publish_workfile
             renderers.production.output_rawfilename = new_filename
@@ -377,7 +375,6 @@ fn PublishWorkfileRenderOutput =
     )
     else
     (
-        -- Handle other renderers
         original_filename = renderOutput
         new_filename = substituteString original_filename original_workfile publish_workfile
         renderOutput = new_filename
@@ -407,15 +404,7 @@ fn PublishWorkfileRenderOutput =
 -- Execute the function
 renderOutputPublish = PublishWorkfileRenderOutput()
 
-if renderOutputPublish then
-(
-    format "Successfully updated render output paths from % to %\\n" "{original_workfile}" "{publish_workfile}"
-)
-else
-(
-    format "Failed to update render output paths\\n"
-)
-"""
+"""  # noqa: E501
 
     script_path = os.path.join(temp_dir, "pre_load_max_script.ms")
 
