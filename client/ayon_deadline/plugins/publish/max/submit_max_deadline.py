@@ -1,5 +1,6 @@
 import os
 import copy
+from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline import (
@@ -337,60 +338,91 @@ def tmp_pre_load_max_script(instance, original_workfile, publish_workfile):
         use_local_temp=True)
 
     max_script = f"""
-fn PublishWorkileRenderOutput =
+fn PublishWorkfileRenderOutput =
 (
     rendererName = renderers.production as string
     original_workfile = "{original_workfile}"
     publish_workfile = "{publish_workfile}"
+
     if matchPattern rendererName pattern:"V_Ray*" then
     (
         if matchPattern rendererName pattern:"*GPU*" then
         (
+            -- Handle V-Ray GPU
             original_filename = renderers.production.V_Ray_settings.output_rawfilename
             new_filename = substituteString original_filename original_workfile publish_workfile
             renderers.production.V_Ray_settings.output_rawfilename = new_filename
-            if renderers.production.V_Ray_settings.output_splitgbuffer do (
+
+            if renderers.production.V_Ray_settings.output_splitgbuffer do
+            (
                 original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
-                new_aovfilename = substituteString original_filename original_workfile publish_workfile
+                new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
                 renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
             )
         )
         else
         (
+            -- Handle V-Ray CPU
             original_filename = renderers.production.output_rawfilename
             new_filename = substituteString original_filename original_workfile publish_workfile
             renderers.production.output_rawfilename = new_filename
-            if renderers.production.output_splitgbuffer do (
+
+            if renderers.production.output_splitgbuffer do
+            (
                 original_Aovfilename = renderers.production.output_splitfilename
-                new_aovfilename = substituteString original_filename original_workfile publish_workfile
+                new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
                 renderers.production.output_splitfilename = new_aovfilename
             )
         )
     )
     else
     (
+        -- Handle other renderers
         original_filename = renderOutput
         new_filename = substituteString original_filename original_workfile publish_workfile
         renderOutput = new_filename
+
         rnMgr = maxOps.GetCurRenderElementMgr()
-        for i = 1 to rnMgr.numrenderelements() do
+        if rnMgr != undefined do
         (
-            re = rnMgr.getrenderelement i
-            if re.enabled do
+            for i = 1 to rnMgr.numrenderelements() do
             (
-                originAovfilename = re.GetRenderElementFileName i
-                newAovfilename = substituteString originAovfilename original_workfile publish_workfile
-                re.SetRenderElementFileName i newAovfilename
+                re = rnMgr.getrenderelement i
+                if re.enabled do
+                (
+                    originAovfilename = re.GetRenderElementFileName i
+                    if originAovfilename != undefined and originAovfilename != "" do
+                    (
+                        newAovfilename = substituteString originAovfilename original_workfile publish_workfile
+                        re.SetRenderElementFileName i newAovfilename
+                    )
+                )
             )
         )
     )
+
     return true
 )
-renderOutputPublish = PublishWorkileRenderOutput()
 
-""".format(original_workfile=original_workfile, publish_workfile=publish_workfile)  # noqa: E501
-    script_path =os.path.join(temp_dir, "pre_load_max_script.ms")
-    with open(script_path, "w") as script_file:
-        script_file.write(max_script)
-    print(f"Temporary pre-load maxscript created at: {script_path}")
-    return script_path
+-- Execute the function
+renderOutputPublish = PublishWorkfileRenderOutput()
+
+if renderOutputPublish then
+(
+    format "Successfully updated render output paths from % to %\\n" "{original_workfile}" "{publish_workfile}"
+)
+else
+(
+    format "Failed to update render output paths\\n"
+)
+"""
+
+    script_path = os.path.join(temp_dir, "pre_load_max_script.ms")
+
+    try:
+        with open(script_path, "w") as script_file:
+            script_file.write(max_script)
+        print(f"Temporary pre-load maxscript created at: {script_path}")
+        return script_path
+    except Exception as e:
+        raise RuntimeError(f"Error creating maxscript file: {str(e)}")
