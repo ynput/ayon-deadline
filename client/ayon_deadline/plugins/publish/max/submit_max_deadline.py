@@ -1,6 +1,5 @@
 import os
 import copy
-from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline import (
