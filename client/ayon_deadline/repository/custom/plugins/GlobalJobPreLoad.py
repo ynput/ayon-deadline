@@ -684,7 +684,7 @@ def _extract_environments(
     )
     if _process_exitcode != 0:
         raise RuntimeError(
-            "Executing AYON process to extract environments"
+            "AYON process to extract environments"
             f" exited with error code: {_process_exitcode}"
         )
 
