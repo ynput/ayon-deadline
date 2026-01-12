@@ -682,6 +682,11 @@ def _extract_environments(
     _process_exitcode = deadlinePlugin.RunProcess(
         exe, args_str, os.path.dirname(exe), -1
     )
+    if _process_exitcode != 0:
+        raise RuntimeError(
+            "AYON process to extract environments"
+            f" exited with error code: {_process_exitcode}"
+        )
 
 
 def get_ayon_executable():
