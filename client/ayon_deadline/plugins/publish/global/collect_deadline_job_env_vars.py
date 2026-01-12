@@ -28,12 +28,8 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
         # Shotgrid / Flow addon
         "OPENPYPE_SG_USER",
 
-        # Not sure how this is usefull for farm, scared to remove
+        # Not sure how this is useful for farm, scared to remove
         "PYBLISHPLUGINPATH",
-
-        # NOTE still required by GlobalPreLoadJob.py, but might not be set by
-        #   ayon-core anymore
-        "AYON_DEFAULT_SETTINGS_VARIANT",
     ]
 
     def process(self, context):

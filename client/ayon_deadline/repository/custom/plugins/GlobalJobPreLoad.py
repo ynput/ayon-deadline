@@ -19,7 +19,7 @@ from Deadline.Scripting import (
 )
 
 
-__version__ = "1.2.4"
+__version__ = "1.2.5"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -635,16 +635,6 @@ def _extract_environments(
         "extractenvironments",
         export_path
     ]
-
-    # staging requires passing argument
-    # TODO could be removed when PR in ayon-core starts to fill
-    #  'AYON_USE_STAGING' (https://github.com/ynput/ayon-core/pull/1130)
-    #  - add requirement for "core>=1.1.1" to 'package.py' when removed
-    settings_variant = job.GetJobEnvironmentKeyValue(
-        "AYON_DEFAULT_SETTINGS_VARIANT"
-    )
-    if settings_variant == "staging":
-        args.append("--use-staging")
 
     for key, value in add_kwargs.items():
         args.extend([f"--{key}", value])
