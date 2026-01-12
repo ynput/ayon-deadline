@@ -19,7 +19,7 @@ from Deadline.Scripting import (
 )
 
 
-__version__ = "1.2.4"
+__version__ = "1.2.5"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
