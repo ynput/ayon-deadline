@@ -402,8 +402,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             kwargs["product_type"] = kwargs.pop("product_base_type")
         template_name = get_publish_template_name(**kwargs)
 
-        template_data["subset"] = product_name
-        template_data["family"] = product_type
         template_data["version"] = version
         template_data["product"] = {
             "name": product_name,

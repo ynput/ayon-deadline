@@ -533,8 +533,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         template_name = get_publish_template_name(**kwargs)
 
         template_data["version"] = version
-        template_data["subset"] = product_name
-        template_data["family"] = product_type
         template_data["product"] = {
             "name": product_name,
             "type": product_type,
