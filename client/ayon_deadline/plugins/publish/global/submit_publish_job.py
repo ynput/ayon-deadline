@@ -172,8 +172,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if instance_version != 1:
             override_version = instance_version
 
-        product_type = instances[0].data["productType"]
-        product_base_type = instances[0].data.get("productBaseType")
+        product_type = instances[0]["productType"]
+        product_base_type = instances[0].get("productBaseType")
         if not product_base_type:
             product_base_type = product_type
         output_dir = self._get_publish_folder(
