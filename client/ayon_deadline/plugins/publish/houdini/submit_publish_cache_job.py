@@ -377,15 +377,21 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             if version_entity:
                 version = int(version_entity["version"]) + 1
             else:
-                version = get_versioning_start(
-                    project_name,
-                    host_name,
+                kwargs = dict(
+                    project_name=project_name,
+                    host_name=host_name,
                     task_name=task_info.get("name"),
                     task_type=task_info.get("type"),
                     product_type="render",
+                    product_base_type="render",
                     product_name=product_name,
-                    project_settings=context.data["project_settings"]
+                    project_settings=context.data["project_settings"],
                 )
+                if not is_func_signature_supported(
+                    get_versioning_start, **kwargs
+                ):
+                    kwargs.pop("product_base_type")
+                version = get_versioning_start(**kwargs)
 
         kwargs = dict(
             project_name=project_name,
