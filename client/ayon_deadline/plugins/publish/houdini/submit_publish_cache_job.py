@@ -395,7 +395,6 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         kwargs = dict(
             project_name=project_name,
             host_name=host_name,
-            product_type=product_type,
             product_base_type=product_base_type,
             task_name=task_info.get("name"),
             task_type=task_info.get("type"),

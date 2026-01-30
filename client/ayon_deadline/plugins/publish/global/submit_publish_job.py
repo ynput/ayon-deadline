@@ -509,7 +509,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                     host_name=host_name,
                     task_name=task_info.get("name"),
                     task_type=task_info.get("type"),
-                    product_type="render",
                     product_base_type="render",
                     product_name=product_name,
                     project_settings=context.data["project_settings"],
@@ -517,7 +516,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 if not is_func_signature_supported(
                     get_versioning_start, **kwargs
                 ):
-                    kwargs.pop("product_base_type")
+                    kwargs["product_type"] = kwargs.pop("product_base_type")
                 version = get_versioning_start(**kwargs)
 
         host_name = context.data["hostName"]
@@ -525,7 +524,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         kwargs = dict(
             project_name=project_name,
             host_name=host_name,
-            product_type=product_type,
             product_base_type=product_base_type,
             task_name=task_info.get("name"),
             task_type=task_info.get("type"),
