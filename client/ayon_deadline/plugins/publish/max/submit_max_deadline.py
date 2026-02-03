@@ -271,6 +271,16 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return job_info_list, plugin_info_list
 
     def from_published_scene(self, replace_in_path=True):
+        """Check and use scene workfile for rendering only when multi-camera
+        farm submission is enabled.
+
+        Args:
+            replace_in_path (bool, optional): Whether to replace the scene path
+                with the published scene path. Defaults to True.
+
+        Returns:
+            str: Published scene path.
+        """
         instance = self._instance
         if instance.data.get("multiCamera"):
             self.log.warning(
@@ -279,8 +289,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             )
             replace_in_path = False
 
-        return replace_with_published_scene_path(
-            instance, replace_in_path)
+        return super().from_published_scene(replace_in_path=replace_in_path)
 
     @staticmethod
     def _collect_render_output(renderer, dir, plugin_data):
