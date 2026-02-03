@@ -13,6 +13,9 @@ from ayon_max.api.lib import (
 )
 from ayon_max.api.lib_rendersettings import RenderSettings
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.abstract_submit_deadline import (
+    replace_with_published_scene_path
+)
 
 
 @dataclass
@@ -267,20 +270,17 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return job_info_list, plugin_info_list
 
-    @staticmethod
-    def _is_unsupported_renderer_for_published_scene(renderer):
-        """Check if renderer doesn't support published scene files."""
-        unsupported_renderers = (
-            "Redshift_Renderer",
-        )
-        unsupported_prefixes = (
-            "Arnold",
-            "V_Ray_",
-        )
-        return (
-            renderer in unsupported_renderers
-            or renderer.startswith(unsupported_prefixes)
-        )
+    def from_published_scene(self, replace_in_path=True):
+        instance = self._instance
+        if instance.data.get("multiCamera"):
+            self.log.warning(
+                "Use published workfile for rendering "
+                "not supported for multi-camera."
+            )
+            replace_in_path = False
+
+        return replace_with_published_scene_path(
+            instance, replace_in_path)
 
     @staticmethod
     def _collect_render_output(renderer, dir, plugin_data):
