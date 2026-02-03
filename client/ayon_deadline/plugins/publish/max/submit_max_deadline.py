@@ -13,9 +13,6 @@ from ayon_max.api.lib import (
 )
 from ayon_max.api.lib_rendersettings import RenderSettings
 from ayon_deadline import abstract_submit_deadline
-from ayon_deadline.abstract_submit_deadline import (
-    replace_with_published_scene_path
-)
 
 
 @dataclass
