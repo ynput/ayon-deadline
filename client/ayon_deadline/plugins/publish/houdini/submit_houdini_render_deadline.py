@@ -374,8 +374,11 @@ class HoudiniSubmitDeadline(
         )
 
     def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
+        product_base_type = instance.data.get("productBaseType")
+        if not product_base_type:
+            product_base_type = instance.data["productType"]
         families = set(instance.data.get("families", []))
-        families.add(instance.data.get("productType"))
+        families.add(product_base_type)
         return families
 
 
