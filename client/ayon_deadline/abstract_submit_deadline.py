@@ -269,8 +269,10 @@ class AbstractSubmitDeadline(
                 job_info.AssetDependency += dependency
 
         # Set job environment variables
+        # Skip for 3DS Max farm submission testing
         job_info.add_instance_job_env_vars(instance)
-        job_info.add_render_job_env_var()
+        if instance.context.data.get("hostName") != "max":
+            job_info.add_render_job_env_var()
 
         return job_info
 
