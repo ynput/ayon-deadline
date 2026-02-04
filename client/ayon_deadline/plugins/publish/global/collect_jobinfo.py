@@ -246,7 +246,6 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "host_names": host_name,
                 "task_types": task_type,
                 "task_names": task_name,
-                # "product_type": product_type
             }
         )
         if not profile:
