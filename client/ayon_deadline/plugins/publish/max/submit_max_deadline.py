@@ -270,9 +270,10 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     def from_published_scene(self, replace_in_path=True):
         """Check and use scene workfile for rendering only when multi-camera
         farm submission is enabled.
-        
+
         When rendering multi-camera scenes we can't render published workfiles
-        because X - so we require the work area workfile to be used to support Y.
+        because X - so we require the work area workfile to be used to
+        support Y.
 
         Args:
             replace_in_path (bool, optional): Whether to replace the scene path
