@@ -372,6 +372,18 @@ fn PublishWorkfileRenderOutput =
             )
         )
     )
+    else if matchPattern rendererName pattern:"Arnold*" then (
+        original_filename = rendOutputFilename
+        new_filename = substituteString original_filename original_workfile publish_workfile
+        rendOutputFilename = new_filename
+        amw = MaxtoAOps.AOVsManagerWindow()
+        amw.close()
+        aovmgr = renderers.current.AOVManager
+        original_arnold_filename = aovmgr.outputPath
+        new_arnold_filename = substituteString original_arnold_filename original_workfile publish_workfile
+        aovmgr.outputPath = new_arnold_filename
+
+    )
     else
     (
         original_filename = rendOutputFilename
