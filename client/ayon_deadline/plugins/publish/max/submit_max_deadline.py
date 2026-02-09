@@ -287,7 +287,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             dict: Updated plugin_data with render output paths.
 
         """
-        from pymxs import runtime as rt
         from ayon_max.api.lib_rendersettings import is_supported_renderer
         # Handle render elements
         if is_supported_renderer(renderer):
