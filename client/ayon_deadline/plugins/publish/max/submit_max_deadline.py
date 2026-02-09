@@ -374,9 +374,9 @@ fn PublishWorkfileRenderOutput =
     )
     else
     (
-        original_filename = renderOutput
+        original_filename = rendOutputFilename
         new_filename = substituteString original_filename original_workfile publish_workfile
-        renderOutput = new_filename
+        rendOutputFilename = new_filename
 
         rnMgr = maxOps.GetCurRenderElementMgr()
         if rnMgr != undefined do
