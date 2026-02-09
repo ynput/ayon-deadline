@@ -66,6 +66,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return plugin_payload
 
+    def process(self, instance):
+        if not instance.data["farm"]:
+            self.log.debug("Render on farm is disabled. "
+                           "Skipping deadline submission.")
+            return
+
+        super().process(instance)
+
     def process_submission(self):
 
         instance = self._instance
