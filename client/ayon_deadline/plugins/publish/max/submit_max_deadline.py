@@ -268,21 +268,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return job_info_list, plugin_info_list
 
     @staticmethod
-    def _is_unsupported_renderer_for_published_scene(renderer):
-        """Check if renderer doesn't support published scene files."""
-        unsupported_renderers = (
-            "Redshift_Renderer",
-        )
-        unsupported_prefixes = (
-            "Arnold",
-            "V_Ray_",
-        )
-        return (
-            renderer in unsupported_renderers
-            or renderer.startswith(unsupported_prefixes)
-        )
-
-    @staticmethod
     def _collect_render_output(renderer, dir, plugin_data):
         """Collects render output and render element paths based on
         renderer type.
@@ -303,13 +288,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                 elem_bname = os.path.basename(element)
                 new_elem_path = os.path.join(dir, elem_bname)
                 plugin_data[f"RenderElementOutputFilename{i}"] = new_elem_path
-
-        # Handle main render output
-        if renderer.startswith("V_Ray_"):
-            plugin_data["RenderOutput"] = ""
-        else:
-            render_output = rt.rendOutputFilename
-            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
 
         return plugin_data
 
@@ -376,9 +354,7 @@ fn PublishWorkfileRenderOutput =
         original_filename = rendOutputFilename
         new_filename = substituteString original_filename original_workfile publish_workfile
         rendOutputFilename = new_filename
-        amw = MaxtoAOps.AOVsManagerWindow()
-        amw.close()
-        aovmgr = renderers.current.AOVManager
+        aovmgr = renderers.production.AOVManager
         original_arnold_filename = aovmgr.outputPath
         new_arnold_filename = substituteString original_arnold_filename original_workfile publish_workfile
         aovmgr.outputPath = new_arnold_filename
