@@ -53,7 +53,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
-        attr_values = self._get_jobinfo_defaults(instance)
+        attr_values = self._get_profile_for_instance(instance)
         if not attr_values:
             raise PublishError(
                 "No profile selected for defaults. Ask Admin to "
@@ -234,6 +234,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         task_name = instance["task"]
         folder_path = instance["folderPath"]
+        product_base_type = instance.data.get("productBaseType")
         task_entity = create_context.get_task_entity(folder_path, task_name)
 
         task_name = task_type = None
@@ -246,6 +247,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "host_names": host_name,
                 "task_types": task_type,
                 "task_names": task_name,
+                "product_base_types": product_base_type,
             }
         )
         if not profile:
@@ -468,14 +470,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                          .get("use_custom_frames")
         )
 
-    def _get_jobinfo_defaults(self, instance):
-        """Queries project setting for profile with default values
+    def _get_profile_for_instance(self, instance):
+        """Returns the profile to use for the given instance.
 
         Args:
             instance (pyblish.api.Instance): Source instance.
 
         Returns:
             (dict)
+
         """
         context_data = instance.context.data
         host_name = context_data["hostName"]
@@ -485,6 +488,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         if task_entity:
             task_name = task_entity["name"]
             task_type = task_entity["taskType"]
+        product_base_type = instance.data.get("productBaseType")
 
         profile = filter_profiles(
             self.profiles,
@@ -492,7 +496,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 "host_names": host_name,
                 "task_types": task_type,
                 "task_names": task_name,
-                # "product_type": product_type
+                "product_base_types": product_base_type,
             }
         )
         return profile or {}
