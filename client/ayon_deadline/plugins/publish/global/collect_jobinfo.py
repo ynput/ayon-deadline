@@ -235,6 +235,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         task_name = instance["task"]
         folder_path = instance["folderPath"]
         product_base_type = instance.data.get("productBaseType")
+        if not product_base_type:
+            product_base_type = instance.data["productType"]
         task_entity = create_context.get_task_entity(folder_path, task_name)
 
         task_name = task_type = None
@@ -489,6 +491,9 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             task_name = task_entity["name"]
             task_type = task_entity["taskType"]
         product_base_type = instance.data.get("productBaseType")
+        if not product_base_type:
+            product_base_type = instance.data["productType"]
+        
 
         profile = filter_profiles(
             self.profiles,

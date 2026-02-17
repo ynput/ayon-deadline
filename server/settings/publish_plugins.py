@@ -4,10 +4,7 @@ from ayon_server.settings import (
     BaseSettingsModel,
     SettingsField,
     ensure_unique_names,
-)
-from ayon_server.settings.enum import (
     task_types_enum,
-    product_types_enum,
 )
 
 
@@ -74,7 +71,6 @@ class CollectJobInfoItem(BaseSettingsModel):
     product_base_types: list[str] = SettingsField(
         default_factory=list,
         title="Product base types",
-        enum_resolver=product_types_enum,
         description=(
             "Apply this profile only for products "
             "with these productBaseTypes."
