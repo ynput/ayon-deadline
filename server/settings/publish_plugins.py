@@ -57,16 +57,24 @@ class CollectJobInfoItem(BaseSettingsModel):
     _layout = "expanded"
     host_names: list[str] = SettingsField(
         default_factory=list,
-        title="Host names"
+        title="Host names",
     )
     task_types: list[str] = SettingsField(
         default_factory=list,
         title="Task types",
-        enum_resolver=task_types_enum
+        enum_resolver=task_types_enum,
     )
     task_names: list[str] = SettingsField(
         default_factory=list,
-        title="Task names"
+        title="Task names",
+    )
+    product_base_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Product base types",
+        description=(
+            "Apply this profile only for products "
+            "with these productBaseTypes."
+        ),
     )
 
     #########################################
@@ -468,6 +476,7 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
           ],
           "task_names": [],
           "task_types": [],
+          "product_base_types": [],
           "limit_groups": [],
           "machine_list": [],
           "primary_pool": "",
