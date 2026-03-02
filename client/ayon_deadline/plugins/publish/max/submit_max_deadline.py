@@ -398,9 +398,7 @@ renderOutputPublish = PublishWorkfileRenderOutput()
 
 """  # noqa: E501
 
-    script_path = os.path.join(
-        temp_dir, "pre_load_max_script.ms"
-    )
+    script_path = os.path.join(temp_dir, "pre_load_max_script.ms")
 
     try:
         with open(script_path, "w") as script_file:
