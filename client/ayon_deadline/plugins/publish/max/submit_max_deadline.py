@@ -2,6 +2,7 @@ import os
 import copy
 from dataclasses import dataclass, field, asdict
 
+from ayon_core.lib import BoolDef
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin,
     tempdir
@@ -31,6 +32,19 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
     families = ["maxrender"]
     targets = ["local"]
     settings_category = "deadline"
+
+    # Settings
+    use_local_temp = True
+
+    @classmethod
+    def get_attribute_defs(cls):
+        return [
+            BoolDef(
+                "use_local_temp",
+                label="Use Local Temp",
+                default=cls.use_local_temp,
+            ),
+        ]
 
     def get_job_info(self, job_info=None):
 
@@ -317,9 +331,13 @@ def tmp_pre_load_max_script(instance, original_workfile, publish_workfile):
     Returns:
         str: Maxscript code as a string.
     """
+    use_local_temp = instance.data.get("use_local_temp", True)
     temp_dir = tempdir.get_temp_dir(
         instance.context.data["projectName"],
-        use_local_temp=True)
+        use_local_temp=use_local_temp
+    )
+    if use_local_temp:
+        temp_dir = os.path.join(temp_dir, publish_workfile)
 
     max_script = f"""
 fn PublishWorkfileRenderOutput =
