@@ -1,6 +1,7 @@
 import os
 import copy
 from dataclasses import dataclass, field, asdict
+import uuid
 
 from ayon_core.lib import BoolDef
 from ayon_core.pipeline import (
@@ -418,7 +419,9 @@ renderOutputPublish = PublishWorkfileRenderOutput()
 
 """  # noqa: E501
 
-    script_path = os.path.join(temp_dir, "pre_load_max_script.ms")
+    script_path = os.path.join(
+        temp_dir, f"pre_load_max_script_{uuid.uuid4().hex}.ms"
+    )
 
     try:
         with open(script_path, "w") as script_file:
