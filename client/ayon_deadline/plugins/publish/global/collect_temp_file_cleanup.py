@@ -41,3 +41,30 @@ class CollectSceneRenderCleanUp(pyblish.api.InstancePlugin):
         self.log.debug(f"Files to clean up: {files}")
         instance.context.data["cleanupEmptyDirs"].extend(staging_dirs)
         self.log.debug(f"Staging dirs to clean up: {staging_dirs}")
+
+
+class CollectTempFileCleanUp(pyblish.api.InstancePlugin):
+    """Collect files and directories to be cleaned up"""
+
+    order = pyblish.api.CollectorOrder - 0.2
+    label = "Collect Temp File Clean Up"
+    targets = ["farm"]
+
+    def process(self, instance):
+        env_temp_dir = os.getenv("AYON_TMPDIR")
+        if not env_temp_dir:
+            return
+        for tmp_file in os.listdir(env_temp_dir):
+            file_path = os.path.join(env_temp_dir, tmp_file)
+            if os.path.isfile(file_path):
+                instance.context.data["cleanupFullPaths"].append(file_path)
+            elif os.path.isdir(file_path):
+                for tmp_script in os.listdir(file_path):
+                    script_path = os.path.join(file_path, tmp_script)
+                    if os.path.isfile(script_path):
+                        instance.context.data["cleanupFullPaths"].append(script_path)
+                instance.context.data["cleanupEmptyDirs"].append(file_path)
+        self.log.debug(
+            "Temp files to clean up: "
+            f"{instance.context.data['cleanupEmptyDirs']}"
+        )

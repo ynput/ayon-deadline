@@ -234,19 +234,6 @@ class MayaSubmitDeadlineModel(BaseSettingsModel):
         return value
 
 
-class MaxSubmitDeadlineModel(BaseSettingsModel):
-    """3ds Max-specific settings"""
-    use_local_temp: bool = SettingsField(
-        True,
-        title="Use local temp directory",
-        description=(
-            "Use local temp directory on render node for storing temporary "
-            "files related to the submission. Temporary files are deleted "
-            "after the job is finished."
-        )
-    )
-
-
 def fusion_deadline_plugin_enum():
     """Return a list of value/label dicts for the enumerator.
 
@@ -410,9 +397,6 @@ class PublishPluginsModel(BaseSettingsModel):
     MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
         default_factory=MayaSubmitDeadlineModel,
         title="Maya")
-    MaxSubmitDeadline: MaxSubmitDeadlineModel = SettingsField(
-        default_factory=MaxSubmitDeadlineModel,
-        title="3ds Max")
     NukeSubmitDeadline: NukeSubmitDeadlineModel = SettingsField(
         default_factory=NukeSubmitDeadlineModel,
         title="Nuke")
@@ -538,9 +522,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "strict_error_checking": True,
         "tile_priority": 50,
         "scene_patches": []
-    },
-    "MaxSubmitDeadline": {
-        "use_local_temp": True
     },
     "NukeSubmitDeadline": {
         "use_gpu": True,
