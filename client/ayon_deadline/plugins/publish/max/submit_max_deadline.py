@@ -3,7 +3,6 @@ import copy
 from dataclasses import dataclass, field, asdict
 import uuid
 
-from ayon_core.lib import BoolDef
 from ayon_core.pipeline import (
     AYONPyblishPluginMixin,
     tempdir
@@ -36,16 +35,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
     # Settings
     use_local_temp = True
-
-    @classmethod
-    def get_attribute_defs(cls):
-        return [
-            BoolDef(
-                "use_local_temp",
-                label="Use Local Temp",
-                default=cls.use_local_temp,
-            ),
-        ]
 
     def get_job_info(self, job_info=None):
 
