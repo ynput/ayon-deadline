@@ -317,9 +317,7 @@ def tmp_pre_load_max_script(instance, original_workfile, publish_workfile):
     Returns:
         str: Maxscript code as a string.
     """
-    temp_dir = tempdir.get_temp_dir(
-        instance.context.data["projectName"],
-        use_local_temp=True)
+    temp_dir = tempdir.get_temp_dir(instance.context.data["projectName"])
 
     max_script = f"""
 fn PublishWorkfileRenderOutput =
