@@ -365,6 +365,29 @@ fn PublishWorkfileRenderOutput =
         aovmgr.outputPath = new_arnold_filename
 
     )
+    else if MatchPattern rendererName pattern:"Redshift*" then (
+		original_filename = rendOutputFilename
+        new_filename = substituteString original_filename original_workfile publish_workfile
+        rendOutputFilename = new_filename
+
+        rnMgr = maxOps.GetCurRenderElementMgr()
+        if rnMgr != undefined do
+        (
+            for i = 0 to rnMgr.numrenderelements()-1 do
+            (
+                re = rnMgr.getrenderelement i
+                if re.enabled do
+                (
+                    originAovfilename = rnMgr.GetRenderElementFileName i
+                    if originAovfilename != undefined and originAovfilename != "" do
+                    (
+                        newAovfilename = substituteString originAovfilename original_workfile publish_workfile
+                        rnMgr.SetRenderElementFileName i newAovfilename
+                    )
+                )
+            )
+        )
+	)
     else
     (
         original_filename = rendOutputFilename
