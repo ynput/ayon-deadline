@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field, fields
 from functools import partial
 import typing
@@ -30,6 +32,10 @@ FARM_FAMILIES = [
 # DEPRECATED: Use `FARM_JOB_ENV_DATA_KEY` from `ayon_core.pipeline.publish`
 #     This variable is NOT USED anywhere in deadline addon.
 JOB_ENV_DATA_KEY: str = "farmJobEnv"
+
+
+MAX_CHUNK_SIZE = 2147483647
+"""Maximum chunk size for Deadline."""
 
 
 @dataclass
@@ -373,12 +379,12 @@ class DeadlineJobInfo:
     SecondaryPool: Optional[str] = field(default=None)
     # Default: "none"
     Group: Optional[str] = field(default=None)
-    Priority: int = field(default=None)
-    ChunkSize: int = field(default=0)
-    ConcurrentTasks: int = field(default=None)
+    Priority: int | None = field(default=None)
+    ChunkSize: int | None = field(default=None)
+    ConcurrentTasks: int | None = field(default=None)
     # Default: "true"
     LimitConcurrentTasksToNumberOfCpus: Optional[bool] = field(default=None)
-    OnJobComplete: str = field(default=None)
+    OnJobComplete: str | None = field(default=None)
     # Default: false
     SynchronizeAllAuxiliaryFiles: Optional[bool] = field(default=None)
     # Default: false
@@ -607,8 +613,8 @@ class DeadlineJobInfo:
                 setattr(self, attr_name, value)
 
         # chunk size of 0 = "unlimited"
-        if self.ChunkSize <= 0:
-            self.ChunkSize = 2147483647
+        if self.ChunkSize == 0:
+            self.ChunkSize = MAX_CHUNK_SIZE
 
     def __setattr__(self, key, value):
         if value is None:
