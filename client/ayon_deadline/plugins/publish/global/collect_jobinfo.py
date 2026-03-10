@@ -343,8 +343,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 label="Frames Per Task",
                 default=default_values.get("chunk_size"),
                 decimals=0,
-                minimum=1,
-                maximum=1000
+                minimum=0,
+                maximum=2147483647,   # default maximum for Deadline
             ),
             NumberDef(
                 "concurrent_tasks",

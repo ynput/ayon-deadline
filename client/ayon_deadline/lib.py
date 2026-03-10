@@ -374,7 +374,7 @@ class DeadlineJobInfo:
     # Default: "none"
     Group: Optional[str] = field(default=None)
     Priority: int = field(default=None)
-    ChunkSize: int = field(default=None)
+    ChunkSize: int = field(default=0)
     ConcurrentTasks: int = field(default=None)
     # Default: "true"
     LimitConcurrentTasksToNumberOfCpus: Optional[bool] = field(default=None)
