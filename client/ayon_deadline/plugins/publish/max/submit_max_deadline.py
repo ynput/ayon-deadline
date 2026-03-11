@@ -43,7 +43,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             start=int(instance.data["frameStart"]),
             end=int(instance.data["frameEnd"])
         )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}".format(
+                start=int(instance.data["frameStart"]),
+                end=int(instance.data["frameEnd"])
+            )
+            job_info.Frames = frames
 
         # do not add expected files for multiCamera
         if instance.data.get("multiCamera"):
