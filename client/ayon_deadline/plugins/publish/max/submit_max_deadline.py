@@ -38,11 +38,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info.Plugin = instance.data.get("plugin") or "3dsmax"
 
         job_info.EnableAutoTimeout = True
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}".format(
-            start=int(instance.data["frameStart"]),
-            end=int(instance.data["frameEnd"])
-        )
         # already collected explicit values for rendered Frames
         if not job_info.Frames:
             # Deadline requires integers in frame range
