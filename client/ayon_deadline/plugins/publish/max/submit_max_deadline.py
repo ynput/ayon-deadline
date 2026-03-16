@@ -38,12 +38,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info.Plugin = instance.data.get("plugin") or "3dsmax"
 
         job_info.EnableAutoTimeout = True
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}".format(
-            start=int(instance.data["frameStart"]),
-            end=int(instance.data["frameEnd"])
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}".format(
+                start=int(instance.data["frameStart"]),
+                end=int(instance.data["frameEnd"])
+            )
+            job_info.Frames = frames
 
         # do not add expected files for multiCamera
         if instance.data.get("multiCamera"):
@@ -374,16 +376,16 @@ fn PublishWorkfileRenderOutput =
         rnMgr = maxOps.GetCurRenderElementMgr()
         if rnMgr != undefined do
         (
-            for i = 1 to rnMgr.numrenderelements() do
+            for i = 0 to rnMgr.numrenderelements()-1 do
             (
                 re = rnMgr.getrenderelement i
                 if re.enabled do
                 (
-                    originAovfilename = re.GetRenderElementFileName i
+                    originAovfilename = rnMgr.GetRenderElementFileName i
                     if originAovfilename != undefined and originAovfilename != "" do
                     (
                         newAovfilename = substituteString originAovfilename original_workfile publish_workfile
-                        re.SetRenderElementFileName i newAovfilename
+                        rnMgr.SetRenderElementFileName i newAovfilename
                     )
                 )
             )
