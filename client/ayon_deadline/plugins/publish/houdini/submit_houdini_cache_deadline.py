@@ -10,6 +10,7 @@ from ayon_core.pipeline import (
     AYONPyblishPluginMixin
 )
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -76,7 +77,7 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         # Set the chunk size to a large number because multiple
         #  machines cannot render to the same file.
         if isinstance(instance.data.get("frames"), str):
-            job_info.ChunkSize = 99999999
+            job_info.ChunkSize = MAX_CHUNK_SIZE
 
         return job_info
 
