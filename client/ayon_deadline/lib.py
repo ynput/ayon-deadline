@@ -612,11 +612,11 @@ class DeadlineJobInfo:
             if not isinstance(value, DeadlineKeyValueVar):
                 setattr(self, attr_name, value)
 
-        # chunk size of 0 = "unlimited"
-        if self.ChunkSize == 0:
-            self.ChunkSize = MAX_CHUNK_SIZE
-
     def __setattr__(self, key, value):
+        # ChunkSize=0 means "unlimited" - convert to max chunk size
+        if key == "ChunkSize" and value == 0:
+            value = MAX_CHUNK_SIZE
+
         if value is None:
             super().__setattr__(key, value)
             return
