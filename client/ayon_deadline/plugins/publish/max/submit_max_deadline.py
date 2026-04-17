@@ -1,11 +1,10 @@
 import os
 import copy
+from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
-from ayon_core.pipeline import (
-    AYONPyblishPluginMixin,
-    tempdir
-)
+from ayon_core.pipeline import AYONPyblishPluginMixin
+
 from ayon_core.pipeline.publish import KnownPublishError
 from ayon_max.api.lib import (
     get_current_renderer,
@@ -319,7 +318,6 @@ def tmp_pre_load_max_script(instance, original_workfile, publish_workfile):
     Returns:
         str: Maxscript code as a string.
     """
-    temp_dir = tempdir.get_temp_dir(instance.context.data["projectName"])
 
     max_script = f"""
 fn PublishWorkfileRenderOutput =
@@ -399,8 +397,10 @@ fn PublishWorkfileRenderOutput =
 renderOutputPublish = PublishWorkfileRenderOutput()
 
 """  # noqa: E501
-
-    script_path = os.path.join(temp_dir, "pre_load_max_script.ms")
+    exp = instance.data["expectedFiles"][0]
+    render_dir = Path(os.path.dirname(exp))
+    render_dir.mkdir(parents=True, exist_ok=True)
+    script_path = render_dir / "pre_load_max_script.ms"
 
     try:
         with open(script_path, "w") as script_file:
