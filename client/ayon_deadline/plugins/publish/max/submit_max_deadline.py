@@ -415,6 +415,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             with open(script_path, "w") as script_file:
                 script_file.write(max_script)
             print(f"Temporary pre-load maxscript created at: {script_path}")
-            return script_path
+            return str(script_path)
+
         except Exception as e:
             raise RuntimeError(f"Error creating maxscript file: {str(e)}")
