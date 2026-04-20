@@ -309,10 +309,20 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             for file in exp:
                 yield file
 
-    def tmp_pre_load_max_script(self, expected_files, original_workfile, publish_workfile):
+    def tmp_pre_load_max_script(
+            self,
+            expected_files: dict,
+            original_workfile: str,
+            publish_workfile: str
+        ) -> str:
         """Temporary function to provide pre-load maxscript for deadline
         submission. This is a workaround for Deadline issue where it
         doesn't load the scene properly before rendering.
+
+        Args:
+            expected_files (dict): A dictionary of expected rendered files.
+            original_workfile (str): The original workfile name pattern.
+            publish_workfile (str): The published workfile name pattern.
 
         Returns:
             str: Maxscript code as a string.
