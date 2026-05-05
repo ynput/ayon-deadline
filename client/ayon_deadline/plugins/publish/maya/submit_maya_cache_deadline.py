@@ -14,6 +14,7 @@ from ayon_core.pipeline import (
 from ayon_deadline import abstract_submit_deadline
 
 from ayon_deadline.scripts import remote_publish
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -57,7 +58,7 @@ class MayaCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,  
         job_info.Name = job_name
         job_info.BatchName = batch_name
         job_info.Plugin = "MayaBatch"
-        job_info.ChunkSize = 99999999
+        job_info.ChunkSize = MAX_CHUNK_SIZE
 
         job_info.EnvironmentKeyValue["INSTANCE_IDS"] = instance.name
         job_info.EnvironmentKeyValue["AYON_REMOTE_PUBLISH"] = "1"

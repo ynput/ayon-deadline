@@ -10,6 +10,7 @@ from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin
 )
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -124,7 +125,7 @@ class NukeSubmitDeadline(
                 self.job_info.Name = os.path.basename(render_path)
 
                 # baking job shouldn't be split
-                self.job_info.ChunkSize = 999999
+                self.job_info.ChunkSize = MAX_CHUNK_SIZE
 
                 self.job_info.Frames = f"{start_frame}-{end_frame}"
 
