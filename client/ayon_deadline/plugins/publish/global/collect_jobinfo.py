@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 from datetime import datetime
-from typing import Optional
 
 import pyblish.api
 from ayon_core.lib import (
@@ -11,7 +10,6 @@ from ayon_core.lib import (
     TextDef,
     UISeparatorDef
 )
-from ayon_core.pipeline import KnownPublishError
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin,
     PublishError
