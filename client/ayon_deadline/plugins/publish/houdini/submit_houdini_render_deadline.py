@@ -1,22 +1,15 @@
 import os
-import re
 from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
 import pyblish.api
 
-# Frame-token placeholders Houdini uses in render-product paths
-# (e.g. "....1###.exr" or "....$F4.exr"). Replaced with Deadline's
-# <STARTFRAME> token for per-task substitution at render time.
-_FRAME_TOKEN_RE = re.compile(r"#+|\$F\d*")
-
 from ayon_core.pipeline import AYONPyblishPluginMixin
 from ayon_core.lib import (
     is_in_tests,
     TextDef,
     NumberDef,
-    get_oiio_tool_args,
 )
 from ayon_deadline import abstract_submit_deadline
 
@@ -402,141 +395,6 @@ class HoudiniSubmitDeadline(
             TileSuffix=tile_suffix,
         )
 
-    def _build_tile_assembly_args(
-        self, file_patterns, tile_count, tile_suffix_pattern
-    ):
-        """Build the oiiotool argument string that merges N tile EXRs into
-        the original render-product path, for each render product.
-
-        Husk wrote each tile as a cropped multipart OpenEXR — display
-        window is the full image, data window is the tile's rectangle,
-        pixel data only in that rectangle. The file typically has
-        multiple subimages: subimage 0 is RGBA beauty, additional
-        subimages are 3-channel AOVs (normals, position, cryptomatte,
-        etc.) without alpha.
-
-        We can't use `--over` because the AOV subimages have no alpha
-        channel. Instead we use `--add:allsubimages=1`: since the four
-        tiles' data windows don't overlap, summing them produces the
-        same result as compositing, and `:allsubimages=1` applies the
-        op to every subimage in parallel so all AOVs survive.
-
-        Frame placeholder tokens ('####', '$F4', etc.) in the input
-        patterns are replaced with Deadline's <STARTFRAME> token so each
-        per-task command resolves to a concrete frame number at run time.
-        """
-        args = []
-        for pattern in file_patterns:
-            canonical = _FRAME_TOKEN_RE.sub("<STARTFRAME>", pattern)
-            base, ext = os.path.splitext(canonical)
-            for i in range(tile_count):
-                # tile_suffix_pattern is a printf string like "_tile%02d"
-                # that husk substitutes with the tile index.
-                tile_suffix = tile_suffix_pattern % i
-                tile_path = "{}{}{}".format(base, tile_suffix, ext)
-                args.append("<QUOTE>{}<QUOTE>".format(tile_path))
-                if i > 0:
-                    args.append("--add:allsubimages=1")
-            args.append("-o")
-            args.append("<QUOTE>{}<QUOTE>".format(canonical))
-        return " ".join(args)
-
-    def _submit_tile_assembly_job(
-        self,
-        instance,
-        tiles_x,
-        tiles_y,
-        tile_suffix_pattern,
-        depends_on,
-        generic_job_info,
-        auth,
-        verify,
-    ):
-        """Submit a Deadline CommandLine job that merges per-tile EXRs into
-        the final render-product path using oiiotool's --over chain.
-
-        One task per frame (ChunkSize=1, IsFrameDependent=True) so a frame
-        can assemble as soon as all its tile-job tasks for that frame are
-        done. The whole assembly job depends on every tile render job, so
-        nothing starts until the tile fan-out is at least partially through.
-        """
-        file_patterns = instance.data.get("files") or []
-        if not file_patterns:
-            self.log.warning(
-                "Tile assembly skipped: instance has no 'files' "
-                "(render product paths) to merge."
-            )
-            return None
-        if not depends_on:
-            self.log.warning(
-                "Tile assembly skipped: no tile job ids to depend on."
-            )
-            return None
-
-        tile_count = tiles_x * tiles_y
-        arguments = self._build_tile_assembly_args(
-            file_patterns, tile_count, tile_suffix_pattern
-        )
-
-        # Build JobInfo. We start from generic_job_info and override the
-        # Plugin to CommandLine; get_job_info() would otherwise set it to
-        # HuskStandalone for usdrender + use_dcc_plugin=False.
-        assembly_job_info = self.get_job_info(
-            job_info=deepcopy(generic_job_info),
-            dependency_job_ids=depends_on,
-            use_dcc_plugin=False,
-        )
-        assembly_job_info.Plugin = "CommandLine"
-        assembly_job_info.Name = "{} (assemble tiles)".format(
-            assembly_job_info.Name
-        )
-        assembly_job_info.IsFrameDependent = True
-        assembly_job_info.ChunkSize = 1
-        # Output paths for Deadline's "View Output" come from get_job_info()
-        # above, which walks instance.data["files"] and appends each path's
-        # dirname/basename via the +=-style container that
-        # PublishDeadlineJobInfo uses. The canonical render product paths
-        # are exactly what the assembled outputs land at, so we don't need
-        # to touch OutputDirectory / OutputFilename here.
-
-        # Resolve oiiotool via AYON's canonical helper. It asks the
-        # ayon_third_party addon for the bundled binary path first
-        # (which is what other AYON tooling uses), falling back to
-        # AYON_OIIO_PATHS / system PATH. Returns a list of args; for
-        # standard installs that's a single executable path. We send
-        # args[0] to Deadline as Executable and prepend any extra
-        # args[1:] to Arguments (rare — only if oiiotool is wrapped).
-        oiio_args = get_oiio_tool_args("oiiotool")
-        if not oiio_args:
-            self.log.error(
-                "Tile assembly skipped: AYON couldn't resolve an "
-                "oiiotool executable. Check that the ayon_third_party "
-                "addon is installed and has finished its first-run "
-                "binary download, or set AYON_OIIO_PATHS."
-            )
-            return None
-        oiiotool_executable = oiio_args[0]
-        if len(oiio_args) > 1:
-            arguments = " ".join(oiio_args[1:]) + " " + arguments
-        plugin_info = {
-            "Executable": oiiotool_executable,
-            "Arguments": arguments,
-            "Shell": "default",
-            "ShellExecute": False,
-        }
-
-        payload = self.assemble_payload(
-            job_info=assembly_job_info,
-            plugin_info=plugin_info,
-        )
-        assembly_job_id = self.submit(payload, auth, verify)
-        self.log.info(
-            "Submitted tile assembly job (oiiotool, %s tiles per frame, "
-            "%s product(s)) to Deadline: %s",
-            tile_count, len(file_patterns), assembly_job_id,
-        )
-        return assembly_job_id
-
     def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
         product_base_type = instance.data.get("productBaseType")
         if not product_base_type:
@@ -566,9 +424,12 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
             return super().process(instance)
 
         # Tile rendering path: submit the export job, then fan out N tile
-        # render jobs (each with --tile-index/--tile-count via Husk PluginInfo)
-        # depending on the export job. Assembly job is a follow-up — for now
-        # tile outputs are produced as separate files with --tile-suffix.
+        # render jobs (each with --tile-index/--tile-count via Husk
+        # PluginInfo) depending on the export job. Per-tile EXRs land on
+        # disk with a '_tile##' suffix; the cross-DCC publish job that
+        # ProcessSubmittedJobOnFarm submits depends on these tile jobs and
+        # the AssembleRenderTiles plugin runs oiiotool inside that publish
+        # job to merge the tiles into the canonical render-product paths.
         self._instance = instance
         context = instance.context
         self._deadline_url = instance.data["deadline"]["url"]
@@ -663,27 +524,17 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
             "Tile rendering submitted: %s tile jobs queued.", tile_count,
         )
 
-        # Tile assembly job. One CommandLine job (Plugin=CommandLine) running
-        # oiiotool's --over chain, one task per frame, depending on all tile
-        # render jobs (whole-job deps) with IsFrameDependent=True so each
-        # merged frame picks up as soon as that frame's tiles complete.
-        assembly_job_id = self._submit_tile_assembly_job(
-            instance,
-            tiles_x=tiles_x,
-            tiles_y=tiles_y,
-            tile_suffix_pattern=tile_suffix_pattern,
-            depends_on=tile_job_ids,
-            generic_job_info=generic_job_info,
-            auth=auth,
-            verify=verify,
-        )
-        if assembly_job_id:
-            instance.data["tileAssemblyJobId"] = assembly_job_id
-            # The cross-DCC publish job (ProcessSubmittedJobOnFarm in
-            # submit_publish_job.py) reads `assemblySubmissionJobs` when
-            # tileRendering=True. Without this, JobDependencies is None
-            # and the publish task fires before the renders finish.
-            instance.data["assemblySubmissionJobs"] = [assembly_job_id]
+        # Suffix pattern Husk used for the tile renders. Stashed for the
+        # publish job's AssembleRenderTiles plugin (worker-side) to know
+        # how to reconstruct tile filenames from the canonical names.
+        instance.data["tileSuffixPattern"] = tile_suffix_pattern
+
+        # The publish job depends on the tile renders directly. We reuse
+        # the existing 'assemblySubmissionJobs' key that
+        # ProcessSubmittedJobOnFarm._get_dependency_ids reads when
+        # tileRendering=True — same key, just pointed at the tile jobs
+        # since assembly now happens inside the publish job itself.
+        instance.data["assemblySubmissionJobs"] = list(tile_job_ids)
 
         # Maintain the parent's "Store output dir for unified publisher" side
         # effect (mirrors HoudiniSubmitDeadline.process).
