@@ -154,14 +154,15 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
     def _handle_custom_frames(self, instance, job_info):
         """Fill JobInfo.Frames only if dropdown says so."""
-        job_info.Frames = None
-        job_info.reuse_last_version = False
-        use_custom_frames = instance.data.get("custom_frames", "")
-        if use_custom_frames:
-            job_info.Frames = use_custom_frames
-            job_info.reuse_last_version = instance.data.get(
-                "reuse_last_version", False
-            )
+        custom_frames = instance.data.get("custom_frames", "")
+        if isinstance(custom_frames, str):
+            custom_frames = custom_frames.strip()
+        elif custom_frames is None:
+            custom_frames = ""
+        job_info.Frames = custom_frames
+        job_info.reuse_last_version = instance.data.get(
+            "reuse_last_version", False
+        )
 
     @classmethod
     def apply_settings(cls, project_settings):
