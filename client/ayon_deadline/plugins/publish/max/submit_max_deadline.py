@@ -1,11 +1,10 @@
 import os
 import copy
+from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
-from ayon_core.pipeline import (
-    AYONPyblishPluginMixin,
-    tempdir
-)
+from ayon_core.pipeline import AYONPyblishPluginMixin
+
 from ayon_core.pipeline.publish import KnownPublishError
 from ayon_max.api.lib import (
     get_current_renderer,
@@ -38,12 +37,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info.Plugin = instance.data.get("plugin") or "3dsmax"
 
         job_info.EnableAutoTimeout = True
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}".format(
-            start=int(instance.data["frameStart"]),
-            end=int(instance.data["frameEnd"])
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}".format(
+                start=int(instance.data["frameStart"]),
+                end=int(instance.data["frameEnd"])
+            )
+            job_info.Frames = frames
 
         # do not add expected files for multiCamera
         if instance.data.get("multiCamera"):
@@ -65,6 +66,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         plugin_payload = asdict(plugin_info)
 
         return plugin_payload
+
+    def process(self, instance):
+        if not instance.data["farm"]:
+            self.log.debug("Render on farm is disabled. "
+                           "Skipping deadline submission.")
+            return
+
+        super().process(instance)
 
     def process_submission(self):
 
@@ -161,8 +170,8 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             "resolutionHeight", rt.renderHeight)
 
         published_workfile = os.path.basename(plugin_info["SceneFile"])
-        plugin_info["PostLoadScript"] = tmp_pre_load_max_script(
-            instance,
+        plugin_info["PostLoadScript"] = self.tmp_pre_load_max_script(
+            instance.data["expectedFiles"],
             instance.data["original_workfile_pattern"],
             os.path.splitext(published_workfile)[0],
         )
@@ -304,7 +313,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             dict: Updated plugin_data with render output paths.
 
         """
-        from pymxs import runtime as rt
         from ayon_max.api.lib_rendersettings import is_supported_renderer
         # Handle render elements
         if is_supported_renderer(renderer):
@@ -313,13 +321,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                 elem_bname = os.path.basename(element)
                 new_elem_path = os.path.join(dir, elem_bname)
                 plugin_data[f"RenderElementOutputFilename{i}"] = new_elem_path
-
-        # Handle main render output
-        if renderer.startswith("V_Ray_"):
-            plugin_data["RenderOutput"] = ""
-        else:
-            render_output = rt.rendOutputFilename
-            plugin_data["RenderOutput"] = render_output.replace("\\", "/")
 
         return plugin_data
 
@@ -333,94 +334,113 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             for file in exp:
                 yield file
 
+    def tmp_pre_load_max_script(
+            self,
+            expected_files: dict,
+            original_workfile: str,
+            publish_workfile: str
+        ) -> str:
+        """Temporary function to provide pre-load maxscript for deadline
+        submission. This is a workaround for Deadline issue where it
+        doesn't load the scene properly before rendering.
 
-def tmp_pre_load_max_script(instance, original_workfile, publish_workfile):
-    """Temporary function to provide pre-load maxscript for deadline
-    submission. This is a workaround for Deadline issue where it
-    doesn't load the scene properly before rendering.
+        Args:
+            expected_files (dict): A dictionary of expected rendered files.
+            original_workfile (str): The original workfile name pattern.
+            publish_workfile (str): The published workfile name pattern.
 
-    Returns:
-        str: Maxscript code as a string.
-    """
-    temp_dir = tempdir.get_temp_dir(
-        instance.context.data["projectName"],
-        use_local_temp=True)
+        Returns:
+            str: Maxscript code as a string.
+        """
 
-    max_script = f"""
-fn PublishWorkfileRenderOutput =
-(
-    rendererName = renderers.production as string
-    original_workfile = "{original_workfile}"
-    publish_workfile = "{publish_workfile}"
-
-    if matchPattern rendererName pattern:"V_Ray*" then
+        max_script = f"""
+    fn PublishWorkfileRenderOutput =
     (
-        if matchPattern rendererName pattern:"*GPU*" then
-        (
-            original_filename = renderers.production.V_Ray_settings.output_rawfilename
-            new_filename = substituteString original_filename original_workfile publish_workfile
-            renderers.production.V_Ray_settings.output_rawfilename = new_filename
+        rendererName = renderers.production as string
+        original_workfile = "{original_workfile}"
+        publish_workfile = "{publish_workfile}"
 
-            if renderers.production.V_Ray_settings.output_splitgbuffer do
+        if matchPattern rendererName pattern:"V_Ray*" then
+        (
+            if matchPattern rendererName pattern:"*GPU*" then
             (
-                original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
-                new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
-                renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                original_filename = renderers.production.V_Ray_settings.output_rawfilename
+                new_filename = substituteString original_filename original_workfile publish_workfile
+                renderers.production.V_Ray_settings.output_rawfilename = new_filename
+
+                if renderers.production.V_Ray_settings.output_splitgbuffer do
+                (
+                    original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
+                    new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                    renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                )
             )
+            else
+            (
+                original_filename = renderers.production.output_rawfilename
+                new_filename = substituteString original_filename original_workfile publish_workfile
+                renderers.production.output_rawfilename = new_filename
+
+                if renderers.production.output_splitgbuffer do
+                (
+                    original_Aovfilename = renderers.production.output_splitfilename
+                    new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                    renderers.production.output_splitfilename = new_aovfilename
+                )
+            )
+        )
+        else if matchPattern rendererName pattern:"Arnold*" then (
+            original_filename = rendOutputFilename
+            new_filename = substituteString original_filename original_workfile publish_workfile
+            rendOutputFilename = new_filename
+            aovmgr = renderers.production.AOVManager
+            original_arnold_filename = aovmgr.outputPath
+            new_arnold_filename = substituteString original_arnold_filename original_workfile publish_workfile
+            aovmgr.outputPath = new_arnold_filename
+
         )
         else
         (
-            original_filename = renderers.production.output_rawfilename
+            original_filename = rendOutputFilename
             new_filename = substituteString original_filename original_workfile publish_workfile
-            renderers.production.output_rawfilename = new_filename
+            rendOutputFilename = new_filename
 
-            if renderers.production.output_splitgbuffer do
+            rnMgr = maxOps.GetCurRenderElementMgr()
+            if rnMgr != undefined do
             (
-                original_Aovfilename = renderers.production.output_splitfilename
-                new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
-                renderers.production.output_splitfilename = new_aovfilename
-            )
-        )
-    )
-    else
-    (
-        original_filename = renderOutput
-        new_filename = substituteString original_filename original_workfile publish_workfile
-        renderOutput = new_filename
-
-        rnMgr = maxOps.GetCurRenderElementMgr()
-        if rnMgr != undefined do
-        (
-            for i = 1 to rnMgr.numrenderelements() do
-            (
-                re = rnMgr.getrenderelement i
-                if re.enabled do
+                for i = 0 to rnMgr.numrenderelements()-1 do
                 (
-                    originAovfilename = re.GetRenderElementFileName i
-                    if originAovfilename != undefined and originAovfilename != "" do
+                    re = rnMgr.getrenderelement i
+                    if re.enabled do
                     (
-                        newAovfilename = substituteString originAovfilename original_workfile publish_workfile
-                        re.SetRenderElementFileName i newAovfilename
+                        originAovfilename = rnMgr.GetRenderElementFileName i
+                        if originAovfilename != undefined and originAovfilename != "" do
+                        (
+                            newAovfilename = substituteString originAovfilename original_workfile publish_workfile
+                            rnMgr.SetRenderElementFileName i newAovfilename
+                        )
                     )
                 )
             )
         )
+
+        return true
     )
 
-    return true
-)
+    -- Execute the function
+    renderOutputPublish = PublishWorkfileRenderOutput()
 
--- Execute the function
-renderOutputPublish = PublishWorkfileRenderOutput()
+    """  # noqa: E501
+        first_file = next(self._iter_expected_files(expected_files))
+        render_dir = Path(os.path.dirname(first_file))
+        render_dir.mkdir(parents=True, exist_ok=True)
+        script_path = render_dir / "pre_load_max_script.ms"
 
-"""  # noqa: E501
+        try:
+            with open(script_path, "w") as script_file:
+                script_file.write(max_script)
+            print(f"Temporary pre-load maxscript created at: {script_path}")
+            return str(script_path)
 
-    script_path = os.path.join(temp_dir, "pre_load_max_script.ms")
-
-    try:
-        with open(script_path, "w") as script_file:
-            script_file.write(max_script)
-        print(f"Temporary pre-load maxscript created at: {script_path}")
-        return script_path
-    except Exception as e:
-        raise RuntimeError(f"Error creating maxscript file: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"Error creating maxscript file: {str(e)}")
