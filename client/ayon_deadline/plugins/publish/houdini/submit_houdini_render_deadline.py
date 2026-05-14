@@ -414,80 +414,41 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
         # output paths then do not match the actual rendered paths
         return
 
-    def process(self, instance):
-        if not instance.data.get("farm"):
-            self.log.debug("Render on farm is disabled. "
-                           "Skipping deadline submission.")
-            return
-
+    def _submit_split_render_jobs(
+        self, instance, job_id, job_info
+    ):
         if not instance.data.get("tileRendering"):
-            return super().process(instance)
+            return super()._submit_split_render_jobs(
+                instance, job_id, job_info
+            )
 
-        # Tile rendering path: submit the export job, then fan out N tile
-        # render jobs (each with --tile-index/--tile-count via Husk
-        # PluginInfo) depending on the export job. Per-tile EXRs land on
-        # disk with a '_tile##' suffix; the cross-DCC publish job that
-        # ProcessSubmittedJobOnFarm submits depends on these tile jobs and
-        # the AssembleRenderTiles plugin runs oiiotool inside that publish
-        # job to merge the tiles into the canonical render-product paths.
-        self._instance = instance
-        context = instance.context
-        self._deadline_url = instance.data["deadline"]["url"]
-        assert self._deadline_url, "Requires Deadline Webservice URL"
+        # Tile rendering path: fan out N tile render jobs (each with
+        # --tile-index/--tile-count via Husk PluginInfo) depending on the
+        # export job. Per-tile EXRs land on disk with a '_tile##' suffix;
+        # the cross-DCC publish job that ProcessSubmittedJobOnFarm submits
+        # depends on these tile jobs and the AssembleRenderTiles plugin
+        # runs oiiotool inside that publish job to merge the tiles into
+        # the canonical render-product paths.
+        # Husk takes a 2D grid via `--tile-count X Y` and a printf-style
+        # `--tile-suffix` (it substitutes %d-style tokens with the index
+        # itself), so the suffix is the same for every tile job and only
+        # TileIndex changes.
+        import hou
 
-        creator_attr = instance.data.get("creator_attributes", {})
-        export_skipped = (
-            creator_attr.get("render_target") == "local_export_farm_render"
-        )
-
-        # Build & submit the export job (mirrors AbstractSubmitDeadline.process)
-        generic_job_info = self.get_generic_job_info(instance)
-        self.job_info = self.get_job_info(job_info=deepcopy(generic_job_info))
-
-        self._set_scene_path(
-            context.data["currentFile"],
-            generic_job_info.use_published,
-            instance.data.get("stagingDir_is_custom", False),
-        )
-        if instance.data.get("expectedFiles"):
-            self._append_job_output_paths(instance, self.job_info)
-
-        self.plugin_info = self.get_plugin_info()
-        self.aux_files = self.get_aux_files()
-
-        plugin_info_data = instance.data["deadline"]["plugin_info_data"]
-        if plugin_info_data:
-            self.apply_additional_plugin_info(plugin_info_data)
-
-        export_job_id = None
-        if not export_skipped:
-            export_job_id = self.process_submission()
-            self.log.info("Submitted export job to Deadline: %s.", export_job_id)
-
-        instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
-
-        # Fan out tile render jobs. Husk takes a 2D grid via
-        # `--tile-count X Y` and a printf-style `--tile-suffix` (it
-        # substitutes %d-style tokens with the index itself), so the suffix
-        # is the same for every tile job and only TileIndex changes.
         tiles_x = int(instance.data["tilesX"])
         tiles_y = int(instance.data["tilesY"])
         tile_count = tiles_x * tiles_y
-        # Husk substitutes %d-style tokens in --tile-suffix with the tile
-        # index itself, so we send the same printf pattern to every tile job.
         tile_suffix_pattern = "_tile%02d"
-        dependency_job_ids = [export_job_id] if export_job_id else []
+        dependency_job_ids = [job_id] if job_id else []
         auth = instance.data["deadline"]["auth"]
         verify = instance.data["deadline"]["verify"]
 
-        # Common Houdini version for the husk plugin.
-        import hou
         hou_major_minor = hou.applicationVersionString().rsplit(".", 1)[0]
 
         tile_job_ids = []
         for tile_index in range(tile_count):
             tile_job_info = self.get_job_info(
-                job_info=deepcopy(generic_job_info),
+                job_info=deepcopy(job_info),
                 dependency_job_ids=dependency_job_ids,
                 use_dcc_plugin=False,
             )
@@ -535,10 +496,3 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
         # tileRendering=True — same key, just pointed at the tile jobs
         # since assembly now happens inside the publish job itself.
         instance.data["assemblySubmissionJobs"] = list(tile_job_ids)
-
-        # Maintain the parent's "Store output dir for unified publisher" side
-        # effect (mirrors HoudiniSubmitDeadline.process).
-        if instance.data.get("files"):
-            instance.data["outputDir"] = os.path.dirname(
-                instance.data["files"][0]
-            )

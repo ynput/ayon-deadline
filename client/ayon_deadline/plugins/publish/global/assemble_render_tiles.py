@@ -38,7 +38,7 @@ class AssembleRenderTiles(pyblish.api.InstancePlugin):
     # the canonical files exist on disk.
     order = pyblish.api.CollectorOrder + 0.499
     targets = ["deadline", "farm"]
-    families = ["render", "prerender", "renderlayer", "usdrender"]
+    families = ["usdrender"]
 
     def process(self, instance):
         publish_metadata = instance.data.get("publishJobMetadata") or {}
