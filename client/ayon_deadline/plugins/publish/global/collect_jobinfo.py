@@ -21,6 +21,7 @@ from ayon_core.addon import AddonsManager
 
 from ayon_deadline.lib import (
     FARM_FAMILIES,
+    MAX_CHUNK_SIZE,
     PublishDeadlineJobInfo,
     DeadlineWebserviceError,
 )
@@ -343,8 +344,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
                 label="Frames Per Task",
                 default=default_values.get("chunk_size"),
                 decimals=0,
-                minimum=1,
-                maximum=1000
+                minimum=0,
+                maximum=MAX_CHUNK_SIZE,
             ),
             NumberDef(
                 "concurrent_tasks",
