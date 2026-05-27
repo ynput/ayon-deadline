@@ -334,6 +334,12 @@ class DeadlineIndexedVar(dict):
         return self
 
     def __setitem__(self, key, value):
+        if isinstance(key, str):
+            try:
+                key = int(key)
+            except ValueError:
+                pass
+
         if not isinstance(key, int):
             raise TypeError(f"Key must be an 'int', got {type(key)} ({key}).")
 
