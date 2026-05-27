@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass, field, fields
 from functools import partial
 import typing
@@ -335,10 +336,8 @@ class DeadlineIndexedVar(dict):
 
     def __setitem__(self, key, value):
         if isinstance(key, str):
-            try:
+            with suppress(ValueError):
                 key = int(key)
-            except ValueError:
-                pass
 
         if not isinstance(key, int):
             raise TypeError(f"Key must be an 'int', got {type(key)} ({key}).")
