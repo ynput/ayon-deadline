@@ -442,6 +442,20 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if deadline_publish_job_id:
             publish_job["deadline_publish_job_id"] = deadline_publish_job_id
 
+        # Tile rendering: surface the assembly config to the worker. The
+        # AssembleRenderTiles plugin reads this from
+        # instance.data["publishJobMetadata"]["tile_assembly"] (which
+        # CollectRenderedFiles populates from this dict) and runs oiiotool
+        # on the worker before validation/integration.
+        if instance.data.get("tileRendering"):
+            publish_job["tile_assembly"] = {
+                "tilesX": instance.data["tilesX"],
+                "tilesY": instance.data["tilesY"],
+                "tileSuffixPattern": instance.data.get(
+                    "tileSuffixPattern", "_tile%02d"
+                ),
+            }
+
         # add audio to metadata file if available
         audio_file = instance.context.data.get("audioFile")
         if audio_file and os.path.isfile(audio_file):

@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
@@ -8,7 +9,7 @@ from ayon_core.pipeline import AYONPyblishPluginMixin
 from ayon_core.lib import (
     is_in_tests,
     TextDef,
-    NumberDef
+    NumberDef,
 )
 from ayon_deadline import abstract_submit_deadline
 
@@ -71,6 +72,15 @@ class HuskStandalonePluginInfo:
     RestartDelegate: str = field(default="")
     Version: str = field(default="")
     SlapCompSources: str = field(default="")
+    # Tile rendering. Husk wants `--tile-count X Y` (two values) and a
+    # printf-style `--tile-suffix` (e.g. `_tile%02d`); husk substitutes the
+    # tile index itself, so the suffix is the same for every tile job and
+    # only TileIndex varies. TileIndex=-1 / TilesX=0 / TilesY=0 mean
+    # "not a tile job".
+    TileIndex: int = field(default=-1)
+    TilesX: int = field(default=0)
+    TilesY: int = field(default=0)
+    TileSuffix: str = field(default="")
 
 
 class HoudiniSubmitDeadline(
@@ -333,7 +343,15 @@ class HoudiniSubmitDeadline(
         output_dir = os.path.dirname(instance.data["files"][0])
         instance.data["outputDir"] = output_dir
 
-    def _get_husk_standalone_plugin_info(self, instance, hou_major_minor):
+    def _get_husk_standalone_plugin_info(
+        self,
+        instance,
+        hou_major_minor,
+        tile_index=-1,
+        tiles_x=0,
+        tiles_y=0,
+        tile_suffix="",
+    ):
         # Not all hosts can import this module.
         import hou
 
@@ -370,7 +388,11 @@ class HoudiniSubmitDeadline(
             PostRender=rop_node.evalParm("husk_postrender"),
             RestartDelegate=restart_delegate,
             Version=hou_major_minor,
-            SlapCompSources="\n".join(slapcomps)
+            SlapCompSources="\n".join(slapcomps),
+            TileIndex=tile_index,
+            TilesX=tiles_x,
+            TilesY=tiles_y,
+            TileSuffix=tile_suffix,
         )
 
     def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
@@ -391,3 +413,86 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
         # Export Job doesn't seem to occur using the published path either, so
         # output paths then do not match the actual rendered paths
         return
+
+    def _submit_split_render_jobs(
+        self, instance, job_id, job_info
+    ):
+        if not instance.data.get("tileRendering"):
+            return super()._submit_split_render_jobs(
+                instance, job_id, job_info
+            )
+
+        # Tile rendering path: fan out N tile render jobs (each with
+        # --tile-index/--tile-count via Husk PluginInfo) depending on the
+        # export job. Per-tile EXRs land on disk with a '_tile##' suffix;
+        # the cross-DCC publish job that ProcessSubmittedJobOnFarm submits
+        # depends on these tile jobs and the AssembleRenderTiles plugin
+        # runs oiiotool inside that publish job to merge the tiles into
+        # the canonical render-product paths.
+        # Husk takes a 2D grid via `--tile-count X Y` and a printf-style
+        # `--tile-suffix` (it substitutes %d-style tokens with the index
+        # itself), so the suffix is the same for every tile job and only
+        # TileIndex changes.
+        import hou
+
+        tiles_x = int(instance.data["tilesX"])
+        tiles_y = int(instance.data["tilesY"])
+        tile_count = tiles_x * tiles_y
+        tile_suffix_pattern = "_tile%02d"
+        dependency_job_ids = [job_id] if job_id else []
+        auth = instance.data["deadline"]["auth"]
+        verify = instance.data["deadline"]["verify"]
+
+        hou_major_minor = hou.applicationVersionString().rsplit(".", 1)[0]
+
+        tile_job_ids = []
+        for tile_index in range(tile_count):
+            tile_job_info = self.get_job_info(
+                job_info=deepcopy(job_info),
+                dependency_job_ids=dependency_job_ids,
+                use_dcc_plugin=False,
+            )
+            tile_job_info.Name = "{} (tile {}/{})".format(
+                tile_job_info.Name, tile_index + 1, tile_count
+            )
+
+            tile_plugin_info = asdict(self._get_husk_standalone_plugin_info(
+                instance,
+                hou_major_minor,
+                tile_index=tile_index,
+                tiles_x=tiles_x,
+                tiles_y=tiles_y,
+                tile_suffix=tile_suffix_pattern,
+            ))
+
+            payload = self.assemble_payload(
+                job_info=tile_job_info,
+                plugin_info=tile_plugin_info,
+            )
+            tile_job_id = self.submit(payload, auth, verify)
+            self.log.info(
+                "Submitted tile %s/%s to Deadline: %s",
+                tile_index + 1, tile_count, tile_job_id,
+            )
+            tile_job_ids.append(tile_job_id)
+
+            # Mirror parent's side effect for the last tile job so downstream
+            # publish plugins that read this still find a sensible value.
+            instance.data["deadline"]["job_info"] = deepcopy(tile_job_info)
+
+        instance.data["tileRenderJobIds"] = tile_job_ids
+        self.log.info(
+            "Tile rendering submitted: %s tile jobs queued.", tile_count,
+        )
+
+        # Suffix pattern Husk used for the tile renders. Stashed for the
+        # publish job's AssembleRenderTiles plugin (worker-side) to know
+        # how to reconstruct tile filenames from the canonical names.
+        instance.data["tileSuffixPattern"] = tile_suffix_pattern
+
+        # The publish job depends on the tile renders directly. We reuse
+        # the existing 'assemblySubmissionJobs' key that
+        # ProcessSubmittedJobOnFarm._get_dependency_ids reads when
+        # tileRendering=True — same key, just pointed at the tile jobs
+        # since assembly now happens inside the publish job itself.
+        instance.data["assemblySubmissionJobs"] = list(tile_job_ids)
