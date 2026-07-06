@@ -1,0 +1,90 @@
+{
+  "type": "object",
+  "title": "Deadline Settings",
+  "properties": {
+    "profiles": {
+      "type": "array",
+      "title": "Deadline Job Profiles",
+      "items": {
+        "type": "object",
+        "title": "Profile",
+        "properties": {
+          "job_types": {
+            "type": "array",
+            "title": "Job Types",
+            "items": {
+              "type": "string",
+              "enum": ["render", "publish", "caches"]
+            },
+            "uniqueItems": true
+          },
+          "filters": {
+            "type": "object",
+            "title": "Filters",
+            "properties": {
+              "task_types": {
+                "type": "array",
+                "title": "Task Types",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hosts": {
+                "type": "array",
+                "title": "Hosts",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "folder_paths": {
+                "type": "array",
+                "title": "Folder Paths (regex)",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "settings": {
+            "type": "object",
+            "title": "Job Settings",
+            "properties": {
+              "Priority": {
+                "type": "integer",
+                "title": "Priority",
+                "default": 50
+              },
+              "Pool": {
+                "type": "string",
+                "title": "Pool"
+              },
+              "SecondaryPool": {
+                "type": "string",
+                "title": "Secondary Pool"
+              },
+              "ChunkSize": {
+                "type": "integer",
+                "title": "Chunk Size",
+                "default": 1
+              },
+              "ConcurrentTasks": {
+                "type": "integer",
+                "title": "Concurrent Tasks",
+                "default": 1
+              },
+              "Suspended": {
+                "type": "boolean",
+                "title": "Suspended",
+                "default": false
+              },
+              "ForceRender": {
+                "type": "boolean",
+                "title": "Force Render"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
