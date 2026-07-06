@@ -1,0 +1,30 @@
+{
+  "deadline": {
+    "job_info_profiles": [
+      {
+        "job_type": "render",
+        "filter": {},
+        "job_info": {
+          "Priority": 50,
+          "MachineLimit": 0
+        }
+      },
+      {
+        "job_type": "publish",
+        "filter": {},
+        "job_info": {
+          "Priority": 60,
+          "MachineLimit": 1
+        }
+      },
+      {
+        "job_type": "cache",
+        "filter": {},
+        "job_info": {
+          "Priority": 70,
+          "MachineLimit": 0
+        }
+      }
+    ]
+  }
+}
