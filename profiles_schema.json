@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "job_info_profiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "job_type": {
+            "type": "string",
+            "enum": ["render", "publish", "cache", "*"]
+          },
+          "task_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": ["job_type", "attributes"]
+      }
+    }
+  }
+}
