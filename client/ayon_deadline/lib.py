@@ -705,6 +705,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
             "MachineLimit": data["machine_limit"],
             "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data.get("frames", ""),
+            "Department": cls._sanitize(data.get("department", "")),
             "Group": cls._sanitize(data["group"]),
             "LimitGroups": cls._sanitize(data["limit_groups"]),
             "Pool": cls._sanitize(data["primary_pool"]),
