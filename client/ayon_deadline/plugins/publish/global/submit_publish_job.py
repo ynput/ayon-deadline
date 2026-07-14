@@ -214,12 +214,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             context.data["ayonAddonsManager"]["deadline"]
         )
 
-job_info = instance.data["deadline"]["job_info"]
-deadline_department = (
-    job_info.Department
-    or self.deadline_department
-    or None
-)
+        job_info = instance.data["deadline"]["job_info"]
+        deadline_department = (
+            job_info.Department
+            or self.deadline_department
+            or None
+        )
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=batch_name,
