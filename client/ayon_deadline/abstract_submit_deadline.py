@@ -200,10 +200,12 @@ class AbstractSubmitDeadline(
             due to remapping workfile to published workfile.
         Used in JobOutput > Explore output
         """
+        # clique.PATTERNS["frames"] but also allow `_` before digits
+        pattern = r"(?P<index>(?P<padding>0*)\d+)\.\D+\d?$"
         collections, remainder = clique.assemble(
             iter_expected_files(instance.data["expectedFiles"]),
             assume_padded_when_ambiguous=True,
-            patterns=[clique.PATTERNS["frames"]])
+            patterns=[pattern])
         paths = []
         for collection in collections:
             padding = "#" * collection.padding

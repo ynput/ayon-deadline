@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass, field, fields
 from functools import partial
 import typing
@@ -334,6 +335,10 @@ class DeadlineIndexedVar(dict):
         return self
 
     def __setitem__(self, key, value):
+        if isinstance(key, str):
+            with suppress(ValueError):
+                key = int(key)
+
         if not isinstance(key, int):
             raise TypeError(f"Key must be an 'int', got {type(key)} ({key}).")
 
@@ -700,6 +705,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
             "MachineLimit": data["machine_limit"],
             "ConcurrentTasks": data["concurrent_tasks"],
             "Frames": data.get("frames", ""),
+            "Department": cls._sanitize(data.get("department") or None),
             "Group": cls._sanitize(data["group"]),
             "LimitGroups": cls._sanitize(data["limit_groups"]),
             "Pool": cls._sanitize(data["primary_pool"]),
