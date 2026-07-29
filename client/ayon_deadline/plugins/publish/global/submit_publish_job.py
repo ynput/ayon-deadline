@@ -215,10 +215,15 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         )
 
         job_info = instance.data["deadline"]["job_info"]
+        deadline_department = (
+            job_info.Department
+            or self.deadline_department
+            or None
+        )
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=batch_name,
-            Department=self.deadline_department,
+            Department=deadline_department,
             Priority=priority,
             InitialStatus=job_info.publish_job_state,
             Group=self.deadline_group,
