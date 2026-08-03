@@ -50,6 +50,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if instance.data.get("multiCamera"):
             job_info.OutputDirectory.clear()
             job_info.OutputFilename.clear()
+            job_info.AssetDependency.clear()
 
         return job_info
 
