@@ -24,6 +24,7 @@ class HoudiniPluginInfo:
     OutputDriver: str = field(default=None)
     Version: str = field(default=None)  # Mandatory for Deadline
     ProjectPath: str = field(default=None)
+    FullVersion: str = field(default=None)
 
 
 class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,   # noqa
@@ -86,8 +87,8 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
         import hou
 
         instance = self._instance
-        version = hou.applicationVersionString()
-        version = ".".join(version.split(".")[:2])
+        full_version = hou.applicationVersionString()
+        version = ".".join(full_version.split(".")[:2])
         rop = self.get_rop_node(instance)
         plugin_info = HoudiniPluginInfo(
             Build=None,
@@ -97,7 +98,8 @@ class HoudiniCacheSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline
             SaveFile=True,
             OutputDriver=rop.path(),
             Version=version,
-            ProjectPath=os.path.dirname(self.scene_path)
+            FullVersion=full_version,
+            ProjectPath=os.path.dirname(self.scene_path),
         )
 
         plugin_payload = asdict(plugin_info)

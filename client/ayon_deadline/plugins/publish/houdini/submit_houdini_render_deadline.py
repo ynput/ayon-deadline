@@ -19,6 +19,7 @@ class DeadlinePluginInfo:
     OutputDriver: str = field(default=None)
     Version: str = field(default=None)
     IgnoreInputs: bool = field(default=True)
+    FullVersion: str = field(default=None)
 
 
 @dataclass
@@ -262,7 +263,8 @@ class HoudiniSubmitDeadline(
         instance = self._instance
         context = instance.context
 
-        hou_major_minor = hou.applicationVersionString().rsplit(".", 1)[0]
+        hou_full_version = hou.applicationVersionString()
+        hou_major_minor = hou_full_version.rsplit(".", 1)[0]
 
         # Output driver to render
         if job_type == "render":
@@ -315,7 +317,8 @@ class HoudiniSubmitDeadline(
                 SceneFile=context.data["currentFile"],
                 OutputDriver=driver.path(),
                 Version=hou_major_minor,
-                IgnoreInputs=True
+                IgnoreInputs=True,
+                FullVersion=hou_full_version,
             )
 
         return asdict(plugin_info)
