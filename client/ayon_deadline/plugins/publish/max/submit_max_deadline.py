@@ -85,7 +85,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if not files:
             raise KnownPublishError("No Render Elements found!")
         first_file = next(self._iter_expected_files(files))
-        output_dir = os.path.dirname(first_file)
+        output_dir = Path(first_file).parent.as_posix()
         instance.data["outputDir"] = output_dir
 
         filename = os.path.basename(filepath)
