@@ -436,12 +436,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         render_dir = Path(os.path.dirname(first_file))
         render_dir.mkdir(parents=True, exist_ok=True)
         script_path = render_dir / "pre_load_max_script.ms"
+        script_path = str(script_path.resolve())
 
         try:
             with open(script_path, "w") as script_file:
                 script_file.write(max_script)
             print(f"Temporary pre-load maxscript created at: {script_path}")
-            return str(script_path)
+            return script_path
 
         except Exception as e:
             raise RuntimeError(f"Error creating maxscript file: {str(e)}")
