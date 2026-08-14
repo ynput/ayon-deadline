@@ -436,7 +436,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         render_dir = Path(os.path.dirname(first_file))
         render_dir.mkdir(parents=True, exist_ok=True)
         script_path = render_dir / "pre_load_max_script.ms"
-        script_path = str(script_path.resolve())
+        script_path = os.path.normpath(script_path.as_posix())
 
         try:
             with open(script_path, "w") as script_file:
