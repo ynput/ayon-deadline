@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 import subprocess
 import json
 import platform
 import uuid
 import re
-from time import sleep
+from time import sleep, time
 import getpass
 from hashlib import sha256
 
@@ -27,7 +27,18 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
-EXTRACT_ENVIRONMENT_TIMEOUT = 30
+# Seconds a worker waits for another worker to extract the environment cache
+# before it stops waiting and extracts the environment just for itself.
+EXTRACT_ENVIRONMENT_TIMEOUT = 10
+# Seconds between checks while waiting for another worker.
+ENV_CACHE_POLL_INTERVAL = 0.5
+# Age at which an extraction lock file is considered left behind by a worker
+# that will never come back, e.g. because its machine lost power.
+ENV_CACHE_LOCK_STALE_TIMEOUT = 300
+# Results of '_acquire_env_cache_lock'.
+_LOCK_ACQUIRED = "acquired"
+_LOCK_CACHE_READY = "cache_ready"
+_LOCK_UNAVAILABLE = "unavailable"
 
 
 class OpenPypeVersion:
@@ -459,105 +470,40 @@ def inject_ayon_environment(deadlinePlugin):
             hash_base = f"{site_id}|{getpass.getuser()}"
             hash_sha256 = sha256(hash_base.encode())
             shared_env_group = hash_sha256.hexdigest()[-10:]
+
+        def extract_to(target_path):
+            """Run the extraction process writing into 'target_path'."""
+            _extract_environments(
+                ayon_server_url,
+                ayon_api_key,
+                ayon_studio_bundle_name,
+                ayon_bundle_name,
+                deadlinePlugin,
+                exe,
+                target_path,
+                job
+            )
+
+        contents = None
         # drive caching of environment variables with env var
         # it is recommended to use same value AYON_SITE_ID for 'same'
         # render nodes (eg. same OS etc.)
         if shared_env_group:
             print(">>> Caching of environment file will be used.")
-            output_dir = _get_output_dir(job)
-            environment_file_name = f"env_{job.JobId}_{shared_env_group}.json"
-            export_dir_url = os.path.join(
-                output_dir,
-                ".ayon_env_cache"
-            )
-
-            if not os.path.exists(export_dir_url):
-                os.makedirs(export_dir_url, exist_ok=True)
-
-            export_path = os.path.join(
-                export_dir_url,
-                environment_file_name)
-            timeout = int(
-                job.GetJobEnvironmentKeyValue(
-                    "AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
-                or EXTRACT_ENVIRONMENT_TIMEOUT
-            )
-            got_lock = _acquire_env_cache_lock(export_path, timeout)
-            if got_lock:
-                # Re-check after acquiring the lock: another worker may have
-                # completed extraction between our last check and lock acquire.
-                if not os.path.exists(export_path):
-                    temp_export_path = f"{export_path}.tmp"
-                    # Remove any stale .tmp left by a previously failed worker.
-                    if os.path.exists(temp_export_path):
-                        try:
-                            os.remove(temp_export_path)
-                        except OSError:
-                            pass
-                    try:
-                        print(
-                            f">>> '{export_path}' with extracted environment "
-                            "doesn't exist yet, running extraction process..."
-                        )
-                        _extract_environments(
-                            ayon_server_url,
-                            ayon_api_key,
-                            ayon_studio_bundle_name,
-                            ayon_bundle_name,
-                            deadlinePlugin,
-                            exe,
-                            temp_export_path,
-                            job
-                        )
-                        if os.path.exists(temp_export_path):
-                            print(f"Creating env var file {export_path}")
-                            os.rename(temp_export_path, export_path)
-                    finally:
-                        if os.path.exists(temp_export_path):
-                            try:
-                                os.remove(temp_export_path)
-                            except OSError:
-                                pass
-                        _release_env_cache_lock(export_path)
-                else:
-                    # File appeared while we were acquiring the lock.
-                    _release_env_cache_lock(export_path)
-            # else: got_lock is False — export_path already existed.
-        else:
-            # no caching - each worker uses a unique temp path, no lock needed
-            temp_file_name = "{}_{}.json".format(
-                datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
-                str(uuid.uuid1())
-            )
-            export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
-            temp_export_path = f"{export_path}.tmp"
-            try:
-                print(
-                    f">>> '{export_path}' with extracted environment "
-                    "doesn't exist yet, running extraction process..."
+            export_path = _get_env_cache_path(job, shared_env_group)
+            if export_path:
+                contents = _get_shared_environments(
+                    export_path,
+                    _get_env_cache_timeout(job),
+                    extract_to
                 )
-                _extract_environments(
-                    ayon_server_url,
-                    ayon_api_key,
-                    ayon_studio_bundle_name,
-                    ayon_bundle_name,
-                    deadlinePlugin,
-                    exe,
-                    temp_export_path,
-                    job
-                )
-                if os.path.exists(temp_export_path):
-                    os.rename(temp_export_path, export_path)
-            finally:
-                if os.path.exists(temp_export_path):
-                    try:
-                        os.remove(temp_export_path)
-                    except OSError:
-                        pass
 
-        print(f">>> Loading file '{export_path}' ...")
-        with open(export_path) as fp:
-            contents = json.load(fp)
+        if contents is None:
+            # Either caching is disabled or the shared cache could not be
+            # used, e.g. because another worker is still busy with it. That
+            # must never fail the job, so extract into a file private to
+            # this worker instead.
+            contents = _extract_private_environments(extract_to)
 
         for key, value in sorted(contents.items()):
             deadlinePlugin.SetProcessEnvironmentVariable(key, value)
@@ -584,100 +530,362 @@ def inject_ayon_environment(deadlinePlugin):
         raise
 
 
-def _acquire_env_cache_lock(export_path, timeout):
-    """Atomically acquire an exclusive lock for environment cache extraction.
-
-    Uses ``os.open`` with ``O_CREAT | O_EXCL`` which is atomic on local
-    filesystems and on NFS v4+ / SMB shares used by render farms.  Only one
-    worker can create the lock file; all others wait.
-
-    Waiting workers check whether:
-    - the final *export_path* file has appeared (another worker finished) →
-      return ``False`` so the caller reads the file directly.
-    - the lock file is older than *timeout* seconds (the owner hung or crashed)
-      → remove the stale lock and retry acquisition immediately.
-
-    Args:
-        export_path (str): Path to the final cached environment JSON file.
-            The lock file is ``export_path + ".lock"``.
-        timeout (int): Seconds after which a held lock is considered stale
-            and will be forcibly removed so another worker can take over.
+def _get_env_cache_timeout(job):
+    """How long a worker waits for the environment extraction of another one.
 
     Returns:
-        bool: ``True`` if this worker acquired the lock and must run
-            extraction (then call :func:`_release_env_cache_lock`).
-            ``False`` if *export_path* already exists and can be read.
-
-    Raises:
-        RuntimeError: If the total wait exceeds ``timeout * 2`` seconds.
+        int: Wait time in seconds, overridable per job with the
+            'AYON_EXTRACT_ENVIRONMENT_TIMEOUT' environment variable.
     """
-    lock_path = f"{export_path}.lock"
-    total_wait_limit = timedelta(seconds=timeout * 2)
-    deadline = datetime.now() + total_wait_limit
-
-    while True:
-        # Short-circuit: final file appeared — nothing to extract.
-        if os.path.exists(export_path):
-            return False
-
-        # Attempt atomic lock acquisition.
-        try:
-            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            identity = "{host}:{pid}:{ts}\n".format(
-                host=platform.node(),
-                pid=os.getpid(),
-                ts=datetime.utcnow().isoformat(),
-            )
-            os.write(fd, identity.encode())
-            os.close(fd)
-            print(f">>> Acquired extraction lock: {lock_path}")
-            return True
-        except (FileExistsError, OSError):
-            pass  # Another worker holds the lock — fall through to wait.
-
-        # Check whether the existing lock is stale.
-        try:
-            lock_age = datetime.now() - datetime.fromtimestamp(
-                os.path.getmtime(lock_path)
-            )
-            if lock_age > timedelta(seconds=timeout):
-                print(
-                    f">>> Lock '{lock_path}' is stale "
-                    f"({lock_age.total_seconds():.0f}s old, "
-                    f"timeout={timeout}s). Removing it."
-                )
-                try:
-                    os.remove(lock_path)
-                except OSError:
-                    pass  # Another worker removed it concurrently.
-                continue  # Retry acquisition immediately.
-        except OSError:
-            pass  # Lock disappeared between our checks — retry next iteration.
-
-        if datetime.now() >= deadline:
-            raise RuntimeError(
-                f"Timed out after {timeout * 2}s waiting for environment "
-                f"cache file '{export_path}'. "
-                f"Lock file: '{lock_path}'"
-            )
-
-        print(">>> Another worker is extracting environments, waiting...")
-        sleep(2)
+    value = job.GetJobEnvironmentKeyValue("AYON_EXTRACT_ENVIRONMENT_TIMEOUT")
+    try:
+        timeout = int(value)
+    except (TypeError, ValueError):
+        timeout = EXTRACT_ENVIRONMENT_TIMEOUT
+    return max(timeout, 0)
 
 
-def _release_env_cache_lock(export_path):
-    """Release the environment cache lock acquired by this worker.
+def _get_env_cache_path(job, shared_env_group):
+    """Path of the environment cache file shared by the workers of a job.
 
     Args:
-        export_path (str): Path to the cached environment JSON file
-            (the lock path is derived from this).
+        job: Deadline job.
+        shared_env_group (str): Hash of the site id and user, so that only
+            workers with a matching environment share a cache file.
+
+    Returns:
+        Optional[str]: Path of the shared JSON cache file. 'None' when its
+            location can't be determined or created, in which case the caller
+            falls back to a worker private environment file.
+    """
+    try:
+        export_dir_url = os.path.join(_get_output_dir(job), ".ayon_env_cache")
+        # 'exist_ok' keeps this safe when many workers start at once
+        os.makedirs(export_dir_url, exist_ok=True)
+    except (OSError, RuntimeError) as exc:
+        print(f">>> Unable to prepare environment cache folder: {exc}")
+        return None
+
+    return os.path.join(
+        export_dir_url, f"env_{job.JobId}_{shared_env_group}.json"
+    )
+
+
+def _get_shared_environments(export_path, timeout, extract_to):
+    """Get environments through the cache file shared by the job's workers.
+
+    Only a single worker runs the expensive extraction process, all others
+    wait for its result. Problems with the shared cache itself - a lock that
+    can't be taken, a worker that takes too long, an unreadable file - return
+    'None' instead of raising, so the caller can fall back to a private
+    extraction. A failure of the extraction process itself is raised.
+
+    Args:
+        export_path (str): Path to the shared cache file.
+        timeout (int): Seconds to wait for another worker before giving up.
+        extract_to (Callable[[str], None]): Runs the extraction process into
+            the path it receives.
+
+    Returns:
+        Optional[dict[str, str]]: Extracted environment variables.
+    """
+    status, token = _acquire_env_cache_lock(export_path, timeout)
+    if status == _LOCK_ACQUIRED:
+        try:
+            # Re-check: another worker may have completed the extraction
+            # between our last check and acquiring the lock.
+            if os.path.exists(export_path):
+                print(">>> Environment cache appeared while taking the lock.")
+            else:
+                return _extract_to_env_cache(export_path, extract_to)
+        finally:
+            _release_env_cache_lock(export_path, token)
+
+    return _read_env_cache(export_path)
+
+
+def _extract_to_env_cache(export_path, extract_to):
+    """Run the extraction and publish its result as the shared cache file.
+
+    Extraction writes to a path unique for this worker, so even a second
+    worker that reclaimed an abandoned lock can't write into the same file.
+    Only the final atomic replace makes the result visible to others.
+
+    Args:
+        export_path (str): Path to the shared cache file.
+        extract_to (Callable[[str], None]): Runs the extraction process into
+            the path it receives.
+
+    Returns:
+        dict[str, str]: Extracted environment variables, read back from the
+            file this worker extracted. Publishing it for the other workers
+            is best effort and never fails this worker.
+    """
+    temp_export_path = f"{export_path}.{_get_worker_id()}.tmp"
+    try:
+        print(
+            f">>> '{export_path}' with extracted environment doesn't exist"
+            " yet, running extraction process..."
+        )
+        extract_to(temp_export_path)
+        if not os.path.exists(temp_export_path):
+            raise RuntimeError(
+                "Extraction process did not create expected file"
+                f" '{temp_export_path}'."
+            )
+        contents = _load_environments(temp_export_path)
+
+        print(f">>> Creating env var file {export_path}")
+        try:
+            # atomic for readers, they see either no file or the full one
+            os.replace(temp_export_path, export_path)
+        except OSError as exc:
+            # e.g. Windows refuses to replace a file another worker reads
+            print(f">>> Could not publish environment cache file: {exc}")
+        return contents
+    finally:
+        _remove_silently(temp_export_path)
+
+
+def _read_env_cache(export_path):
+    """Read the shared cache file extracted by another worker.
+
+    Args:
+        export_path (str): Path to the shared cache file.
+
+    Returns:
+        Optional[dict[str, str]]: Environment variables or 'None' when the
+            file is missing or unusable, so that the caller falls back to a
+            private extraction instead of failing the job.
+    """
+    if not os.path.exists(export_path):
+        return None
+
+    print(f">>> Loading file '{export_path}' ...")
+    try:
+        return _load_environments(export_path)
+    except (OSError, ValueError) as exc:
+        print(f">>> Unable to use environment cache '{export_path}': {exc}")
+        return None
+
+
+def _extract_private_environments(extract_to):
+    """Extract environments into a file used by this worker only.
+
+    Args:
+        extract_to (Callable[[str], None]): Runs the extraction process into
+            the path it receives.
+
+    Returns:
+        dict[str, str]: Extracted environment variables.
+    """
+    temp_file_name = "ayon_env_{}_{}.json".format(
+        datetime.utcnow().strftime("%Y%m%d%H%M%S%f"),
+        uuid.uuid4().hex
+    )
+    export_path = os.path.join(tempfile.gettempdir(), temp_file_name)
+    try:
+        print(
+            ">>> Running extraction process for this worker only into"
+            f" '{export_path}'..."
+        )
+        extract_to(export_path)
+        if not os.path.exists(export_path):
+            raise RuntimeError(
+                "Extraction process did not create expected file"
+                f" '{export_path}'."
+            )
+        return _load_environments(export_path)
+    finally:
+        _remove_silently(export_path)
+
+
+def _acquire_env_cache_lock(export_path, timeout):
+    """Try to become the single worker that extracts the environments.
+
+    Uses 'os.open' with 'O_CREAT | O_EXCL' which is atomic on local
+    filesystems and on the NFS v4+ / SMB shares used by render farms, so only
+    one worker of a job can create the lock file, all others wait for it.
+
+    Waiting is deliberately short and never fatal. A worker that doesn't get
+    the lock in time extracts the environment for itself instead of failing
+    the job, which keeps a burst of dozens of workers starting at the same
+    time functional even when the lock owner is slow or died on the way.
+
+    A lock file older than 'ENV_CACHE_LOCK_STALE_TIMEOUT' seconds is treated
+    as abandoned - a machine can lose power while holding it - and removed,
+    so a job is not stuck behind it for the rest of its lifetime.
+
+    Args:
+        export_path (str): Path to the shared environment cache file. The
+            lock file is 'export_path' with a '.lock' suffix.
+        timeout (int): Seconds to wait for the current lock owner.
+
+    Returns:
+        tuple[str, Optional[str]]: Status and, when acquired, the token
+            identifying our ownership of the lock file:
+            - '_LOCK_ACQUIRED': run the extraction, then release the lock.
+            - '_LOCK_CACHE_READY': the cache file is there, just read it.
+            - '_LOCK_UNAVAILABLE': neither happened in time, extract into a
+              worker private file instead.
     """
     lock_path = f"{export_path}.lock"
+    token = _get_worker_id()
+    give_up_at = time() + timeout
+    waiting_logged = False
+
+    while True:
+        # Short-circuit, the final file appeared - nothing to extract.
+        if os.path.exists(export_path):
+            return _LOCK_CACHE_READY, None
+
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            pass  # another worker holds the lock, fall through to wait
+        except OSError as exc:
+            # locking is not possible at all, e.g. on a read only share
+            print(f">>> Cannot use environment cache lock: {exc}")
+            return _LOCK_UNAVAILABLE, None
+        else:
+            try:
+                os.write(fd, token.encode())
+            finally:
+                os.close(fd)
+            print(f">>> Acquired extraction lock: {lock_path}")
+            return _LOCK_ACQUIRED, token
+
+        if _remove_abandoned_lock(lock_path):
+            continue  # retry acquisition immediately
+
+        if time() >= give_up_at:
+            print(
+                ">>> Another worker did not finish extracting the"
+                f" environment within {timeout}s, extracting for this worker"
+                " instead."
+            )
+            return _LOCK_UNAVAILABLE, None
+
+        if not waiting_logged:
+            print(
+                ">>> Another worker is extracting the environment cache"
+                f" file, waiting up to {timeout}s for: {export_path}"
+            )
+            waiting_logged = True
+
+        sleep(ENV_CACHE_POLL_INTERVAL)
+
+
+def _remove_abandoned_lock(lock_path):
+    """Remove a lock file left behind by a worker that never came back.
+
+    The threshold is much larger than the time any extraction should take,
+    because the lock file's timestamp comes from the file server while the
+    current time comes from the render node, and those two only agree as well
+    as the farm's clock synchronization allows.
+
+    Args:
+        lock_path (str): Path to the lock file.
+
+    Returns:
+        bool: Whether an abandoned lock file was removed.
+    """
+    try:
+        lock_age = time() - os.path.getmtime(lock_path)
+    except OSError:
+        return False  # lock disappeared, the caller retries anyway
+
+    if lock_age < ENV_CACHE_LOCK_STALE_TIMEOUT:
+        return False
+
+    print(
+        f">>> Lock '{lock_path}' looks abandoned ({lock_age:.0f}s old),"
+        " removing it."
+    )
+    try:
+        os.remove(lock_path)
+    except OSError:
+        return False  # another worker removed it first
+    return True
+
+
+def _release_env_cache_lock(export_path, token):
+    """Release the extraction lock, but only while it is still ours.
+
+    A lock considered abandoned may have been reclaimed by another worker
+    while we were extracting. Removing that worker's lock would let a third
+    one start extracting in parallel, so the token written when acquiring the
+    lock is verified first.
+
+    Args:
+        export_path (str): Path to the shared environment cache file.
+        token (str): Token returned by '_acquire_env_cache_lock'.
+    """
+    lock_path = f"{export_path}.lock"
+    try:
+        with open(lock_path) as stream:
+            current_token = stream.read().strip()
+    except OSError:
+        return  # already removed by somebody else
+
+    if current_token and current_token != token:
+        print(
+            f">>> Extraction lock '{lock_path}' was taken over by another"
+            " worker, leaving it alone."
+        )
+        return
+
     try:
         os.remove(lock_path)
         print(f">>> Released extraction lock: {lock_path}")
     except OSError:
         pass
+
+
+def _load_environments(path):
+    """Read extracted environment variables from a JSON file.
+
+    Args:
+        path (str): Path to the JSON file.
+
+    Returns:
+        dict[str, str]: Environment variables.
+
+    Raises:
+        ValueError: If the file is not valid JSON or does not hold a mapping,
+            e.g. because it was written by an older, non atomic version of
+            this plugin and got truncated.
+    """
+    with open(path) as stream:
+        contents = json.load(stream)
+
+    if not isinstance(contents, dict):
+        raise ValueError(
+            f"File '{path}' does not contain environment variables."
+        )
+    return contents
+
+
+def _remove_silently(path):
+    """Remove a file if it exists, ignoring any failure to do so."""
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def _get_worker_id():
+    """Identifier unique for a single extraction attempt on this worker.
+
+    Returns:
+        str: Filename safe identifier, used both for the temporary file the
+            extraction writes to and as the lock file's ownership token.
+    """
+    return "{}_{}_{}".format(
+        re.sub(r"\W", "", platform.node()),
+        os.getpid(),
+        uuid.uuid4().hex[:8]
+    )
 
 
 def _get_output_dir(job):
