@@ -749,9 +749,18 @@ def _acquire_env_cache_lock(export_path, timeout):
             return _LOCK_UNAVAILABLE, None
         else:
             try:
-                os.write(fd, token.encode())
-            finally:
-                os.close(fd)
+                # 'fdopen' takes ownership of the descriptor and closes it,
+                # also when writing the token fails
+                with os.fdopen(fd, "w") as stream:
+                    stream.write(token)
+            except OSError as exc:
+                # e.g. the share ran out of space or quota. Leaving the
+                # lock file behind would block every other worker of this
+                # job until it ages out, and there is no reason to fail
+                # over it - extract into a private file instead.
+                print(f">>> Cannot write environment cache lock: {exc}")
+                _remove_silently(lock_path)
+                return _LOCK_UNAVAILABLE, None
             print(f">>> Acquired extraction lock: {lock_path}")
             return _LOCK_ACQUIRED, token
 
