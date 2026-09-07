@@ -1,4 +1,4 @@
-import objecttoolutils
+import os
 import hou
 
 import pyblish.api
