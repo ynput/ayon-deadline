@@ -68,12 +68,14 @@ class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
         node = hou.node(instance.data["instance_node"])
         output_parm = node.parm("lopoutput")
         outparm_keyframs = output_parm.keyframes()
-        unexpanded_str = ""
         if outparm_keyframs:
-            unexpanded_str = outparm_keyframs[0].expression()
-        else:
-            unexpanded_str = output_parm.unexpandedString()
+            cls.log.warning(
+                "Skipping validation: 'lopoutput' parm on "
+                f"{node.path()} is animated."
+            )
+            return
 
+        unexpanded_str = output_parm.unexpandedString()
         if (
             "$F" not in unexpanded_str
             or
@@ -87,7 +89,7 @@ class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
             # Already fixed
             return
 
-        import os 
+        import os
 
         rop_node = hou.node(instance.data["instance_node"])
         lopoutput = rop_node.parm("lopoutput").eval()
