@@ -1,3 +1,4 @@
+import objecttoolutils
 import hou
 
 import pyblish.api
@@ -89,8 +90,6 @@ class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
         if not cls.get_invalid(instance):
             # Already fixed
             return
-
-        import os
 
         rop_node = hou.node(instance.data["instance_node"])
         lopoutput = rop_node.parm("lopoutput").unexpandedString()
