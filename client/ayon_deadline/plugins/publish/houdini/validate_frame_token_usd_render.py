@@ -13,7 +13,8 @@ class FixParameterAction(RepairAction):
 
 
 class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
-    """Validate if the unexpanded string contains the frame ('$F') token.
+    """Validate if the unexpanded string contains a frame
+        token (e.g. '$F' or '@Frame').
 
     This validator will *only* check the output parameter of the node if
     the "Use Custom Frames" attribute is set.
@@ -78,7 +79,7 @@ class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
         unexpanded_str = output_parm.unexpandedString()
         if (
             "$F" not in unexpanded_str
-            or
+            and
             "@Frame" not in unexpanded_str
         ):
             return [node]
@@ -92,6 +93,6 @@ class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
         import os
 
         rop_node = hou.node(instance.data["instance_node"])
-        lopoutput = rop_node.parm("lopoutput").eval()
+        lopoutput = rop_node.parm("lopoutput").unexpandedString()
         path, ext = os.path.splitext(lopoutput)
         rop_node.parm("lopoutput").set(f"{path}.$F4{ext}")
