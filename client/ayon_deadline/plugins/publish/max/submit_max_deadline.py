@@ -50,6 +50,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if instance.data.get("multiCamera"):
             job_info.OutputDirectory.clear()
             job_info.OutputFilename.clear()
+            job_info.AssetDependency.clear()
 
         return job_info
 
@@ -84,7 +85,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if not files:
             raise KnownPublishError("No Render Elements found!")
         first_file = next(self._iter_expected_files(files))
-        output_dir = os.path.dirname(first_file)
+        output_dir = Path(first_file).parent.as_posix()
         instance.data["outputDir"] = output_dir
 
         filename = os.path.basename(filepath)
@@ -276,6 +277,31 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return job_info_list, plugin_info_list
 
+    def from_published_scene(self, replace_in_path=True):
+        """Check and use scene workfile for rendering only when multi-camera
+        farm submission is enabled.
+
+        When rendering multi-camera scenes we can't render published workfiles
+        because X - so we require the work area workfile to be used to
+        support Y.
+
+        Args:
+            replace_in_path (bool, optional): Whether to replace the scene path
+                with the published scene path. Defaults to True.
+
+        Returns:
+            str: Published scene path.
+        """
+        instance = self._instance
+        if instance.data.get("multiCamera"):
+            self.log.warning(
+                "Use published workfile for rendering "
+                "not supported for multi-camera."
+            )
+            replace_in_path = False
+
+        return super().from_published_scene(replace_in_path=replace_in_path)
+
     @staticmethod
     def _collect_render_output(renderer, dir, plugin_data):
         """Collects render output and render element paths based on
@@ -410,12 +436,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         render_dir = Path(os.path.dirname(first_file))
         render_dir.mkdir(parents=True, exist_ok=True)
         script_path = render_dir / "pre_load_max_script.ms"
+        script_path = os.path.normpath(script_path.as_posix())
 
         try:
             with open(script_path, "w") as script_file:
                 script_file.write(max_script)
             print(f"Temporary pre-load maxscript created at: {script_path}")
-            return str(script_path)
+            return script_path
 
         except Exception as e:
             raise RuntimeError(f"Error creating maxscript file: {str(e)}")
