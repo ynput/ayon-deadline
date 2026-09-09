@@ -243,8 +243,6 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             # set the default camera and target camera
             # (weird parameters from max)
             plugin_data["Camera"] = camera
-            plugin_data["Camera1"] = camera
-            plugin_data["Camera0"] = None
 
         plugin_info.update(plugin_data)
         return plugin_info
