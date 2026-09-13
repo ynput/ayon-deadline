@@ -12,7 +12,6 @@ from ayon_core.lib import (
 )
 from ayon_deadline import abstract_submit_deadline
 
-
 @dataclass
 class DeadlinePluginInfo:
     SceneFile: str = field(default=None)
@@ -350,6 +349,7 @@ class HoudiniSubmitDeadline(
 
         rendersettings = (
             rop_node.evalParm("rendersettings")
+            or instance.data["stage"].GetMetadata("renderSettingsPrimPath")
             or "/Render/rendersettings"
         )
 
