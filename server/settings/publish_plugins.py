@@ -27,6 +27,11 @@ class CollectAYONServerToFarmJobModel(BaseSettingsModel):
     enabled: bool = SettingsField(False, title="Enabled")
 
 
+class OptionalPluginsModel(BaseSettingsModel):
+    enabled: bool = SettingsField(True, title="Enabled")
+    optional: bool = SettingsField(True, title="Optional")
+
+
 def extract_jobinfo_overrides_enum():
     """Enum of fields that could be overridden by artist in Publisher UI"""
     return [
@@ -416,6 +421,14 @@ class PublishPluginsModel(BaseSettingsModel):
         default_factory=ValidateExpectedFilesModel,
         title="Validate Expected Files"
     )
+    ValidateDeadlineConnection: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Deadline Connection"
+    )
+    ValidateDeadlineJobInfo: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Deadline Job Info"
+    )
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
@@ -584,6 +597,14 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
                 ]
             }
         ],
-        "add_rendered_dependencies": False
-    }
+        "add_rendered_dependencies": False,
+    },
+    "ValidateDeadlineConnection": {
+        "enabled": True,
+        "optional": False
+    },
+    "ValidateDeadlineJobInfo": {
+        "enabled": True,
+        "optional": True
+    },
 }
