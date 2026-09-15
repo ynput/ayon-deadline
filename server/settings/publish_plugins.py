@@ -28,7 +28,9 @@ class CollectAYONServerToFarmJobModel(BaseSettingsModel):
 
 
 class OptionalPluginsModel(BaseSettingsModel):
-    enabled: bool = SettingsField(True, title="Enabled")
+    _isGroup = True
+    enabled: bool = SettingsField(True)
+    active: bool = SettingsField(True, title="Active")
     optional: bool = SettingsField(True, title="Optional")
 
 
@@ -609,18 +611,22 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
     },
     "ValidateDeadlineConnection": {
         "enabled": True,
+        "active": True,
         "optional": False,
     },
     "ValidateDeadlinePools": {
         "enabled": True,
+        "active": True,
         "optional": True,
     },
     "ValidateDeadlineJobInfo": {
         "enabled": True,
+        "active": True,
         "optional": True,
     },
     "ValidateFrameTokenUSDRender": {
         "enabled": True,
+        "active": True,
         "optional": False,
     },
 }
