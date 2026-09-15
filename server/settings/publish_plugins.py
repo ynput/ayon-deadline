@@ -419,19 +419,23 @@ class PublishPluginsModel(BaseSettingsModel):
     )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
-        title="Validate Expected Files"
+        title="Validate Expected Files",
     )
     ValidateDeadlineConnection: OptionalPluginsModel = SettingsField(
         default_factory=OptionalPluginsModel,
-        title="Validate Deadline Connection"
+        title="Validate Deadline Connection",
     )
     ValidateDeadlinePools: OptionalPluginsModel = SettingsField(
         default_factory=OptionalPluginsModel,
-        title="Validate Deadline Pools"
+        title="Validate Deadline Pools",
     )
     ValidateDeadlineJobInfo: OptionalPluginsModel = SettingsField(
         default_factory=OptionalPluginsModel,
-        title="Validate Deadline Job Info"
+        title="Validate Deadline Job Info",
+    )
+    ValidateFrameTokenUSDRender: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Frame Token (USD Render)",
     )
 
 
@@ -605,14 +609,18 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
     },
     "ValidateDeadlineConnection": {
         "enabled": True,
-        "optional": False
+        "optional": False,
     },
     "ValidateDeadlinePools": {
         "enabled": True,
-        "optional": True
+        "optional": True,
     },
     "ValidateDeadlineJobInfo": {
         "enabled": True,
-        "optional": True
+        "optional": True,
+    },
+    "ValidateFrameTokenUSDRender": {
+        "enabled": True,
+        "optional": False,
     },
 }

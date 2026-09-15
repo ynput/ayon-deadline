@@ -3,7 +3,10 @@ import hou
 
 import pyblish.api
 
-from ayon_core.pipeline import PublishValidationError
+from ayon_core.pipeline import (
+    OptionalPyblishPluginMixin,
+    PublishValidationError,
+)
 from ayon_core.pipeline.publish import RepairAction
 from ayon_houdini.api import plugin
 from ayon_houdini.api.action import SelectInvalidAction
@@ -13,7 +16,10 @@ class FixParameterAction(RepairAction):
     label = "Add $F4 to 'lopoutput'"
 
 
-class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
+class ValidateFrameTokenUSDRender(
+    OptionalPyblishPluginMixin,
+    plugin.HoudiniInstancePlugin
+):
     """Validate if the unexpanded string contains a frame
         token (e.g. '$F' or '@Frame').
 
@@ -36,9 +42,13 @@ class ValidateFrameTokenUSDRender(plugin.HoudiniInstancePlugin):
     order = pyblish.api.ValidatorOrder
     label = "Validate Frame Token (USD Render)"
     families = ["usdrender"]
+    optional = True
     actions = [FixParameterAction, SelectInvalidAction]
 
     def process(self, instance):
+        if not self.is_active(instance.data):
+            return
+
         if not instance.data.get("farm"):
             self.log.debug("Not a farm instance, skipping.")
             return
