@@ -425,6 +425,10 @@ class PublishPluginsModel(BaseSettingsModel):
         default_factory=OptionalPluginsModel,
         title="Validate Deadline Connection"
     )
+    ValidateDeadlinePools: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Deadline Pools"
+    )
     ValidateDeadlineJobInfo: OptionalPluginsModel = SettingsField(
         default_factory=OptionalPluginsModel,
         title="Validate Deadline Job Info"
@@ -602,6 +606,10 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
     "ValidateDeadlineConnection": {
         "enabled": True,
         "optional": False
+    },
+    "ValidateDeadlinePools": {
+        "enabled": True,
+        "optional": True
     },
     "ValidateDeadlineJobInfo": {
         "enabled": True,
