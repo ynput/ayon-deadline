@@ -44,6 +44,7 @@ class ValidateFrameTokenUSDRender(
     families = ["usdrender"]
     optional = True
     actions = [FixParameterAction, SelectInvalidAction]
+    settings_category = "deadline"
 
     def process(self, instance):
         if not self.is_active(instance.data):

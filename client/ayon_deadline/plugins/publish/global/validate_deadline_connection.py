@@ -11,7 +11,7 @@ from ayon_deadline.lib import FARM_FAMILIES
 
 class ValidateDeadlineConnection(
     OptionalPyblishPluginMixin,
-    pyblish.api.InstancePlugin
+    pyblish.api.InstancePlugin,
 ):
     """Validate Deadline Web Service is running"""
 
@@ -20,6 +20,8 @@ class ValidateDeadlineConnection(
     families = FARM_FAMILIES
     optional = True
     targets = ["local"]
+
+    settings_category = "deadline"
 
     # cache
     responses = {}

@@ -23,6 +23,8 @@ class ValidateDeadlineJobInfo(
     optional = True
     targets = ["local"]
 
+    settings_category = "deadline"
+
     # cache
     pools_by_url = {}
 
