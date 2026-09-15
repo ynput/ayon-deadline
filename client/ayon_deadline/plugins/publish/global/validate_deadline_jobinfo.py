@@ -44,11 +44,15 @@ class ValidateDeadlineJobInfo(
             return
 
         frame_start = (
-            instance.data.get("frameStart")
+            instance.data.get("frameStartHandle")
+            or instance.data.get("frameStart")
+            or instance.context.get("frameStartHandle")
             or instance.context.data.get("frameStart")
         )
         frame_end = (
-            instance.data.get("frameEnd")
+            instance.data.get("frameEndHandle")
+            or instance.data.get("frameEnd")
+            or instance.context.get("frameEndHandle")
             or instance.context.data.get("frameEnd")
         )
         if not frame_start or not frame_end:
