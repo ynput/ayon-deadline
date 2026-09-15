@@ -401,6 +401,10 @@ class PublishPluginsModel(BaseSettingsModel):
     ProcessSubmittedCacheJobOnFarm: ProcessCacheJobFarmModel = SettingsField(
         default_factory=ProcessCacheJobFarmModel,
         title="Houdini Cache Publish Job Settings")
+    ValidateFrameTokenUSDRender: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Houdini Validate Frame Token (USD Render)",
+    )
     MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
         default_factory=MayaSubmitDeadlineModel,
         title="Maya")
@@ -434,10 +438,6 @@ class PublishPluginsModel(BaseSettingsModel):
     ValidateDeadlineJobInfo: OptionalPluginsModel = SettingsField(
         default_factory=OptionalPluginsModel,
         title="Validate Deadline Job Info",
-    )
-    ValidateFrameTokenUSDRender: OptionalPluginsModel = SettingsField(
-        default_factory=OptionalPluginsModel,
-        title="Validate Frame Token (USD Render)",
     )
 
 
