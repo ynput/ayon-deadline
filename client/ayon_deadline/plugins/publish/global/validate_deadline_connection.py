@@ -1,23 +1,35 @@
 import pyblish.api
 
-from ayon_core.pipeline import PublishXmlValidationError
+from ayon_core.pipeline import (
+    OptionalPyblishPluginMixin,
+    PublishXmlValidationError,
+)
 
 from ayon_deadline.abstract_submit_deadline import requests_get
 from ayon_deadline.lib import FARM_FAMILIES
 
 
-class ValidateDeadlineConnection(pyblish.api.InstancePlugin):
+class ValidateDeadlineConnection(
+    OptionalPyblishPluginMixin,
+    pyblish.api.InstancePlugin,
+):
     """Validate Deadline Web Service is running"""
 
     label = "Validate Deadline Web Service"
     order = pyblish.api.ValidatorOrder
     families = FARM_FAMILIES
+    optional = True
     targets = ["local"]
+
+    settings_category = "deadline"
 
     # cache
     responses = {}
 
     def process(self, instance):
+        if not self.is_active(instance.data):
+            return
+
         if not instance.data.get("farm"):
             self.log.debug("Should not be processed on farm, skipping.")
             return
