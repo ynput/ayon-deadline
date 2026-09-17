@@ -442,6 +442,7 @@ class PublishPluginsModel(BaseSettingsModel):
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
+    # Generic submission settings applying to all hosts
     "CollectJobInfo": {
       "profiles": [
         {
@@ -515,47 +516,6 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         }
       ]
     },
-    "CollectAYONServerToFarmJob": {
-        "enabled": False
-    },
-    "ValidateExpectedFiles": {
-        "enabled": True,
-        "active": True,
-        "allow_user_override": True,
-        "families": [
-            "render"
-        ],
-        "targets": [
-            "deadline"
-        ]
-    },
-    "FusionSubmitDeadline": {
-        "plugin": "Fusion"
-    },
-    "HoudiniSubmitDeadline": {
-        "export_priority": 50,
-        "export_chunk_size": 10,
-        "export_group": "",
-        "export_limits": "",
-        "export_machine_limit": 0
-    },
-    "MayaSubmitDeadline": {
-        "tile_assembler_plugin": "DraftTileAssembler",
-        "import_reference": False,
-        "strict_error_checking": True,
-        "tile_priority": 50,
-        "scene_patches": []
-    },
-    "NukeSubmitDeadline": {
-        "use_gpu": True,
-        "continue_on_error": False,
-    },
-    "ProcessSubmittedCacheJobOnFarm": {
-        "deadline_priority": 50,
-        "deadline_group": "",
-        "deadline_pool": "",
-        "deadline_department": "",
-    },
     "ProcessSubmittedJobOnFarm": {
         "deadline_priority": 50,
         "deadline_group": "",
@@ -609,6 +569,56 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         ],
         "add_rendered_dependencies": False,
     },
+
+    # Host-specific
+    "FusionSubmitDeadline": {
+        "plugin": "Fusion"
+    },
+    "HoudiniSubmitDeadline": {
+        "export_priority": 50,
+        "export_chunk_size": 10,
+        "export_group": "",
+        "export_limits": "",
+        "export_machine_limit": 0
+    },
+    "ProcessSubmittedCacheJobOnFarm": {
+        "deadline_priority": 50,
+        "deadline_group": "",
+        "deadline_pool": "",
+        "deadline_department": "",
+    },
+    "ValidateFrameTokenUSDRender": {
+        "enabled": True,
+        "active": True,
+        "optional": False,
+    },
+    "MayaSubmitDeadline": {
+        "tile_assembler_plugin": "DraftTileAssembler",
+        "import_reference": False,
+        "strict_error_checking": True,
+        "tile_priority": 50,
+        "scene_patches": []
+    },
+    "NukeSubmitDeadline": {
+        "use_gpu": True,
+        "continue_on_error": False,
+    },
+
+    # Others
+    "CollectAYONServerToFarmJob": {
+        "enabled": False
+    },
+    "ValidateExpectedFiles": {
+        "enabled": True,
+        "active": True,
+        "allow_user_override": True,
+        "families": [
+            "render"
+        ],
+        "targets": [
+            "deadline"
+        ]
+    },
     "ValidateDeadlineConnection": {
         "enabled": True,
         "active": True,
@@ -623,10 +633,5 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": True,
         "active": True,
         "optional": True,
-    },
-    "ValidateFrameTokenUSDRender": {
-        "enabled": True,
-        "active": True,
-        "optional": False,
     },
 }
