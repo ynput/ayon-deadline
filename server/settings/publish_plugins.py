@@ -593,11 +593,11 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "optional": False,
     },
     "MayaSubmitDeadline": {
-        "tile_assembler_plugin": "DraftTileAssembler",
         "import_reference": False,
-        "strict_error_checking": True,
         "tile_priority": 50,
-        "scene_patches": []
+        "tile_assembler_plugin": "DraftTileAssembler",
+        "scene_patches": [],
+        "strict_error_checking": True,
     },
     "NukeSubmitDeadline": {
         "use_gpu": True,
