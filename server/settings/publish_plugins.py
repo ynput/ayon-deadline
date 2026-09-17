@@ -442,119 +442,82 @@ class PublishPluginsModel(BaseSettingsModel):
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
+    # Generic submission settings applying to all hosts
     "CollectJobInfo": {
-      "profiles": [
-        {
-          "group": "",
-          "priority": 50,
-          "job_delay": "",
-          "publish_job_state": "active",
-          "overrides": [
-            "department",
-            "chunk_size",
-            "group",
-            "priority",
-            "primary_pool",
-            "secondary_pool",
-            "publish_job_state"
-          ],
-          "chunk_size": 1,
-          "department": "",
-          "host_names": [],
-          "task_names": [],
-          "task_types": [],
-          "limit_groups": [],
-          "machine_list": [],
-          "primary_pool": "",
-          "machine_limit": 0,
-          "use_published": True,
-          "secondary_pool": "",
-          "concurrent_tasks": 1,
-          "machine_list_deny": False,
-          "additional_job_info": "",
-          "additional_plugin_info": "",
-          "use_asset_dependencies": False,
-          "use_workfile_dependency": True
-        },
-        {
-          "group": "",
-          "priority": 50,
-          "job_delay": "",
-          "publish_job_state": "active",
-          "overrides": [
-            "department",
-            "chunk_size",
-            "group",
-            "priority",
-            "primary_pool",
-            "secondary_pool",
-            "publish_job_state"
-          ],
-          "chunk_size": 10,
-          "department": "",
-          "host_names": [
-            "nuke",
-            "fusion",
-            "aftereffects"
-          ],
-          "task_names": [],
-          "task_types": [],
-          "product_base_types": [],
-          "limit_groups": [],
-          "machine_list": [],
-          "primary_pool": "",
-          "machine_limit": 0,
-          "use_published": True,
-          "secondary_pool": "",
-          "concurrent_tasks": 1,
-          "machine_list_deny": False,
-          "additional_job_info": "",
-          "additional_plugin_info": "",
-          "use_asset_dependencies": False,
-          "use_workfile_dependency": True
-        }
-      ]
-    },
-    "CollectAYONServerToFarmJob": {
-        "enabled": False
-    },
-    "ValidateExpectedFiles": {
-        "enabled": True,
-        "active": True,
-        "allow_user_override": True,
-        "families": [
-            "render"
-        ],
-        "targets": [
-            "deadline"
+        "profiles": [
+            {
+                "host_names": [],
+                "task_types": [],
+                "task_names": [],
+                "product_base_types": [],
+
+                "chunk_size": 1,
+                "priority": 50,
+                "group": "",
+                "limit_groups": [],
+                "primary_pool": "",
+                "secondary_pool": "",
+                "machine_limit": 0,
+                "machine_list": [],
+                "machine_list_deny": False,
+                "concurrent_tasks": 1,
+                "department": "",
+                "job_delay": "",
+                "publish_job_state": "active",
+                "use_published": True,
+                "use_asset_dependencies": False,
+                "use_workfile_dependency": True,
+                "additional_job_info": "",
+                "additional_plugin_info": "",
+                "overrides": [
+                    "department",
+                    "chunk_size",
+                    "group",
+                    "priority",
+                    "primary_pool",
+                    "secondary_pool",
+                    "publish_job_state",
+                ],
+            },
+            {
+                "host_names": [
+                    "aftereffects",
+                    "fusion",
+                    "nuke",
+                ],
+                "task_types": [],
+                "task_names": [],
+                "product_base_types": [],
+
+                "chunk_size": 10,
+                "priority": 50,
+                "group": "",
+                "limit_groups": [],
+                "primary_pool": "",
+                "secondary_pool": "",
+                "machine_limit": 0,
+                "machine_list": [],
+                "machine_list_deny": False,
+                "concurrent_tasks": 1,
+                "department": "",
+                "job_delay": "",
+                "publish_job_state": "active",
+                "use_published": True,
+                "use_asset_dependencies": False,
+                "use_workfile_dependency": True,
+                "additional_job_info": "",
+                "additional_plugin_info": "",
+                "overrides": [
+                    "department",
+                    "chunk_size",
+                    "group",
+                    "priority",
+                    "primary_pool",
+                    "secondary_pool",
+                    "publish_job_state",
+                ],
+            }
         ]
-    },
-    "FusionSubmitDeadline": {
-        "plugin": "Fusion"
-    },
-    "HoudiniSubmitDeadline": {
-        "export_priority": 50,
-        "export_chunk_size": 10,
-        "export_group": "",
-        "export_limits": "",
-        "export_machine_limit": 0
-    },
-    "MayaSubmitDeadline": {
-        "tile_assembler_plugin": "DraftTileAssembler",
-        "import_reference": False,
-        "strict_error_checking": True,
-        "tile_priority": 50,
-        "scene_patches": []
-    },
-    "NukeSubmitDeadline": {
-        "use_gpu": True,
-        "continue_on_error": False,
-    },
-    "ProcessSubmittedCacheJobOnFarm": {
-        "deadline_priority": 50,
-        "deadline_group": "",
-        "deadline_pool": "",
-        "deadline_department": "",
     },
     "ProcessSubmittedJobOnFarm": {
         "deadline_priority": 50,
@@ -609,6 +572,56 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         ],
         "add_rendered_dependencies": False,
     },
+
+    # Host-specific
+    "FusionSubmitDeadline": {
+        "plugin": "Fusion"
+    },
+    "HoudiniSubmitDeadline": {
+        "export_priority": 50,
+        "export_chunk_size": 10,
+        "export_group": "",
+        "export_limits": "",
+        "export_machine_limit": 0
+    },
+    "ProcessSubmittedCacheJobOnFarm": {
+        "deadline_priority": 50,
+        "deadline_group": "",
+        "deadline_pool": "",
+        "deadline_department": "",
+    },
+    "ValidateFrameTokenUSDRender": {
+        "enabled": True,
+        "active": True,
+        "optional": False,
+    },
+    "MayaSubmitDeadline": {
+        "import_reference": False,
+        "tile_priority": 50,
+        "tile_assembler_plugin": "DraftTileAssembler",
+        "scene_patches": [],
+        "strict_error_checking": True,
+    },
+    "NukeSubmitDeadline": {
+        "use_gpu": True,
+        "continue_on_error": False,
+    },
+
+    # Others
+    "CollectAYONServerToFarmJob": {
+        "enabled": False
+    },
+    "ValidateExpectedFiles": {
+        "enabled": True,
+        "active": True,
+        "allow_user_override": True,
+        "families": [
+            "render"
+        ],
+        "targets": [
+            "deadline"
+        ]
+    },
     "ValidateDeadlineConnection": {
         "enabled": True,
         "active": True,
@@ -623,10 +636,5 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
         "enabled": True,
         "active": True,
         "optional": True,
-    },
-    "ValidateFrameTokenUSDRender": {
-        "enabled": True,
-        "active": True,
-        "optional": False,
     },
 }
