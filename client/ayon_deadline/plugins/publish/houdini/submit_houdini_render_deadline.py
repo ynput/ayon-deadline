@@ -349,8 +349,8 @@ class HoudiniSubmitDeadline(
         if rop_node.evalParm("husk_restartdelegate"):
             restart_delegate = rop_node.evalParm("husk_restartdelegateframes")
 
-        render_pass = instance.data["renderpass"]
-        render_pass_path = render_pass.GetPath().pathString if render_pass else ''
+        render_pass = instance.data.get("renderpass")
+        render_pass_path = render_pass.GetPath().pathString if render_pass else ""
 
         # Get SlapComps
         # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
