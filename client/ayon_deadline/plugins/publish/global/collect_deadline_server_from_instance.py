@@ -104,7 +104,7 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
         deadline_settings = (
             instance.context.data["project_settings"]["deadline"]
         )
-        for server_info in deadline_settings["deadline_servers_info"]:
+        for server_info in deadline_settings["deadline_urls"]:
             if server_info["value"].strip().rstrip("/") == deadline_url:
                 return server_info["name"]
         return None
@@ -152,9 +152,9 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
 
         default_servers = {
             url_item["name"]: url_item["value"]
-            for url_item in deadline_settings["deadline_servers_info"]
+            for url_item in deadline_settings["deadline_urls"]
         }
-        project_servers = deadline_settings["deadline_servers"]
+        project_servers = deadline_settings.get("deadline_servers")
         if not project_servers:
             self.log.debug("Not project servers found. Using default servers.")
             return default_servers[instance_server], instance_server
