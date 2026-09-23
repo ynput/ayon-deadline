@@ -56,7 +56,7 @@ class MayaPluginInfo(object):
     RenderSetupIncludeLights: str = field(default="1")
     StrictErrorChecking: bool = field(default=True)
 
-    def __post__init__(self):
+    def __post_init__(self):
         self._validate_deadline_bool_value()
 
     def _validate_deadline_bool_value(self):
