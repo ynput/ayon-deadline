@@ -537,7 +537,7 @@ class MayaSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             "OutputFilePath": os.path.dirname(vray_scene)
         }
 
-        return job_info, asdict(plugin_info)
+        return job_info, plugin_info
 
     def _get_vray_render_payload(self, data):
 
