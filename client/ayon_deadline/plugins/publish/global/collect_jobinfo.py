@@ -443,10 +443,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             )
 
             instance = instance_change["instance"]
-            #recalculate only if context changes
+            # recalculate only if context changes
+            changes = instance_change["changes"]
             if (
-                "task" not in instance_change
-                and "folderPath" not in instance_change
+                "task" not in changes
+                and "folderPath" not in changes
                 and not custom_frame_change
             ):
                 continue
