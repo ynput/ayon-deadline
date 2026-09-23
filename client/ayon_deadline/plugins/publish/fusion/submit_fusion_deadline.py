@@ -114,7 +114,7 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             if saver_instance is instance:
                 continue
 
-            self._append_job_output_paths(instance, job_info)
+            self._append_job_output_paths(saver_instance, job_info)
 
         return job_info
 
