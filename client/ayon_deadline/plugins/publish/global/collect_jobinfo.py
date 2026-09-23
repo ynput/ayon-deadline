@@ -54,7 +54,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
-        attr_values = self._get_profile_for_instance(instance)
+        # Copy so artist values do not leak into the shared profile settings
+        attr_values = dict(self._get_profile_for_instance(instance))
         if not attr_values:
             raise PublishError(
                 "No profile selected for defaults. Ask Admin to "
@@ -442,10 +443,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             )
 
             instance = instance_change["instance"]
-            #recalculate only if context changes
+            # recalculate only if context changes
+            changes = instance_change["changes"]
             if (
-                "task" not in instance_change
-                and "folderPath" not in instance_change
+                "task" not in changes
+                and "folderPath" not in changes
                 and not custom_frame_change
             ):
                 continue

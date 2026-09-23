@@ -350,6 +350,7 @@ class HoudiniSubmitDeadline(
 
         rendersettings = (
             rop_node.evalParm("rendersettings")
+            or instance.data["stage"].GetMetadata("renderSettingsPrimPath")
             or "/Render/rendersettings"
         )
 
