@@ -54,7 +54,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
-        attr_values = self._get_profile_for_instance(instance)
+        # Copy so artist values do not leak into the shared profile settings
+        attr_values = dict(self._get_profile_for_instance(instance))
         if not attr_values:
             raise PublishError(
                 "No profile selected for defaults. Ask Admin to "
@@ -307,7 +308,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         default_values = {}
         for key in overrides:
             default_value = profile[key]
-            if key == "machine_limit":
+            if key == "machine_list":
                 available_values = {
                     item["value"]
                     for item in cls.machines_enum_values
