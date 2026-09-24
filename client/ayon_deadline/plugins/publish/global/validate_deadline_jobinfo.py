@@ -37,7 +37,7 @@ class ValidateDeadlineJobInfo(
             return
 
         priority = instance.data["deadline"]["job_info"].Priority
-        if priority < 0 or priority > 100:
+        if priority is not None and (priority < 0 or priority > 100):
             raise PublishValidationError(
                 f"Priority:'{priority}' must be between 0-100")
 
@@ -47,13 +47,15 @@ class ValidateDeadlineJobInfo(
 
         frame_start = (
             instance.data.get("frameStart")
-            or instance.context.data.get("frameStart")
+            if instance.data.get("frameStart") is not None
+            else instance.context.data.get("frameStart")
         )
         frame_end = (
             instance.data.get("frameEnd")
-            or instance.context.data.get("frameEnd")
+            if instance.data.get("frameEnd") is not None
+            else instance.context.data.get("frameEnd")
         )
-        if not frame_start or not frame_end:
+        if frame_start is None or frame_end is None:
             self.log.info("Unable to get frame range, skip validation.")
             return
 
