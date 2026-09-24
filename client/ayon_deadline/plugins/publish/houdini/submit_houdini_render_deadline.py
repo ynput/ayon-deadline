@@ -60,6 +60,7 @@ class HuskStandalonePluginInfo:
     # TODO: Below parameters are only supported by custom version of the plugin
     Renderer: str = field(default=None)
     RenderSettings: str = field(default="/Render/rendersettings")
+    RenderPass: str = field(default="")
     Purpose: str = field(default="geometry,render")
     Complexity: str = field(default="veryhigh")
     Snapshot: int = field(default=-1)
@@ -348,11 +349,8 @@ class HoudiniSubmitDeadline(
         if rop_node.evalParm("husk_restartdelegate"):
             restart_delegate = rop_node.evalParm("husk_restartdelegateframes")
 
-        rendersettings = (
-            rop_node.evalParm("rendersettings")
-            or instance.data["stage"].GetMetadata("renderSettingsPrimPath")
-            or "/Render/rendersettings"
-        )
+        render_pass = instance.data.get("renderpass")
+        render_pass_path = render_pass.GetPath().pathString if render_pass else ""
 
         # Get SlapComps
         # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
@@ -361,7 +359,8 @@ class HoudiniSubmitDeadline(
         return HuskStandalonePluginInfo(
             SceneFile=instance.data["ifdFile"],
             Renderer=rop_node.evalParm("renderer"),
-            RenderSettings=rendersettings,
+            RenderSettings=instance.data["rendersettings"].GetPath().pathString,
+            RenderPass=render_pass_path,
             Purpose=rop_node.evalParm("husk_purpose"),
             Complexity=rop_node.evalParm("husk_complexity"),
             Snapshot=snapshot_interval,
