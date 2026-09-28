@@ -336,7 +336,7 @@ class HoudiniSubmitDeadline(
 
     def _get_render_settings(self, instance, rop_node) -> str:
         render_settings_prim = instance.data.get("rendersettings")
-        
+
         if render_settings_prim is not None:
             render_settings = render_settings_prim.GetPath().pathString
         else:
@@ -347,7 +347,7 @@ class HoudiniSubmitDeadline(
                 or "/Render/rendersettings"
             )
         return render_settings
-    
+
     def _get_husk_standalone_plugin_info(self, instance, hou_major_minor):
         # Not all hosts can import this module.
         import hou
