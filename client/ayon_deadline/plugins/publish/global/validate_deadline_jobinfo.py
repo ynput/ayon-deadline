@@ -45,17 +45,18 @@ class ValidateDeadlineJobInfo(
         if not custom_frames:
             return
 
+        context = instance.context
         frame_start = _first_not_none(
             instance.data.get("frameStartHandle"),
             instance.data.get("frameStart"),
-            instance.context.data.get("frameStartHandle"),
-            instance.context.data.get("frameStart"),
+            context.data.get("frameStartHandle"),
+            context.data.get("frameStart"),
         )
         frame_end = _first_not_none(
             instance.data.get("frameEndHandle"),
             instance.data.get("frameEnd"),
-            instance.context.data.get("frameEndHandle"),
-            instance.context.data.get("frameEnd"),
+            context.data.get("frameEndHandle"),
+            context.data.get("frameEnd"),
         )
         if frame_start is None or frame_end is None:
             self.log.info("Unable to get frame range, skip validation.")
