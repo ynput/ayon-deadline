@@ -365,7 +365,7 @@ class HoudiniSubmitDeadline(
 
         render_pass = instance.data.get("renderpass")
         render_pass_path = render_pass.GetPath().pathString if render_pass else ""  # noqa
-        render_settings = self._get_render_settings(instance,rop_node)
+        render_settings = self._get_render_settings(instance, rop_node)
 
         # Get SlapComps
         # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
