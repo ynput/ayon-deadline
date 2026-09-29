@@ -141,33 +141,45 @@ class AbstractSubmitDeadline(
         # TODO: Find a way that's more generic and not render type specific
         #  This is currently only HoudiniSubmitDeadline-specific
         if instance.data.get("splitRender"):
-            dependency_job_ids = []
-            if job_id:
-                self.log.info("Splitting export and render in two jobs")
-                self.log.info("Export job id: %s", job_id)
-                dependency_job_ids = [job_id]
-            # When submitting a render job separate from the export job,
-            # we do not want to use the DCC's DL plugin. Instead, we
-            # want to use the renderer's dedicated DL plugin.
-            # The `get_job_info` method should be responsible for setting
-            # the correct DL plugin for the render job. For implementation
-            # examples, check `HoudiniSubmitDeadline.get_job_info`.
-            render_job_info = self.get_job_info(
-                job_info=job_info,
-                dependency_job_ids=dependency_job_ids,
-                use_dcc_plugin=False
-            )
-            render_plugin_info = self.get_plugin_info(job_type="render")
-            payload = self.assemble_payload(
-                job_info=render_job_info,
-                plugin_info=render_plugin_info
-            )
-            auth = instance.data["deadline"]["auth"]
-            verify = instance.data["deadline"]["verify"]
-            render_job_id = self.submit(payload, auth, verify)
+            self._submit_split_render_jobs(instance, job_id, job_info)
 
-            instance.data["deadline"]["job_info"] = deepcopy(render_job_info)
-            self.log.info("Render job id: %s", render_job_id)
+    def _submit_split_render_jobs(
+        self, instance, job_id, job_info
+    ):
+        """Submit render job(s) depending on the export job.
+
+        Default submits one render job using the renderer's dedicated DL
+        plugin (see `HoudiniSubmitDeadline.get_job_info` for how the
+        plugin swap is wired via `use_dcc_plugin=False`). Override to
+        submit multiple — e.g. tile rendering fans out N jobs.
+        """
+        dependency_job_ids = []
+        if job_id:
+            self.log.info("Splitting export and render in two jobs")
+            self.log.info("Export job id: %s", job_id)
+            dependency_job_ids = [job_id]
+        # When submitting a render job separate from the export job,
+        # we do not want to use the DCC's DL plugin. Instead, we
+        # want to use the renderer's dedicated DL plugin.
+        # The `get_job_info` method should be responsible for setting
+        # the correct DL plugin for the render job. For implementation
+        # examples, check `HoudiniSubmitDeadline.get_job_info`.
+        render_job_info = self.get_job_info(
+            job_info=job_info,
+            dependency_job_ids=dependency_job_ids,
+            use_dcc_plugin=False
+        )
+        render_plugin_info = self.get_plugin_info(job_type="render")
+        payload = self.assemble_payload(
+            job_info=render_job_info,
+            plugin_info=render_plugin_info
+        )
+        auth = instance.data["deadline"]["auth"]
+        verify = instance.data["deadline"]["verify"]
+        render_job_id = self.submit(payload, auth, verify)
+
+        instance.data["deadline"]["job_info"] = deepcopy(render_job_info)
+        self.log.info("Render job id: %s", render_job_id)
 
     def _set_scene_path(
         self,
