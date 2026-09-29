@@ -39,12 +39,22 @@ MAX_CHUNK_SIZE = 2147483647
 """Maximum chunk size for Deadline."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class DeadlineConnectionInfo:
-    """Connection information for Deadline server."""
+    """Connection information for Deadline server.
+
+    Frozen to be hashable, so it can be used as cache key.
+
+    Attributes:
+        name: Deadline server name from settings.
+        url: Deadline webservice url.
+        auth: Username and password, 'None' when authentication
+            is not used.
+        verify: Verify SSL certificate of the webservice.
+    """
     name: str
     url: str
-    auth: Tuple[str, str]
+    auth: tuple[str, str] | None
     verify: bool
 
 
