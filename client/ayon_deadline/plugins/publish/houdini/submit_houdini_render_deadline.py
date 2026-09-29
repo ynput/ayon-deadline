@@ -60,6 +60,7 @@ class HuskStandalonePluginInfo:
     # TODO: Below parameters are only supported by custom version of the plugin
     Renderer: str = field(default=None)
     RenderSettings: str = field(default="/Render/rendersettings")
+    RenderPass: str = field(default="")
     Purpose: str = field(default="geometry,render")
     Complexity: str = field(default="veryhigh")
     Snapshot: int = field(default=-1)
@@ -333,6 +334,20 @@ class HoudiniSubmitDeadline(
         output_dir = os.path.dirname(instance.data["files"][0])
         instance.data["outputDir"] = output_dir
 
+    def _get_render_settings(self, instance, rop_node) -> str:
+        render_settings_prim = instance.data.get("rendersettings")
+
+        if render_settings_prim is not None:
+            render_settings = render_settings_prim.GetPath().pathString
+        else:
+            # Backwards compatibility for AYON houdini <= 0.10.8
+            render_settings = (
+                rop_node.evalParm("rendersettings")
+                or instance.data["stage"].GetMetadata("renderSettingsPrimPath")
+                or "/Render/rendersettings"
+            )
+        return render_settings
+
     def _get_husk_standalone_plugin_info(self, instance, hou_major_minor):
         # Not all hosts can import this module.
         import hou
@@ -348,11 +363,9 @@ class HoudiniSubmitDeadline(
         if rop_node.evalParm("husk_restartdelegate"):
             restart_delegate = rop_node.evalParm("husk_restartdelegateframes")
 
-        rendersettings = (
-            rop_node.evalParm("rendersettings")
-            or instance.data["stage"].GetMetadata("renderSettingsPrimPath")
-            or "/Render/rendersettings"
-        )
+        render_pass = instance.data.get("renderpass")
+        render_pass_path = render_pass.GetPath().pathString if render_pass else ""  # noqa
+        render_settings = self._get_render_settings(instance, rop_node)
 
         # Get SlapComps
         # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
@@ -361,7 +374,8 @@ class HoudiniSubmitDeadline(
         return HuskStandalonePluginInfo(
             SceneFile=instance.data["ifdFile"],
             Renderer=rop_node.evalParm("renderer"),
-            RenderSettings=rendersettings,
+            RenderSettings=render_settings,
+            RenderPass=render_pass_path,
             Purpose=rop_node.evalParm("husk_purpose"),
             Complexity=rop_node.evalParm("husk_complexity"),
             Snapshot=snapshot_interval,
