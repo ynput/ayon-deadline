@@ -6,7 +6,7 @@ from ayon_core.pipeline import (
     PublishValidationError,
 )
 from ayon_core.pipeline.publish import RepairAction
-from ayon_houdini.api import plugin
+
 try:
     from ayon_houdini.api import plugin
     from ayon_houdini.api.action import SelectInvalidAction
@@ -83,7 +83,6 @@ class ValidateFrameTokenUSDRender(
 
     @classmethod
     def get_invalid(cls, instance):
-        import hou
 
         node = hou.node(instance.data["instance_node"])
         output_parm = node.parm("lopoutput")
@@ -105,8 +104,6 @@ class ValidateFrameTokenUSDRender(
 
     @classmethod
     def repair(cls, instance):
-        import hou
-
         if not cls.get_invalid(instance):
             # Already fixed
             return
