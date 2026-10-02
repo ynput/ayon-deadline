@@ -1,6 +1,4 @@
 import os
-import hou
-
 import pyblish.api
 
 from ayon_core.pipeline import (
@@ -79,6 +77,7 @@ class ValidateFrameTokenUSDRender(
 
     @classmethod
     def get_invalid(cls, instance):
+        import hou
 
         node = hou.node(instance.data["instance_node"])
         output_parm = node.parm("lopoutput")
@@ -100,6 +99,8 @@ class ValidateFrameTokenUSDRender(
 
     @classmethod
     def repair(cls, instance):
+        import hou
+
         if not cls.get_invalid(instance):
             # Already fixed
             return
