@@ -42,6 +42,8 @@ class ValidateFrameTokenUSDRender(
     order = pyblish.api.ValidatorOrder
     label = "Validate Frame Token (USD Render)"
     families = ["usdrender"]
+    targets = ["local"]
+    hosts = ["houdini"]
     optional = True
     actions = [FixParameterAction, SelectInvalidAction]
     settings_category = "deadline"
