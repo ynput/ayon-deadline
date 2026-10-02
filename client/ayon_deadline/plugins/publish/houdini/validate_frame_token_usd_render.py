@@ -7,7 +7,13 @@ from ayon_core.pipeline import (
 )
 from ayon_core.pipeline.publish import RepairAction
 from ayon_houdini.api import plugin
-from ayon_houdini.api.action import SelectInvalidAction
+try:
+    from ayon_houdini.api import plugin
+    from ayon_houdini.api.action import SelectInvalidAction
+    import hou
+except ImportError:
+    # Do not log an error inside publish jobs where this does not run anyway
+    pass
 
 
 class FixParameterAction(RepairAction):
