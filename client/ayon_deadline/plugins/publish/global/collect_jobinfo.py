@@ -29,17 +29,10 @@ from ayon_deadline.lib import (
 )
 
 
-def _core_handles_custom_frames() -> bool:
-    """Custom frames are collected by core addon since version 1.10.0.
-
-    Older core versions require deadline addon to show the attributes
-    and collect custom frames on its own.
-    """
-    return semver.VersionInfo.parse(core_version) >= (1, 10, 0)
-
-
 # TODO remove when deadline requires core addon >= 1.10.0
-CORE_HANDLES_CUSTOM_FRAMES = _core_handles_custom_frames()
+CORE_HANDLES_CUSTOM_FRAMES = (
+    semver.VersionInfo.parse(core_version) >= (1, 10, 0)
+)
 
 
 class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
