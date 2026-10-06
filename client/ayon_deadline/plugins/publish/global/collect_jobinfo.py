@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 import pyblish.api
+import semver
 from ayon_core.lib import (
     BoolDef,
     NumberDef,
@@ -34,13 +35,7 @@ def _core_handles_custom_frames() -> bool:
     Older core versions require deadline addon to show the attributes
     and collect custom frames on its own.
     """
-    parts = []
-    for part in core_version.split("+")[0].split("-")[0].split(".")[:3]:
-        try:
-            parts.append(int(part))
-        except ValueError:
-            parts.append(0)
-    return tuple(parts) >= (1, 10, 0)
+    return semver.VersionInfo.parse(core_version) >= (1, 10, 0)
 
 
 # TODO remove when deadline requires core addon >= 1.10.0
