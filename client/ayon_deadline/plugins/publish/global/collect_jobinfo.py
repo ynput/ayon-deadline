@@ -175,8 +175,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         custom_frames = instance.data.get("customFrames")
         if isinstance(custom_frames, str):
             custom_frames = custom_frames.strip()
-        elif custom_frames is None:
-            custom_frames = ""
+        elif not custom_frames:
+            custom_frames = None
         job_info.Frames = custom_frames
         job_info.reuse_last_version = instance.data.get(
             "reuse_last_version", False
