@@ -74,7 +74,11 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         attr_values.update(self.get_attr_values_from_data(instance.data))
         job_info = PublishDeadlineJobInfo.from_attribute_values(attr_values)
 
-        if CORE_HANDLES_CUSTOM_FRAMES:
+        # Core's CollectCustomFrameRange is authoritative whenever it
+        # collected a value: the host rendered exactly those frames, so the
+        # farm job has to match. The version gate only decides which UI is
+        # shown, never which data wins.
+        if instance.data.get("customFrames") or CORE_HANDLES_CUSTOM_FRAMES:
             self._handle_custom_frames(instance, job_info)
         else:
             self._handle_legacy_custom_frames(attr_values, job_info)
@@ -293,7 +297,12 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
-        if not CORE_HANDLES_CUSTOM_FRAMES:
+        families = set(getattr(instance, "families", None) or [])
+        core_owns_custom_frames = (
+            CORE_HANDLES_CUSTOM_FRAMES
+            or "supports.customFrameRange" in families
+        )
+        if not core_owns_custom_frames:
             defs.extend(cls._get_legacy_custom_frames_defs(instance))
 
         defs.append(
