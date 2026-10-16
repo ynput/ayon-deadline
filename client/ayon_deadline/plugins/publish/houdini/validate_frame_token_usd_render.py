@@ -1,6 +1,4 @@
 import os
-import hou
-
 import pyblish.api
 
 from ayon_core.pipeline import (
@@ -8,8 +6,14 @@ from ayon_core.pipeline import (
     PublishValidationError,
 )
 from ayon_core.pipeline.publish import RepairAction
-from ayon_houdini.api import plugin
-from ayon_houdini.api.action import SelectInvalidAction
+
+try:
+    from ayon_houdini.api import plugin
+    from ayon_houdini.api.action import SelectInvalidAction
+    import hou
+except ImportError:
+    # Do not log an error inside publish jobs where this does not run anyway
+    pass
 
 
 class FixParameterAction(RepairAction):
@@ -42,6 +46,8 @@ class ValidateFrameTokenUSDRender(
     order = pyblish.api.ValidatorOrder
     label = "Validate Frame Token (USD Render)"
     families = ["usdrender"]
+    targets = ["local"]
+    hosts = ["houdini"]
     optional = True
     actions = [FixParameterAction, SelectInvalidAction]
     settings_category = "deadline"
