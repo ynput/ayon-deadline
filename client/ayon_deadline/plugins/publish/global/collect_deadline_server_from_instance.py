@@ -8,7 +8,7 @@ data.
 TODOS:
 - Don't store deadline url, but use server name instead.
 """
-from typing import Optional, Tuple
+from typing import Optional
 
 import pyblish.api
 from ayon_core.pipeline.publish import PublishError
