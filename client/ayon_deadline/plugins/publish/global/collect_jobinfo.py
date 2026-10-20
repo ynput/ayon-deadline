@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 import pyblish.api
+import semver
 from ayon_core.lib import (
     BoolDef,
     NumberDef,
@@ -11,6 +12,7 @@ from ayon_core.lib import (
     TextDef,
     UISeparatorDef
 )
+from ayon_core import __version__ as core_version
 from ayon_core.pipeline import KnownPublishError
 from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin,
@@ -24,6 +26,12 @@ from ayon_deadline.lib import (
     MAX_CHUNK_SIZE,
     PublishDeadlineJobInfo,
     DeadlineWebserviceError,
+)
+
+
+# TODO remove when deadline requires core addon >= 1.10.0
+CORE_HANDLES_CUSTOM_FRAMES = (
+    semver.VersionInfo.parse(core_version) >= (1, 10, 0)
 )
 
 
@@ -54,7 +62,8 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             self.log.debug("Should not be processed on farm, skipping.")
             return
 
-        attr_values = self._get_profile_for_instance(instance)
+        # Copy so artist values do not leak into the shared profile settings
+        attr_values = dict(self._get_profile_for_instance(instance))
         if not attr_values:
             raise PublishError(
                 "No profile selected for defaults. Ask Admin to "
@@ -65,9 +74,16 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         attr_values.update(self.get_attr_values_from_data(instance.data))
         job_info = PublishDeadlineJobInfo.from_attribute_values(attr_values)
 
+        # Core's CollectCustomFrameRange is authoritative whenever it
+        # collected a value: the host rendered exactly those frames, so the
+        # farm job has to match. The version gate only decides which UI is
+        # shown, never which data wins.
+        if instance.data.get("customFrames") or CORE_HANDLES_CUSTOM_FRAMES:
+            self._handle_custom_frames(instance, job_info)
+        else:
+            self._handle_legacy_custom_frames(attr_values, job_info)
         self._handle_machine_list(attr_values, job_info)
         self._handle_job_delay(attr_values, job_info)
-        self._handle_custom_frames(attr_values, job_info)
 
         self._handle_additional_jobinfo(attr_values, job_info)
 
@@ -154,15 +170,31 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
             )
             job_info.JobDelay = None
 
-    def _handle_custom_frames(self, attr_values, job_info):
+    def _handle_custom_frames(self, instance, job_info):
         """Fill JobInfo.Frames only if dropdown says so."""
+        custom_frames = instance.data.get("customFrames")
+        if isinstance(custom_frames, str):
+            custom_frames = custom_frames.strip()
+
+        # Keep Frames as None to use default frame range
+        job_info.Frames = custom_frames or None
+        job_info.reuse_last_version = instance.data.get(
+            "reuse_last_version", False
+        )
+
+    def _handle_legacy_custom_frames(self, attr_values, job_info):
+        """Fill JobInfo.Frames from deadline attributes.
+
+        Used only with core addon older than 1.10.0 which does not have
+        'CollectCustomFrameRange' plugin.
+        """
         job_info.Frames = None
         job_info.reuse_last_version = False
         use_custom_frames = self._is_custom_frames_used(
             attr_values.get("use_custom_frames")
         )
         if use_custom_frames:
-            if not attr_values["frames"]:
+            if not attr_values.get("frames"):
                 raise KnownPublishError("Please fill `Custom Frames` value")
             job_info.Frames = attr_values["frames"]
             if attr_values["use_custom_frames"] == "reuse_last_version":
@@ -265,34 +297,13 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
 
         defs.extend(cls._get_artist_overrides(overrides, profile))
 
-        use_custom_frames = (
-            cls._get_publish_use_custom_frames_value(instance.data) or "none"
+        families = set(getattr(instance, "families", None) or [])
+        core_owns_custom_frames = (
+            CORE_HANDLES_CUSTOM_FRAMES
+            or "supports.customFrameRange" in families
         )
-
-        # explicit frames to render - for test renders
-        use_custom_frames_enum_values = [
-            {"value": "none", "label": "Disabled"},
-            {"value": "custom_only", "label": "Custom Frames Only"},
-            {"value": "reuse_last_version", "label": "Reuse from Last Version"}
-        ]
-        defs.append(
-            EnumDef(
-                "use_custom_frames",
-                label="Use Custom Frames",
-                default=use_custom_frames,
-                items=use_custom_frames_enum_values,
-            )
-        )
-        custom_frames_visible = cls._is_custom_frames_used(use_custom_frames)
-        defs.append(
-            TextDef(
-                "frames",
-                label="Custom Frames",
-                default="",
-                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)",
-                visible=custom_frames_visible
-            )
-        )
+        if not core_owns_custom_frames:
+            defs.extend(cls._get_legacy_custom_frames_defs(instance))
 
         defs.append(
             UISeparatorDef("deadline_defs_end")
@@ -307,7 +318,7 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         default_values = {}
         for key in overrides:
             default_value = profile[key]
-            if key == "machine_limit":
+            if key == "machine_list":
                 available_values = {
                     item["value"]
                     for item in cls.machines_enum_values
@@ -431,21 +442,55 @@ class CollectJobInfo(pyblish.api.InstancePlugin, AYONPyblishPluginMixin):
         ]
 
     @classmethod
+    def _get_legacy_custom_frames_defs(cls, instance):
+        """Custom frames attributes for core addon older than 1.10.0."""
+        use_custom_frames = (
+            cls._get_publish_use_custom_frames_value(instance.data) or "none"
+        )
+
+        # explicit frames to render - for test renders
+        use_custom_frames_enum_values = [
+            {"value": "none", "label": "Disabled"},
+            {"value": "custom_only", "label": "Custom Frames Only"},
+            {"value": "reuse_last_version", "label": "Reuse from Last Version"}
+        ]
+        custom_frames_visible = cls._is_custom_frames_used(use_custom_frames)
+        return [
+            EnumDef(
+                "use_custom_frames",
+                label="Use Custom Frames",
+                default=use_custom_frames,
+                items=use_custom_frames_enum_values,
+            ),
+            TextDef(
+                "frames",
+                label="Custom Frames",
+                default="",
+                tooltip="Explicit frames to be rendered. (1001,1003-1004)(2x)",
+                visible=custom_frames_visible
+            ),
+        ]
+
+    @classmethod
     def register_create_context_callbacks(cls, create_context):
+        # Core addon 1.10.0+ handles custom frames on its own
+        if CORE_HANDLES_CUSTOM_FRAMES:
+            return
         create_context.add_value_changed_callback(cls.on_values_changed)
 
     @classmethod
     def on_values_changed(cls, event):
         for instance_change in event["changes"]:
-            custom_frame_change = cls._get_publish_use_custom_frames_value(
-                instance_change["changes"]
-            )
-
             instance = instance_change["instance"]
-            #recalculate only if context changes
+            changes = instance_change["changes"]
+            custom_frame_change = cls._get_publish_use_custom_frames_value(
+                changes
+            )
+            # recalculate only if context changes or custom frames usage
+            #   changed
             if (
-                "task" not in instance_change
-                and "folderPath" not in instance_change
+                "task" not in changes
+                and "folderPath" not in changes
                 and not custom_frame_change
             ):
                 continue

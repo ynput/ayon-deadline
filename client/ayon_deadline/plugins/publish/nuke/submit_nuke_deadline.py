@@ -222,7 +222,7 @@ class NukeSubmitDeadline(
             for node_class in limit_group["value"]:
                 for node in nuke.allNodes(recurseGroups=True):
                     # ignore all nodes not member of defined class
-                    if node.Class() not in node_class:
+                    if node.Class() != node_class:
                         continue
                     # ignore all disabled nodes
                     if node["disable"].value():

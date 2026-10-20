@@ -23,6 +23,8 @@ class ValidateDeadlineJobInfo(
     optional = True
     targets = ["local"]
 
+    settings_category = "deadline"
+
     # cache
     pools_by_url = {}
 
@@ -35,7 +37,7 @@ class ValidateDeadlineJobInfo(
             return
 
         priority = instance.data["deadline"]["job_info"].Priority
-        if priority < 0 or priority > 100:
+        if priority is not None and (priority < 0 or priority > 100):
             raise PublishValidationError(
                 f"Priority:'{priority}' must be between 0-100")
 
@@ -43,15 +45,20 @@ class ValidateDeadlineJobInfo(
         if not custom_frames:
             return
 
-        frame_start = (
-            instance.data.get("frameStart")
-            or instance.context.data.get("frameStart")
+        context = instance.context
+        frame_start = _first_not_none(
+            instance.data.get("frameStartHandle"),
+            instance.data.get("frameStart"),
+            context.data.get("frameStartHandle"),
+            context.data.get("frameStart"),
         )
-        frame_end = (
-            instance.data.get("frameEnd")
-            or instance.context.data.get("frameEnd")
+        frame_end = _first_not_none(
+            instance.data.get("frameEndHandle"),
+            instance.data.get("frameEnd"),
+            context.data.get("frameEndHandle"),
+            context.data.get("frameEnd"),
         )
-        if not frame_start or not frame_end:
+        if frame_start is None or frame_end is None:
             self.log.info("Unable to get frame range, skip validation.")
             return
 
@@ -65,3 +72,10 @@ class ValidateDeadlineJobInfo(
                 f"Custom frames '{custom_frames}' are outside of "
                 f"expected frame range '{frame_start}'-'{frame_end}'"
             )
+
+
+def _first_not_none(*args):
+    for arg in args:
+        if arg is not None:
+            return arg
+    return None
