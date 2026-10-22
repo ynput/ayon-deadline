@@ -414,28 +414,46 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         (
             if matchPattern rendererName pattern:"*GPU*" then
             (
-                original_filename = renderers.production.V_Ray_settings.output_rawfilename
-                new_filename = substituteString original_filename original_workfile publish_workfile
-                renderers.production.V_Ray_settings.output_rawfilename = new_filename
+                if renderers.production.V_Ray_settings.output_saverawfile do
+                (
+                    if renderers.production.V_Ray_settings.output_rawfilename != undefined do
+                    (
+                        original_filename = renderers.production.V_Ray_settings.output_rawfilename
+                        new_filename = substituteString original_filename original_workfile publish_workfile
+                        renderers.production.V_Ray_settings.output_rawfilename = new_filename
+                    )
+                )
 
                 if renderers.production.V_Ray_settings.output_splitgbuffer do
                 (
-                    original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
-                    new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
-                    renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                    if renderers.production.V_Ray_settings.output_splitfilename != undefined do
+                    (
+                        original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
+                        new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                        renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                    )
                 )
             )
             else
             (
-                original_filename = renderers.production.output_rawfilename
-                new_filename = substituteString original_filename original_workfile publish_workfile
-                renderers.production.output_rawfilename = new_filename
+                if renderers.production.output_saverawfile do
+                (
+                    if renderers.production.output_rawfilename != undefined do
+                    (
+                        original_filename = renderers.production.output_rawfilename
+                        new_filename = substituteString original_filename original_workfile publish_workfile
+                        renderers.production.output_rawfilename = new_filename
+                    )
+                )
 
                 if renderers.production.output_splitgbuffer do
                 (
-                    original_Aovfilename = renderers.production.output_splitfilename
-                    new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
-                    renderers.production.output_splitfilename = new_aovfilename
+                    if renderers.production.output_splitfilename != undefined do
+                    (
+                        original_Aovfilename = renderers.production.output_splitfilename
+                        new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                        renderers.production.output_splitfilename = new_aovfilename
+                    )
                 )
             )
         )
