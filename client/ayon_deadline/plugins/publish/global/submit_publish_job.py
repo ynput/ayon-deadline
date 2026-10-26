@@ -139,7 +139,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         "review": ["lutPath"],
         "render2d": ["bakingNukeScripts", "version"],
         "renderlayer": ["convertToScanline"],
-        # 3ds Max frame fix: the publish job has to know which frames the render
+        # 3dsMax frame fix: the publish job has to know which frames the render
         # job rendered, the remaining frames of the version are copied from the
         # previous version by `ExtractLastPublished`.
         "maxrender": ["frames_to_fix", "frames_to_render"],
