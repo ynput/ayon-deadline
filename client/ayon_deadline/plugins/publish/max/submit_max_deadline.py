@@ -66,8 +66,20 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info.Plugin = instance.data.get("plugin") or "3dsmax"
 
         job_info.EnableAutoTimeout = True
+        # A frame fix renders only the frames to fix, the remaining frames are
+        # copied from the previous version by the farm publish job. The
+        # restriction is applied here, on the copy of the job info, because the
+        # publish metadata has to keep the full frame range (otherwise the
+        # publish job builds representations only for the rendered frames and
+        # the copy extractor has no target frames).
+        frames_to_render = instance.data.get("frames_to_render")
+        if frames_to_render and not job_info.Frames:
+            job_info.Frames = frames_to_deadline_string(frames_to_render)
+            self.log.info(
+                "Rendering only the frames to fix: %s", job_info.Frames
+            )
         # already collected explicit values for rendered Frames
-        if not job_info.Frames:
+        elif not job_info.Frames:
             # Deadline requires integers in frame range
             frames = "{start}-{end}".format(
                 start=int(instance.data["frameStart"]),
@@ -102,20 +114,9 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                            "Skipping deadline submission.")
             return
 
-        # A frame fix only renders the frames to fix, the rest of the frame
-        # range is copied from the previous published version by the publish
-        # job. `Frames` is filled before the generic job info is collected, so
-        # that the fixed frames are used instead of the whole frame range and
-        # `hasExplicitFrames` is collected from it as well - the copied frames
-        # have to keep their frame numbers.
-        job_info = instance.data["deadline"]["job_info"]
-        frames_to_render = instance.data.get("frames_to_render")
-        if frames_to_render and not job_info.Frames:
-            job_info.Frames = frames_to_deadline_string(frames_to_render)
-            self.log.info(
-                "Rendering only the frames to fix: %s", job_info.Frames
-            )
-
+        # NOTE: The frame restriction for the render job is applied in
+        # `get_job_info` (working on a deep copy), the shared job info of the
+        # instance keeps the full frame range for the publish job.
         super().process(instance)
 
     def process_submission(self):
