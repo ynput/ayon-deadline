@@ -35,6 +35,8 @@ def frames_to_deadline_string(frames) -> str:
 
     """
     frames = sorted({int(frame) for frame in frames})
+    if not frames:
+        return ""
     ranges = []
     start = previous = frames[0]
     for frame in frames[1:]:
@@ -103,19 +105,18 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         # A frame fix only renders the frames to fix, the rest of the frame
         # range is copied from the previous published version by the publish
         # job. `Frames` is filled before the generic job info is collected, so
-        # that `hasExplicitFrames` is collected from it as well - the copied
-        # frames have to keep their frame numbers.
+        # that the fixed frames are used instead of the whole frame range and
+        # `hasExplicitFrames` is collected from it as well - the copied frames
+        # have to keep their frame numbers.
         job_info = instance.data["deadline"]["job_info"]
-        collected_frames = job_info.Frames
         frames_to_render = instance.data.get("frames_to_render")
-        if frames_to_render and not collected_frames:
-            collected_frames = frames_to_deadline_string(frames_to_render)
+        if frames_to_render and not job_info.Frames:
+            job_info.Frames = frames_to_deadline_string(frames_to_render)
             self.log.info(
-                "Rendering only the frames to fix: %s", collected_frames
+                "Rendering only the frames to fix: %s", job_info.Frames
             )
 
-            super().process(instance)
-        job_info.Frames = collected_frames
+        super().process(instance)
 
     def process_submission(self):
 
@@ -168,6 +169,16 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         )
         from pymxs import runtime as rt
         instance = self._instance
+        # Every farm render has to be submitted with an explicit camera,
+        # otherwise the 3ds Max render task falls back to the active viewport
+        # (a perspective view) and the result is a wrong camera.
+        cameras = instance.data.get("cameras") or []
+        if not cameras:
+            raise KnownPublishError(
+                "No renderable camera found on the instance, the farm render "
+                "would fall back to the active viewport. Assign a camera to "
+                "the render instance before publishing to the farm."
+            )
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
         plugin_data = {}
@@ -205,11 +216,11 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             # enable this so that V-Ray frame buffer shows up
             plugin_data["ShowFrameBuffer"] = True
 
-        if instance.data["cameras"]:
-            camera = instance.data["cameras"][0]
-            plugin_info["Camera0"] = camera
-            plugin_info["Camera"] = camera
-            plugin_info["Camera1"] = camera
+        # The camera was validated at the beginning of the method.
+        camera = cameras[0]
+        plugin_info["Camera0"] = camera
+        plugin_info["Camera"] = camera
+        plugin_info["Camera1"] = camera
 
         plugin_info["RenderWidth"] = instance.data.get(
             "resolutionWidth", rt.renderWidth)
@@ -310,7 +321,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info_list = []
         plugin_info_list = []
         instance = self._instance
-        cameras = instance.data.get("cameras", [])
+        cameras = instance.data.get("cameras") or []
+        if not cameras:
+            raise KnownPublishError(
+                "No renderable camera found on the instance, nothing to "
+                "submit for multi-camera rendering. Assign at least one "
+                "camera to the render instance before publishing to the farm."
+            )
         renderer = instance.data["renderer"]
         plugin_data = {}
         multipass = get_multipass_setting(renderer, project_settings)
