@@ -56,6 +56,9 @@ class UnrealSubmitDeadline(
         job_info_env = {"AYON_DEADLINE_URL": dl_server_url}
         job_info.EnvironmentKeyValue.update(job_info_env)
 
+        if context.data.get("perforce"):
+            self._limit_perforce_concurrency(job_info)
+
         # already collected explicit values for rendered Frames
         if (
             not job_info.Frames
@@ -68,6 +71,21 @@ class UnrealSubmitDeadline(
             job_info.Frames = frame_range
 
         return job_info
+
+    def _limit_perforce_concurrency(self, job_info):
+        """Don't render tasks of Perforce job concurrently on one worker.
+
+        Every task syncs the render node's Perforce workspace to the job
+        changelist (see 'GlobalJobPreLoad'). Concurrent tasks share that
+        workspace, so a sync of one task would change files used by
+        another one.
+        """
+        if job_info.ConcurrentTasks and job_info.ConcurrentTasks > 1:
+            self.log.warning(
+                f"Concurrent tasks {job_info.ConcurrentTasks} is not "
+                "supported for Perforce jobs, using 1."
+            )
+        job_info.ConcurrentTasks = 1
 
     def get_plugin_info(self):
         deadline_plugin_info = DeadlinePluginInfo()
