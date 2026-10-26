@@ -138,7 +138,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],
         "render2d": ["bakingNukeScripts", "version"],
-        "renderlayer": ["convertToScanline"]
+        "renderlayer": ["convertToScanline"],
+        # 3ds Max frame fix: the publish job has to know which frames the render
+        # job rendered, the remaining frames of the version are copied from the
+        # previous version by `ExtractLastPublished`.
+        "maxrender": ["frames_to_fix", "frames_to_render"],
     }
 
     # list of family names to transfer to new family if present

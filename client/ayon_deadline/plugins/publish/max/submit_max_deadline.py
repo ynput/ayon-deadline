@@ -21,6 +21,34 @@ class MaxPluginInfo(object):
     IgnoreInputs: bool = field(default=True)
 
 
+def frames_to_deadline_string(frames) -> str:
+    """Convert frame numbers to a Deadline frame list.
+
+    Deadline accepts a comma separated list of frames and frame ranges, e.g.
+    ``"1001,1005-1007"``.
+
+    Args:
+        frames (Iterable[int]): Frames which are rendered.
+
+    Returns:
+        str: Frame list for the Deadline ``JobInfo.Frames`` field.
+
+    """
+    frames = sorted({int(frame) for frame in frames})
+    ranges = []
+    start = previous = frames[0]
+    for frame in frames[1:]:
+        if frame == previous + 1:
+            previous = frame
+            continue
+        ranges.append(
+            f"{start}-{previous}" if start != previous else str(start)
+        )
+        start = previous = frame
+    ranges.append(f"{start}-{previous}" if start != previous else str(start))
+    return ",".join(ranges)
+
+
 class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                         AYONPyblishPluginMixin):
 
@@ -72,7 +100,22 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                            "Skipping deadline submission.")
             return
 
-        super().process(instance)
+        # A frame fix only renders the frames to fix, the rest of the frame
+        # range is copied from the previous published version by the publish
+        # job. `Frames` is filled before the generic job info is collected, so
+        # that `hasExplicitFrames` is collected from it as well - the copied
+        # frames have to keep their frame numbers.
+        job_info = instance.data["deadline"]["job_info"]
+        collected_frames = job_info.Frames
+        frames_to_render = instance.data.get("frames_to_render")
+        if frames_to_render and not collected_frames:
+            collected_frames = frames_to_deadline_string(frames_to_render)
+            self.log.info(
+                "Rendering only the frames to fix: %s", collected_frames
+            )
+
+            super().process(instance)
+        job_info.Frames = collected_frames
 
     def process_submission(self):
 
