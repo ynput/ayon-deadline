@@ -751,6 +751,7 @@ class PublishDeadlineJobInfo(DeadlineJobInfo):
             "use_published",
             "use_asset_dependencies",
             "use_workfile_dependency",
+            "reuse_last_version",
         ):
             super()._fill_serialize_value(key, value, output)
 
