@@ -8,6 +8,7 @@ from pathlib import Path
 from ayon_core.lib import is_in_tests
 
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -46,7 +47,6 @@ class UnrealSubmitDeadline(
         job_info.BatchName = self._get_batch_name()
         job_info.Plugin = "UnrealEngine5"
         job_info.Name = instance.data["name"]
-        job_info.Plugin = "UnrealEngine5"
         job_info.UserName = context.data.get(
             "deadlineUser", getpass.getuser())
         job_info.CommandLineMode = False    # enables RPC
@@ -69,6 +69,10 @@ class UnrealSubmitDeadline(
                 int(round(instance.data["frameStart"])),
                 int(round(instance.data["frameEnd"])))
             job_info.Frames = frame_range
+
+        # 'rendering_remote' renders whole MRQ manifest and completes
+        # the job itself, frame range must be rendered in a single task
+        job_info.ChunkSize = MAX_CHUNK_SIZE
 
         return job_info
 
