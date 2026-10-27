@@ -102,7 +102,9 @@ class UnrealSubmitDeadline(
         deadline_plugin_info.Executable = self._get_executable()
         deadline_plugin_info.EngineVersion = self._instance.data["app_version"]
 
-        cmd_args = ['-execcmds="py from ayon_unreal.api import rendering_remote; rendering_remote.main()"']
+        cmd_args = [
+            ('-execcmds="py from ayon_unreal.api import rendering_remote; '
+             'rendering_remote.main()"')]
         if work_mrq := self._instance.data["work_mrq"]:
             manifest: str = Path(work_mrq).as_posix()
             cmd_args.append(f"-MRQManifest={manifest}")
