@@ -114,10 +114,15 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                            "Skipping deadline submission.")
             return
 
-        # NOTE: The frame restriction for the render job is applied in
-        # `get_job_info` (working on a deep copy), the shared job info of the
-        # instance keeps the full frame range for the publish job.
+        # `get_job_info` restricts the frames of the render job to the frames
+        # to fix. The abstract submitter stores its job info back into the
+        # instance metadata, which is used by `SubmitPublishJob` to build the
+        # farm publish representations - the publish job has to keep the
+        # original frame range, the remaining frames are copied from the
+        # previous version.
+        publish_frames = instance.data["deadline"]["job_info"].Frames
         super().process(instance)
+        instance.data["deadline"]["job_info"].Frames = publish_frames
 
     def process_submission(self):
 
