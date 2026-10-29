@@ -7,6 +7,7 @@ from datetime import datetime
 import subprocess
 import json
 import platform
+import random
 import shutil
 import socket
 import marshal
@@ -31,10 +32,15 @@ VERSION_REGEX = re.compile(
     r"(?:-(?P<prerelease>[a-zA-Z\d\-.]*))?"
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
-# Seconds a worker waits for another worker to extract the environment cache
-# before it stops waiting and extracts the environment just for itself.
-EXTRACT_ENVIRONMENT_TIMEOUT = 10
-# Seconds between checks while waiting for another worker.
+# Maximum seconds a worker waits for another worker to extract the environment
+# cache before it stops waiting and extracts the environment just for itself.
+# Waiting workers continue as soon as the cache file appears, so this only
+# matters when the extraction is slow. Fresh render nodes download addons as
+# part of the extraction which easily takes longer than a few seconds, and
+# each worker that gives up queries the AYON server on its own.
+EXTRACT_ENVIRONMENT_TIMEOUT = 60
+# Seconds between checks while waiting for another worker. Checks only touch
+# the file system, not the AYON server.
 ENV_CACHE_POLL_INTERVAL = 0.5
 # Age at which an extraction lock file is considered left behind by a worker
 # that will never come back, e.g. because its machine lost power.
@@ -786,10 +792,12 @@ def _acquire_env_cache_lock(export_path, timeout):
     filesystems and on the NFS v4+ / SMB shares used by render farms, so only
     one worker of a job can create the lock file, all others wait for it.
 
-    Waiting is deliberately short and never fatal. A worker that doesn't get
-    the lock in time extracts the environment for itself instead of failing
-    the job, which keeps a burst of dozens of workers starting at the same
-    time functional even when the lock owner is slow or died on the way.
+    Waiting is never fatal and ends as soon as the cache file appears. A
+    worker that doesn't get the lock in time extracts the environment for
+    itself instead of failing the job, which keeps a burst of workers starting
+    at the same time functional even when the lock owner is slow or died on
+    the way. The moment of giving up is spread randomly, so such workers don't
+    all query the AYON server in the same second.
 
     A lock file older than 'ENV_CACHE_LOCK_STALE_TIMEOUT' seconds is treated
     as abandoned - a machine can lose power while holding it - and removed,
@@ -810,7 +818,7 @@ def _acquire_env_cache_lock(export_path, timeout):
     """
     lock_path = f"{export_path}.lock"
     token = _get_worker_id()
-    give_up_at = time() + timeout
+    give_up_at = time() + timeout * random.uniform(1.0, 1.25)
     waiting_logged = False
 
     while True:
