@@ -1,11 +1,15 @@
 # /usr/bin/env python3
 # -*- coding: utf-8 -*-
+import io
 import os
 import tempfile
 from datetime import datetime
 import subprocess
 import json
 import platform
+import shutil
+import socket
+import marshal
 import uuid
 import re
 from time import sleep, time
@@ -19,7 +23,7 @@ from Deadline.Scripting import (
 )
 
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -468,6 +472,10 @@ def inject_ayon_environment(deadlinePlugin):
         shared_env_group = None
         if site_id:
             hash_base = f"{site_id}|{getpass.getuser()}"
+            # jobs with host specific environment (e.g. Perforce workspace
+            # of the render node) can share the cache only on the same host
+            if job.GetJobEnvironmentKeyValue("AYON_ENV_CACHE_PER_HOST"):
+                hash_base = f"{hash_base}|{socket.gethostname()}"
             hash_sha256 = sha256(hash_base.encode())
             shared_env_group = hash_sha256.hexdigest()[-10:]
 
@@ -514,6 +522,13 @@ def inject_ayon_environment(deadlinePlugin):
             print(f">>> Setting 'PATH' Environment to: {contents['PATH']}")
             os.environ["PATH"] = contents["PATH"]
 
+        # job id is not known at submission, e.g. Unreal remote rendering
+        # reports the job result with it
+        deadlinePlugin.SetProcessEnvironmentVariable(
+            "AYON_DEADLINE_JOBID", job.JobId)
+
+        _sync_perforce_workspace(deadlinePlugin, job, contents)
+
         script_url = job.GetJobPluginInfoKeyValue("ScriptFilename")
         if script_url:
             script_url = script_url.format(**contents).replace("\\", "/")
@@ -528,6 +543,70 @@ def inject_ayon_environment(deadlinePlugin):
         print(traceback.format_exc())
         print("!!! Injection failed.")
         raise
+
+
+def _sync_perforce_workspace(deadlinePlugin, job, contents):
+    """Sync Perforce workspace of the render node to the job changelist.
+
+    AYON Perforce launch hook syncs the workspace during extraction of
+    environments, which can be cached. Another job may sync the workspace
+    to a different changelist in the meantime, so the sync runs for every
+    task. It is a no-op if the workspace is already synced.
+
+    Runs only for jobs submitted with Perforce data ('AYON_P4_CHANGELIST'
+    set by ayon-perforce publish) when the render node workspace is known
+    ('AYON_P4_WORKSPACE' set by ayon-perforce launch hook) and 'p4' is
+    available. Other jobs are not affected.
+    """
+    changelist = job.GetJobEnvironmentKeyValue("AYON_P4_CHANGELIST")
+    workspace = contents.get("AYON_P4_WORKSPACE")
+    if not changelist or not workspace:
+        return
+
+    env = os.environ.copy()
+    env.update(contents)
+    p4_executable = shutil.which("p4", path=env.get("PATH"))
+    if not p4_executable:
+        print(
+            "!!! Perforce job but 'p4' executable was not found, skipping "
+            "sync of Perforce workspace."
+        )
+        return
+
+    filespec = f"//{workspace}/...@{changelist}"
+    args = [p4_executable, "-G", "-c", workspace, "sync", filespec]
+    print(f">>> Syncing Perforce workspace: {subprocess.list2cmdline(args)}")
+    proc = subprocess.run(args, capture_output=True, env=env, check=False)
+
+    errors = []
+    synced = 0
+    stream = io.BytesIO(proc.stdout)
+    while True:
+        try:
+            record = marshal.load(stream)
+        except EOFError:
+            break
+        record = {
+            (k.decode() if isinstance(k, bytes) else k):
+            (v.decode(errors="replace") if isinstance(v, bytes) else v)
+            for k, v in record.items()
+        }
+        if record.get("code") != "error":
+            synced += 1
+            continue
+        message = str(record.get("data", "")).strip()
+        # warnings like "file(s) up-to-date." are fine
+        if int(record.get("severity", 0)) > 2:
+            errors.append(message)
+        else:
+            print(f">>> {message}")
+
+    if errors or (proc.returncode != 0 and not proc.stdout):
+        stderr = proc.stderr.decode(errors="replace").strip()
+        raise RuntimeError(
+            "Perforce sync failed: {}".format("; ".join(errors) or stderr)
+        )
+    print(f">>> Perforce sync finished, {synced} file(s) updated.")
 
 
 def _get_env_cache_timeout(job):
@@ -964,7 +1043,13 @@ def _extract_environments(
         "AYON_BUNDLE_NAME": ayon_bundle_name,
     }
 
-    for key in ("AYON_USE_STAGING", "AYON_IN_TESTS"):
+    for key in (
+        "AYON_USE_STAGING",
+        "AYON_IN_TESTS",
+        # used by AYON Perforce launch hook to sync the render workspace
+        "AYON_P4_STREAM",
+        "AYON_P4_CHANGELIST",
+    ):
         value = job.GetJobEnvironmentKeyValue(key)
         if value:
             environment[key] = value
