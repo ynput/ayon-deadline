@@ -101,7 +101,9 @@ class CelactionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline):
             instance.data["expectedFiles"].append(filepath)
             return
 
-        for i in range(self._frame_start, (self._frame_end + 1)):
+        frame_start = int(instance.data["frameStart"])
+        frame_end = int(instance.data["frameEnd"])
+        for i in range(frame_start, (frame_end + 1)):
             instance.data["expectedFiles"].append(
                 os.path.join(dirpath, (filename % i)).replace("\\", "/")
             )
