@@ -180,7 +180,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         # (a perspective view) and the result is a wrong camera.
         cameras = instance.data.get("cameras") or []
         if not cameras:
-            raise KnownPublishError(
+            raise PublishError(
                 "No renderable camera found on the instance, the farm render "
                 "would fall back to the active viewport. Assign a camera to "
                 "the render instance before publishing to the farm."
