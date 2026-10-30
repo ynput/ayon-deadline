@@ -329,7 +329,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         instance = self._instance
         cameras = instance.data.get("cameras") or []
         if not cameras:
-            raise KnownPublishError(
+            raise PublishError(
                 "No renderable camera found on the instance, nothing to "
                 "submit for multi-camera rendering. Assign at least one "
                 "camera to the render instance before publishing to the farm."
