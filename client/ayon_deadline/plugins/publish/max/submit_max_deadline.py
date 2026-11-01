@@ -5,7 +5,7 @@ from dataclasses import dataclass, field, asdict
 
 from ayon_core.pipeline import AYONPyblishPluginMixin
 
-from ayon_core.pipeline.publish import KnownPublishError
+from ayon_core.pipeline.publish import PublishError
 from ayon_max.api.lib import (
     get_current_renderer,
     get_multipass_setting
