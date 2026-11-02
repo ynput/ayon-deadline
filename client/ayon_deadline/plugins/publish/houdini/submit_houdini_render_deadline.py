@@ -11,6 +11,7 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -123,7 +124,7 @@ class HoudiniSubmitDeadline(
                 default=cls.export_chunk_size,
                 decimals=0,
                 minimum=1,
-                maximum=1000
+                maximum=MAX_CHUNK_SIZE
             ),
             TextDef(
                 "export_group",
