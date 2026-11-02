@@ -131,7 +131,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         files = instance.data["expectedFiles"]
         if not files:
-            raise KnownPublishError("No Render Elements found!")
+            raise PublishError("No Render Elements found!")
         first_file = next(self._iter_expected_files(files))
         output_dir = Path(first_file).parent.as_posix()
         instance.data["outputDir"] = output_dir
@@ -197,10 +197,10 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         files = instance.data.get("expectedFiles")
         if not files:
-            raise KnownPublishError("No render elements found")
+            raise PublishError("No render elements found")
         first_file = next(self._iter_expected_files(files), None)
         if first_file is None:
-            raise KnownPublishError(
+            raise PublishError(
                 "No expected render files found. When V-Ray renders with "
                 "separate render channels the scene needs at least one render "
                 "element, otherwise there is nothing to render to."
@@ -294,10 +294,10 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         files = instance.data.get("expectedFiles")
         if not files:
-            raise KnownPublishError("No render elements found")
+            raise PublishError("No render elements found")
         first_file = next(self._iter_expected_files(files), None)
         if first_file is None:
-            raise KnownPublishError(
+            raise PublishError(
                 "No expected render files found. When V-Ray renders with "
                 "separate render channels the scene needs at least one render "
                 "element, otherwise there is nothing to render to."
