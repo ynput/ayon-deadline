@@ -24,7 +24,7 @@ from Deadline.Scripting import (
 )
 
 
-__version__ = "1.3.1"
+__version__ = "1.4.0"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -49,6 +49,25 @@ ENV_CACHE_LOCK_STALE_TIMEOUT = 300
 _LOCK_ACQUIRED = "acquired"
 _LOCK_CACHE_READY = "cache_ready"
 _LOCK_UNAVAILABLE = "unavailable"
+
+
+class AYONJobConfigurationError(RuntimeError):
+    """Job or plugin configuration error that no worker can recover from.
+
+    When raised, the whole job is marked as failed, because retrying the task
+    on this or any other worker would fail the same way. For example required
+    job environment variables are missing or the AYON Deadline plugin is not
+    configured.
+    """
+
+
+class AYONWorkerBadForJobError(RuntimeError):
+    """Error specific to the current worker.
+
+    When raised, the worker is marked as bad for the job so the task is
+    picked up by other workers instead. For example the AYON executable
+    is not available on this machine.
+    """
 
 
 class OpenPypeVersion:
@@ -451,7 +470,7 @@ def inject_ayon_environment(deadlinePlugin):
         exe = FileUtils.SearchFileList(exe_list)
 
         if not exe:
-            raise RuntimeError((
+            raise AYONWorkerBadForJobError((
                "AYON executable was not found in the semicolon "
                "separated list \"{}\"."
                "The path to the render executable can be configured"
@@ -468,7 +487,7 @@ def inject_ayon_environment(deadlinePlugin):
             ayon_studio_bundle_name = ayon_bundle_name
 
         if not ayon_studio_bundle_name:
-            raise RuntimeError(
+            raise AYONJobConfigurationError(
                 "Missing env var in job properties AYON_STUDIO_BUNDLE_NAME"
             )
 
@@ -1026,7 +1045,7 @@ def _extract_environments(
         "app": job.GetJobEnvironmentKeyValue("AYON_APP_NAME"),
     }
     if not all(add_kwargs.values()):
-        raise RuntimeError(
+        raise AYONJobConfigurationError(
             "Missing required env vars: AYON_PROJECT_NAME,"
             " AYON_FOLDER_PATH, AYON_TASK_NAME, AYON_APP_NAME"
         )
@@ -1087,14 +1106,14 @@ def get_ayon_executable():
         list[str]: AYON executable paths.
 
     Raises:
-        RuntimeError: When no path configured at all.
+        AYONJobConfigurationError: When no path configured at all.
 
     """
     config = RepositoryUtils.GetPluginConfig("Ayon")
     exe_list = config.GetConfigEntryWithDefault("AyonExecutable", "")
 
     if not exe_list:
-        raise RuntimeError(
+        raise AYONJobConfigurationError(
             "Path to AYON executable not configured."
             "Please set it in AYON Deadline Plugin."
         )
@@ -1175,7 +1194,7 @@ def handle_credentials(job):
             )
         ayon_server_url = job_ayon_server_url
     if not all([ayon_server_url, ayon_api_key]):
-        raise RuntimeError(
+        raise AYONJobConfigurationError(
             "Missing required values for server url and api key. "
             "Please fill in AYON Deadline plugin or provide by "
             "AYON_SERVER_URL and AYON_API_KEY"
@@ -1223,10 +1242,45 @@ def _get_ayon_api_key_from_additional_servers(config, server):
             return api_key
 
 
+def _mark_worker_bad_for_job(deadlinePlugin, job):
+    """Mark the current worker as bad for the job."""
+    worker_name = deadlinePlugin.GetSlaveName()
+    # 'AddBadSlaveForJob' was renamed in newer Deadline versions
+    add_bad_worker = getattr(
+        RepositoryUtils, "AddBadWorkerForJob", None
+    ) or RepositoryUtils.AddBadSlaveForJob
+    print(f"!!! Marking worker '{worker_name}' as bad for the job.")
+    add_bad_worker(worker_name, job)
+
+
 def __main__(deadlinePlugin):
     print("*** GlobalJobPreload {} start ...".format(__version__))
     print(">>> Getting job ...")
     job = deadlinePlugin.GetJob()
+
+    try:
+        _process_job(deadlinePlugin, job)
+
+    except AYONJobConfigurationError:
+        print(
+            "!!! Job is misconfigured, retrying won't help."
+            " Failing the job."
+        )
+        try:
+            RepositoryUtils.FailJob(job)
+        except Exception as exc:
+            print(f"!!! Failed to fail the job: {exc}")
+        raise
+
+    except AYONWorkerBadForJobError:
+        try:
+            _mark_worker_bad_for_job(deadlinePlugin, job)
+        except Exception as exc:
+            print(f"!!! Failed to mark worker as bad for the job: {exc}")
+        raise
+
+
+def _process_job(deadlinePlugin, job):
 
     openpype_render_job = job.GetJobEnvironmentKeyValue(
         "OPENPYPE_RENDER_JOB")
@@ -1236,7 +1290,7 @@ def __main__(deadlinePlugin):
         "OPENPYPE_REMOTE_PUBLISH")
 
     if openpype_publish_job == "1" and openpype_render_job == "1":
-        raise RuntimeError(
+        raise AYONJobConfigurationError(
             "Misconfiguration. Job couldn't be both render and publish."
         )
 
@@ -1250,7 +1304,7 @@ def __main__(deadlinePlugin):
     ayon_remote_job = job.GetJobEnvironmentKeyValue("AYON_REMOTE_PUBLISH")
 
     if ayon_publish_job == "1" and ayon_render_job == "1":
-        raise RuntimeError(
+        raise AYONJobConfigurationError(
             "Misconfiguration. Job couldn't be both render and publish."
         )
 
