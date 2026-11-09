@@ -1290,7 +1290,7 @@ def _process_job(deadlinePlugin, job):
         "OPENPYPE_REMOTE_PUBLISH")
 
     if openpype_publish_job == "1" and openpype_render_job == "1":
-        raise AYONJobConfigurationError(
+        raise RuntimeError(
             "Misconfiguration. Job couldn't be both render and publish."
         )
 
