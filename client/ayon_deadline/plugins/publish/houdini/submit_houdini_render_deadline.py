@@ -11,6 +11,7 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -123,7 +124,7 @@ class HoudiniSubmitDeadline(
                 default=cls.export_chunk_size,
                 decimals=0,
                 minimum=1,
-                maximum=1000
+                maximum=MAX_CHUNK_SIZE
             ),
             TextDef(
                 "export_group",
@@ -233,6 +234,11 @@ class HoudiniSubmitDeadline(
             job_info.ChunkSize = attribute_values.get(
                 "export_chunk", self.export_chunk_size
             )
+            # A render that is not frame dependent exports a single file
+            #  (e.g. a USD file without $F). Export it in one task, since
+            #  multiple machines cannot write to the same file.
+            if not instance.data.get("splitRenderFrameDependent", True):
+                job_info.ChunkSize = MAX_CHUNK_SIZE
             job_info.Group = attribute_values.get(
                 "export_group", self.export_group
             )

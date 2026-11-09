@@ -10,7 +10,6 @@ from ayon_max.api.lib import (
     get_current_renderer,
     get_multipass_setting
 )
-from ayon_max.api.lib_rendersettings import RenderSettings
 from ayon_deadline import abstract_submit_deadline
 
 
@@ -84,7 +83,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if not files:
             raise KnownPublishError("No Render Elements found!")
         first_file = next(self._iter_expected_files(files))
-        output_dir = os.path.dirname(first_file)
+        output_dir = Path(first_file).parent.as_posix()
         instance.data["outputDir"] = output_dir
 
         filename = os.path.basename(filepath)
@@ -139,8 +138,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        first_file = next(self._iter_expected_files(files))
-        old_output_dir = os.path.dirname(first_file)
+        first_file = next(self._iter_expected_files(files), None)
+        if first_file is None:
+            raise KnownPublishError(
+                "No expected render files found. When V-Ray renders with "
+                "separate render channels the scene needs at least one render "
+                "element, otherwise there is nothing to render to."
+            )
 
         # as 3dsmax has version with different languages
         plugin_data["Language"] = "ENU"
@@ -148,7 +152,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         renderer = str(renderer_class).split(":")[0]
         plugin_data = self._collect_render_output(
-            renderer, old_output_dir, plugin_data
+            renderer, project_settings, plugin_data
         )
         if renderer == "Redshift_Renderer":
             plugin_data["redshift_SeparateAovFiles"] = instance.data.get(
@@ -204,11 +208,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return job_info
         # set the output filepath with the relative camera
 
-    def get_plugin_info_through_camera(self, camera):
+    def get_plugin_info_through_camera(self, camera, project_settings):
         """Get the plugin parameters for deadline submission when
         multi-camera is enabled.
         Args:
-            infos(dict): a dictionary with plugin info.
+            camera (str): The camera name.
+            project_settings (dict): The project settings.
         """
         instance = self._instance
         # set the target camera
@@ -230,13 +235,18 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        first_file = next(self._iter_expected_files(files))
-        old_output_dir = os.path.dirname(first_file)
+        first_file = next(self._iter_expected_files(files), None)
+        if first_file is None:
+            raise KnownPublishError(
+                "No expected render files found. When V-Ray renders with "
+                "separate render channels the scene needs at least one render "
+                "element, otherwise there is nothing to render to."
+            )
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
         plugin_data = self._collect_render_output(
-            renderer, old_output_dir, plugin_data
+            renderer, project_settings, plugin_data
         )
 
         if camera:
@@ -267,33 +277,100 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             plugin_data["DisableMultipass"] = 1
         for cam in cameras:
             job_info = self.get_job_info_through_camera(cam)
-            plugin_info = self.get_plugin_info_through_camera(cam)
+            plugin_info = self.get_plugin_info_through_camera(
+                cam, project_settings)
             plugin_info.update(plugin_data)
             job_info_list.append(job_info)
             plugin_info_list.append(plugin_info)
 
         return job_info_list, plugin_info_list
 
+    def from_published_scene(self, replace_in_path=True):
+        """Check and use scene workfile for rendering only when multi-camera
+        farm submission is enabled.
+
+        When rendering multi-camera scenes we can't render published workfiles
+        because X - so we require the work area workfile to be used to
+        support Y.
+
+        Args:
+            replace_in_path (bool, optional): Whether to replace the scene path
+                with the published scene path. Defaults to True.
+
+        Returns:
+            str: Published scene path.
+        """
+        instance = self._instance
+        if instance.data.get("multiCamera"):
+            self.log.warning(
+                "Use published workfile for rendering "
+                "not supported for multi-camera."
+            )
+            replace_in_path = False
+
+        return super().from_published_scene(replace_in_path=replace_in_path)
+
     @staticmethod
-    def _collect_render_output(renderer, dir, plugin_data):
-        """Collects render output and render element paths based on
-        renderer type.
+    def _collect_render_output(renderer, project_settings, plugin_data):
+        """Collect the render element output paths for the Deadline plugin.
+
+        The paths come from `RenderProducts` so the submission reuses the
+        naming the publish expects for the render elements (V-Ray split
+        filename, Redshift/Scanline element filenames, ...). Entries without a
+        filename are skipped: an undefined filename makes the 3ds Max render
+        task fail with "Unable to convert: undefined to type: String".
+
         Args:
             renderer (str): The name of the current renderer.
-            dir (str): The directory where render outputs should be saved.
+            project_settings (dict): The project settings.
             plugin_data (dict): The dictionary to populate with output paths.
+
         Returns:
             dict: Updated plugin_data with render output paths.
 
         """
-        from ayon_max.api.lib_rendersettings import is_supported_renderer
-        # Handle render elements
-        if is_supported_renderer(renderer):
-            render_elem_list = RenderSettings().get_render_element()
-            for i, element in enumerate(render_elem_list):
-                elem_bname = os.path.basename(element)
-                new_elem_path = os.path.join(dir, elem_bname)
-                plugin_data[f"RenderElementOutputFilename{i}"] = new_elem_path
+        from ayon_max.api.lib_renderproducts import RenderProducts
+        from pymxs import runtime as rt
+
+        products = RenderProducts(project_settings)
+        image_format = products.image_format()
+        # Build the expected files for a reference frame and turn the trailing
+        # frame number into the Deadline frame padding token. Only the trailing
+        # token is replaced, a "0000" elsewhere in the path (version folder,
+        # element name, ...) is left untouched.
+        reference_frame = 0
+        frame_token = f"{reference_frame:04d}"
+        expected_by_element = {}
+        for element_name, filepath in (
+                products.get_render_element_and_filepath(image_format)):
+            if not element_name or not filepath:
+                continue
+            expected_files = products.get_expected_files(
+                filepath, [reference_frame], element_name, renderer)
+            if not expected_files:
+                continue
+            expected_path = Path(expected_files[0])
+            frame_suffix = f"{frame_token}{expected_path.suffix}"
+            if not expected_path.name.endswith(frame_suffix):
+                continue
+            pattern = (
+                f"{expected_path.name[:-len(frame_suffix)]}"
+                f"####{expected_path.suffix}"
+            )
+            expected_by_element[element_name] = (
+                expected_path.parent / pattern).as_posix()
+
+        # Only pass entries for render elements that exist in the scene, the
+        # Deadline plugin maps them by their render element index.
+        element_mgr = rt.maxOps.GetCurRenderElementMgr()
+        for index in range(element_mgr.NumRenderElements()):
+            element = element_mgr.GetRenderElement(index)
+            if not element:
+                continue
+            element_name = str(element).split(":")[-1]
+            filename = expected_by_element.get(element_name)
+            if filename:
+                plugin_data[f"RenderElementOutputFilename{index}"] = filename
 
         return plugin_data
 
@@ -337,28 +414,46 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         (
             if matchPattern rendererName pattern:"*GPU*" then
             (
-                original_filename = renderers.production.V_Ray_settings.output_rawfilename
-                new_filename = substituteString original_filename original_workfile publish_workfile
-                renderers.production.V_Ray_settings.output_rawfilename = new_filename
+                if renderers.production.V_Ray_settings.output_saverawfile do
+                (
+                    if renderers.production.V_Ray_settings.output_rawfilename != undefined do
+                    (
+                        original_filename = renderers.production.V_Ray_settings.output_rawfilename
+                        new_filename = substituteString original_filename original_workfile publish_workfile
+                        renderers.production.V_Ray_settings.output_rawfilename = new_filename
+                    )
+                )
 
                 if renderers.production.V_Ray_settings.output_splitgbuffer do
                 (
-                    original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
-                    new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
-                    renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                    if renderers.production.V_Ray_settings.output_splitfilename != undefined do
+                    (
+                        original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
+                        new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                        renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                    )
                 )
             )
             else
             (
-                original_filename = renderers.production.output_rawfilename
-                new_filename = substituteString original_filename original_workfile publish_workfile
-                renderers.production.output_rawfilename = new_filename
+                if renderers.production.output_saverawfile do
+                (
+                    if renderers.production.output_rawfilename != undefined do
+                    (
+                        original_filename = renderers.production.output_rawfilename
+                        new_filename = substituteString original_filename original_workfile publish_workfile
+                        renderers.production.output_rawfilename = new_filename
+                    )
+                )
 
                 if renderers.production.output_splitgbuffer do
                 (
-                    original_Aovfilename = renderers.production.output_splitfilename
-                    new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
-                    renderers.production.output_splitfilename = new_aovfilename
+                    if renderers.production.output_splitfilename != undefined do
+                    (
+                        original_Aovfilename = renderers.production.output_splitfilename
+                        new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                        renderers.production.output_splitfilename = new_aovfilename
+                    )
                 )
             )
         )
