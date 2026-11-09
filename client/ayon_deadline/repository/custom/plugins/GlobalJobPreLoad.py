@@ -1250,7 +1250,7 @@ def _mark_worker_bad_for_job(deadlinePlugin, job):
         RepositoryUtils, "AddBadWorkerForJob", None
     ) or RepositoryUtils.AddBadSlaveForJob
     print(f"!!! Marking worker '{worker_name}' as bad for the job.")
-    add_bad_worker(worker_name, job)
+    add_bad_worker(job, worker_name)
 
 
 def __main__(deadlinePlugin):
