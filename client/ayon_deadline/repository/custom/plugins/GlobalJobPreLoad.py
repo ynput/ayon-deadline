@@ -24,7 +24,7 @@ from Deadline.Scripting import (
 )
 
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 VERSION_REGEX = re.compile(
     r"(?P<major>0|[1-9]\d*)"
     r"\.(?P<minor>0|[1-9]\d*)"
@@ -45,6 +45,31 @@ ENV_CACHE_POLL_INTERVAL = 0.5
 # Age at which an extraction lock file is considered left behind by a worker
 # that will never come back, e.g. because its machine lost power.
 ENV_CACHE_LOCK_STALE_TIMEOUT = 300
+# Format of the shared environment cache file. Version 1 was a plain mapping
+# of environment variables, version 2 wraps it with information about the
+# worker that extracted it.
+ENV_CACHE_FORMAT = 2
+# Variables that describe the machine the environment was extracted on. When
+# a worker uses an environment cache file extracted by another machine, these
+# keep the values of the worker itself.
+MACHINE_SPECIFIC_ENV_KEYS = {
+    "CLIENTNAME",
+    "COMPUTERNAME",
+    "HOST",
+    "HOSTNAME",
+    "LOGONSERVER",
+    "NUMBER_OF_PROCESSORS",
+    "PROCESSOR_ARCHITECTURE",
+    "PROCESSOR_IDENTIFIER",
+    "PROCESSOR_LEVEL",
+    "PROCESSOR_REVISION",
+    "SESSIONNAME",
+    "TEMP",
+    "TMP",
+    "TMPDIR",
+    "USERDOMAIN",
+    "USERDOMAIN_ROAMINGPROFILE",
+}
 # Results of '_acquire_env_cache_lock'.
 _LOCK_ACQUIRED = "acquired"
 _LOCK_CACHE_READY = "cache_ready"
@@ -722,6 +747,7 @@ def _extract_to_env_cache(export_path, extract_to):
 
         print(f">>> Creating env var file {export_path}")
         try:
+            _write_env_cache(temp_export_path, contents)
             # atomic for readers, they see either no file or the full one
             os.replace(temp_export_path, export_path)
         except OSError as exc:
@@ -748,10 +774,121 @@ def _read_env_cache(export_path):
 
     print(f">>> Loading file '{export_path}' ...")
     try:
-        return _load_environments(export_path)
+        contents, cache_info = _load_env_cache(export_path)
     except (OSError, ValueError) as exc:
         print(f">>> Unable to use environment cache '{export_path}': {exc}")
         return None
+
+    missing_paths = [
+        path
+        for path in cache_info.get("required_paths", [])
+        if not os.path.exists(path)
+    ]
+    if missing_paths:
+        # e.g. addons were distributed on the worker that extracted the
+        # environment but not on this one yet. Extracting for this worker
+        # runs the AYON launcher which distributes them.
+        print(
+            ">>> Environment cache uses paths that don't exist on this"
+            f" worker ({len(missing_paths)} missing, e.g."
+            f" '{missing_paths[0]}'). Extracting for this worker instead."
+        )
+        return None
+
+    if cache_info.get("hostname") != socket.gethostname():
+        # Keep values of this machine, e.g. 'COMPUTERNAME' or 'TEMP'
+        contents = {
+            key: value
+            for key, value in contents.items()
+            if key.upper() not in MACHINE_SPECIFIC_ENV_KEYS
+        }
+    return contents
+
+
+def _get_required_paths(contents):
+    """Paths in the environment that must exist on workers that use it.
+
+    These are paths in the AYON launcher storage, where addons and dependency
+    packages are distributed to. Workers with their own storage may not have
+    them yet, while workers sharing the storage always have them. Only paths
+    that exist on the worker that extracted the environment are used. When
+    the storage location is not known, entries of 'PYTHONPATH' are used.
+
+    Args:
+        contents (dict[str, str]): Extracted environment variables.
+
+    Returns:
+        list[str]: Paths that must exist.
+    """
+    storage_dir = contents.get("AYON_LAUNCHER_STORAGE_DIR")
+    if storage_dir:
+        storage_dir = os.path.normcase(os.path.normpath(storage_dir))
+
+    paths = set()
+    for key, value in contents.items():
+        if not isinstance(value, str):
+            continue
+        if not storage_dir and key.upper() != "PYTHONPATH":
+            continue
+        for entry in value.split(os.pathsep):
+            entry = entry.strip()
+            if not entry or not os.path.isabs(entry):
+                continue
+            if storage_dir:
+                normalized = os.path.normcase(os.path.normpath(entry))
+                if (
+                    normalized != storage_dir
+                    and not normalized.startswith(storage_dir + os.sep)
+                ):
+                    continue
+            if os.path.exists(entry):
+                paths.add(entry)
+    return sorted(paths)
+
+
+def _write_env_cache(path, contents):
+    """Write environment cache file with information for other workers.
+
+    Args:
+        path (str): Path to the file.
+        contents (dict[str, str]): Extracted environment variables.
+    """
+    data = {
+        "format": ENV_CACHE_FORMAT,
+        "hostname": socket.gethostname(),
+        "required_paths": _get_required_paths(contents),
+        "environments": contents,
+    }
+    with open(path, "w") as stream:
+        json.dump(data, stream, indent=4)
+
+
+def _load_env_cache(path):
+    """Read environment cache file.
+
+    Args:
+        path (str): Path to the file.
+
+    Returns:
+        tuple[dict[str, str], dict[str, Any]]: Environment variables and
+            information about the worker that extracted them. Information
+            is empty for files written by older versions of this plugin.
+
+    Raises:
+        ValueError: If the file does not contain environment variables.
+    """
+    data = _load_environments(path)
+    environments = data.get("environments")
+    if data.get("format") == ENV_CACHE_FORMAT and isinstance(
+        environments, dict
+    ):
+        cache_info = {
+            key: value
+            for key, value in data.items()
+            if key != "environments"
+        }
+        return environments, cache_info
+    return data, {}
 
 
 def _extract_private_environments(extract_to):
