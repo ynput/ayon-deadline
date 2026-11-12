@@ -1,6 +1,6 @@
 name = "deadline"
 title = "Deadline"
-version = "0.7.5+dev"
+version = "0.7.6+dev"
 
 client_dir = "ayon_deadline"
 
@@ -8,4 +8,8 @@ ayon_required_addons = {
     "core": ">1.6.4",
     "applications": ">=1.0.0",
 }
-ayon_compatible_addons = {}
+ayon_compatible_addons = {
+    # Collect their own farm job environment variables
+    "ftrack": ">=1.3.0",
+    "kitsu": ">=1.2.5",
+}
