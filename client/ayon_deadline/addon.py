@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import os
 import subprocess
+import time
 import typing
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, List, Dict, Any, Tuple
 
 import requests
@@ -19,6 +23,7 @@ from .lib import (
     get_deadline_limit_groups,
     get_deadline_pools,
     DeadlineJobInfo,
+    DeadlineWebserviceError,
 )
 
 if typing.TYPE_CHECKING:
@@ -27,6 +32,78 @@ if typing.TYPE_CHECKING:
     InitialStatus = Literal["Active", "Suspended"]
 
 DEADLINE_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+class _ServerInfoCache:
+    """Deadline server info shared by all addon objects in the process.
+
+    New addon object is created with every 'AddonsManager', e.g. on each
+    reset of publisher, so the cache can't be stored on the addon object.
+    Server info is cached by connection information so changed credentials
+    are not affected by the cache.
+    """
+    # Lifetime of successfully fetched server info in seconds
+    lifetime: int = 300
+    # Lifetime of failed connection, to not wait for connection timeout
+    #   on each reset when Deadline webservice is not available
+    failed_lifetime: int = 30
+    # Expiration time with server info, or error message if connection failed
+    _items: dict[
+        DeadlineConnectionInfo, tuple[float, DeadlineServerInfo | str]
+    ] = {}
+
+    @classmethod
+    def get(cls, con_info: DeadlineConnectionInfo) -> DeadlineServerInfo:
+        item = cls._items.get(con_info)
+        if item is not None:
+            expire_time, value = item
+            if time.time() < expire_time:
+                if isinstance(value, str):
+                    raise DeadlineWebserviceError(value)
+                return value
+
+        try:
+            server_info = cls._fetch(con_info)
+        except DeadlineWebserviceError as exc:
+            cls._items[con_info] = (
+                time.time() + cls.failed_lifetime, str(exc)
+            )
+            raise
+
+        cls._items[con_info] = (time.time() + cls.lifetime, server_info)
+        return server_info
+
+    @staticmethod
+    def _fetch(con_info: DeadlineConnectionInfo) -> DeadlineServerInfo:
+        """Fetch server info from webservice for single Deadline server.
+
+        This uses a thread pool to quickly acquire all the information from the
+        webservice, as each request can take a while.
+        """
+        funcs = (
+            get_deadline_pools,
+            get_deadline_groups,
+            get_deadline_limit_groups,
+            get_deadline_workers,
+        )
+        # Query the endpoints in parallel as each request can take a while
+        with ThreadPoolExecutor(max_workers=len(funcs)) as executor:
+            futures = [
+                executor.submit(
+                    func, con_info.url, con_info.auth, con_info.verify
+                )
+                for func in funcs
+            ]
+            pools, groups, limit_groups, machines = [
+                future.result()
+                for future in futures
+            ]
+        return DeadlineServerInfo(
+            pools=pools,
+            limit_groups=limit_groups,
+            groups=groups,
+            machines=machines
+        )
 
 
 class DeadlineAddon(AYONAddon, IPluginPaths):
@@ -47,8 +124,6 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
             ))
 
         self.deadline_servers_info = deadline_servers_info
-
-        self._server_info_by_name: Dict[str, DeadlineServerInfo] = {}
 
         self._local_settings_cache = CacheItem(lifetime=60)
 
@@ -85,26 +160,15 @@ class DeadlineAddon(AYONAddon, IPluginPaths):
         Returns:
             DeadlineServerInfo: Deadline server info.
 
-        """
-        server_info = self._server_info_by_name.get(server_name)
-        if server_info is None:
-            con_info = self.get_deadline_server_connection_info(
-                server_name, local_settings
-            )
-            args = con_info.url, con_info.auth, con_info.verify
-            pools = get_deadline_pools(*args)
-            groups = get_deadline_groups(*args)
-            limit_groups = get_deadline_limit_groups(*args)
-            machines = get_deadline_workers(*args)
-            server_info = DeadlineServerInfo(
-                pools=pools,
-                limit_groups=limit_groups,
-                groups=groups,
-                machines=machines
-            )
-            self._server_info_by_name[server_name] = server_info
+        Raises:
+            DeadlineWebserviceError: When Deadline webservice is not
+                available.
 
-        return server_info
+        """
+        con_info = self.get_deadline_server_connection_info(
+            server_name, local_settings
+        )
+        return _ServerInfoCache.get(con_info)
 
     def get_job_info(
         self,
