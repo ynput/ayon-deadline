@@ -478,6 +478,7 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
             tile_job_info.TileJobFrame = int(frame)
             tile_job_info.TileJobTilesInX = plugin_info["TilesX"]
             tile_job_info.TileJobTilesInY = plugin_info["TilesY"]
+            tile_job_info.ChunkSize = 1
             tile_job_info.IsFrameDependent = False
             payload = self.assemble_payload(
                 job_info=tile_job_info, plugin_info=plugin_info)
