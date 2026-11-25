@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
@@ -73,6 +74,13 @@ class HuskStandalonePluginInfo:
     RestartDelegate: str = field(default="")
     Version: str = field(default="")
     SlapCompSources: str = field(default="")
+    AutoTile: bool = field(default=False)
+    TilesX: int = field(default=0)
+    TilesY: int = field(default=0)
+    AutoTileRes: str = field(default="")
+    TileIndex: int = field(default=-1)
+    TileSuffix: str = field(default="")
+    Stitch: bool = field(default=False)
 
 
 class HoudiniSubmitDeadline(
@@ -377,6 +385,28 @@ class HoudiniSubmitDeadline(
         # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
         slapcomps: "list[str]" = instance.data.get("slapComp", [])
 
+        # Like the ROP, pass nothing when Tiled Render is off. With Render
+        # All Tiles and Stitch Final Image (Houdini 21+) husk renders and
+        # stitches every tile in one task; otherwise each tile gets its own
+        # job, see `HoudiniSubmitDeadlineUsdRender._submit_split_render_jobs`
+        tiled = rop_node.evalParm("husk_tile")
+        auto_tile = bool(
+            tiled
+            and rop_node.parm("husk_autotile")
+            and rop_node.evalParm("husk_autotile")
+        )
+        tiles_x = tiles_y = 0
+        auto_tile_res = tile_suffix = ""
+        if tiled:
+            tiles_x, tiles_y = rop_node.evalParmTuple("husk_tilecount")
+            if auto_tile:
+                auto_tile_res = "{} {}".format(
+                    *rop_node.evalParmTuple("husk_tilemaxres"))
+            else:
+                # husk expands $F or %d in the suffix to the tile index.
+                tile_suffix = (
+                    rop_node.parm("husk_tilesuffix").unexpandedString())
+
         return HuskStandalonePluginInfo(
             SceneFile=instance.data["ifdFile"],
             Renderer=rop_node.evalParm("renderer"),
@@ -391,7 +421,12 @@ class HoudiniSubmitDeadline(
             PostRender=rop_node.evalParm("husk_postrender"),
             RestartDelegate=restart_delegate,
             Version=hou_major_minor,
-            SlapCompSources="\n".join(slapcomps)
+            SlapCompSources="\n".join(slapcomps),
+            AutoTile=auto_tile,
+            TilesX=tiles_x,
+            TilesY=tiles_y,
+            AutoTileRes=auto_tile_res,
+            TileSuffix=tile_suffix,
         )
 
     def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
@@ -412,3 +447,85 @@ class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):
         # Export Job doesn't seem to occur using the published path either, so
         # output paths then do not match the actual rendered paths
         return
+
+    def _submit_split_render_jobs(self, instance, job_id, job_info):
+        """Render the tiles when the ROP renders them without stitching them:
+        one Deadline tile job for a single frame, else one job per tile. Then
+        one job per render product stitches each frame once its tiles are
+        rendered.
+        """
+        plugin_info = self.get_plugin_info(job_type="render")
+        tile_count = plugin_info["TilesX"] * plugin_info["TilesY"]
+        if plugin_info["AutoTile"] or tile_count < 2:
+            super()._submit_split_render_jobs(instance, job_id, job_info)
+            return
+
+        auth = instance.data["deadline"]["auth"]
+        verify = instance.data["deadline"]["verify"]
+        dependency_job_ids = [job_id] if job_id else []
+        frame = instance.data["frameStartHandle"]
+        single_frame = frame == instance.data["frameEndHandle"]
+
+        if single_frame:
+            # A Deadline tile job, one task per tile. Its tasks are tiles, not
+            # frames, so it waits for the whole export job.
+            tile_job_info = self.get_job_info(
+                job_info=deepcopy(job_info),
+                dependency_job_ids=dependency_job_ids,
+                use_dcc_plugin=False,
+            )
+            tile_job_info.TileJob = True
+            tile_job_info.TileJobFrame = int(frame)
+            tile_job_info.TileJobTilesInX = plugin_info["TilesX"]
+            tile_job_info.TileJobTilesInY = plugin_info["TilesY"]
+            tile_job_info.ChunkSize = 1
+            tile_job_info.IsFrameDependent = False
+            payload = self.assemble_payload(
+                job_info=tile_job_info, plugin_info=plugin_info)
+            tile_job_ids = [self.submit(payload, auth, verify)]
+        else:
+            tile_job_ids = []
+            for tile_index in range(tile_count):
+                tile_job_info = self.get_job_info(
+                    job_info=deepcopy(job_info),
+                    dependency_job_ids=dependency_job_ids,
+                    use_dcc_plugin=False,
+                )
+                tile_job_info.Name += " (tile {}/{})".format(
+                    tile_index + 1, tile_count)
+                payload = self.assemble_payload(
+                    job_info=tile_job_info,
+                    plugin_info=dict(plugin_info, TileIndex=tile_index),
+                )
+                tile_job_ids.append(self.submit(payload, auth, verify))
+        self.log.info("Tile job ids: %s", tile_job_ids)
+
+        # itilestitch makes one image per call: one stitch job per product.
+        stitch_job_ids = []
+        for filepath in instance.data["files"]:
+            stitch_job_info = self.get_job_info(
+                job_info=deepcopy(job_info),
+                dependency_job_ids=tile_job_ids,
+                use_dcc_plugin=False,
+            )
+            stitch_job_info.Name = stitch_job_info.Name.replace(
+                "[RENDER]", "[STITCH]")
+            stitch_job_info.IsFrameDependent = not single_frame
+            stitch_job_info.ChunkSize = 1
+            stitch_job_info.OutputDirectory.clear()
+            stitch_job_info.OutputFilename.clear()
+            dirname = os.path.dirname(filepath)
+            stitch_job_info.OutputDirectory += dirname.replace("\\", "/")
+            stitch_job_info.OutputFilename += os.path.basename(filepath)
+            payload = self.assemble_payload(
+                job_info=stitch_job_info,
+                plugin_info=dict(plugin_info, Stitch=True),
+            )
+            stitch_job_ids.append(self.submit(payload, auth, verify))
+        self.log.info("Stitch job ids: %s", stitch_job_ids)
+
+        # The publish job then waits for the stitch jobs, as for Maya's tile
+        # assembly (`ProcessSubmittedJobOnFarm._get_dependency_ids`).
+        instance.data["tileRendering"] = True
+        instance.data["assemblySubmissionJobs"] = stitch_job_ids
+        instance.data["deadline"]["job_info"] = deepcopy(stitch_job_info)
