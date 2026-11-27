@@ -357,6 +357,10 @@ class DeadlineIndexedVar(dict):
         dict.__setitem__(self, key, value)
 
 
+# Serialized key templates that differ from the attribute name
+_INDEXED_KEYS = {"OutputFilenameTile": "OutputFilename{}Tile"}
+
+
 def _partial_key_value(key: str):
     return partial(DeadlineKeyValueVar, key)
 
@@ -654,7 +658,9 @@ class DeadlineJobInfo:
             "AssetDependency",
         ):
             if not isinstance(value, DeadlineIndexedVar):
-                new_value = DeadlineIndexedVar(key)
+                new_value = DeadlineIndexedVar(
+                    _INDEXED_KEYS.get(key, key)
+                )
                 new_value.update(value)
                 value = new_value
 
