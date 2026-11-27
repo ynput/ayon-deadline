@@ -5,7 +5,7 @@ import json
 import re
 import getpass
 from copy import deepcopy
-from typing import List, Any
+from typing import Any, List, Optional
 
 import clique
 import ayon_api
@@ -22,7 +22,8 @@ from ayon_core.pipeline.farm.pyblish_functions import (
     create_instances_for_aov,
     attach_instances_to_product,
     prepare_representations,
-    create_metadata_path
+    create_metadata_path,
+    convert_frames_str_to_list,
 )
 
 from ayon_deadline import DeadlineAddon
@@ -58,6 +59,68 @@ def get_resource_files(resources, frame_range=None):
             res_collection.indexes.remove(frame)
 
     return list(res_collection)
+
+
+# Frame number at the end of a file name, e.g. `beauty.1001.exr`
+R_FILE_FRAME_NUMBER = re.compile(r"\.(?P<frame>[0-9]+)(?:\.[^.]+)?$")
+
+
+def get_rendered_frames(instance: dict) -> Optional[set]:
+    """Return the frames the render job renders for a frame fix instance.
+
+    A frame fix renders only part of the frame range. The other frames of the
+    version are copied from the previous version by the publish job itself,
+    so those files are never written to the render output directory and the
+    publish job must not wait for them.
+
+    Only the 3dsMax frame fix transfers `frames_to_fix` and `frames_to_render`
+    to the farm publish instances, see `instance_transfer["maxrender"]`.
+    Other hosts define `frames_to_fix` only on their host instances, so they
+    keep the previous behaviour of waiting for every rendered file.
+
+    Args:
+        instance (dict): Farm publish instance data.
+
+    Returns:
+        Optional[set[int]]: Frames rendered by the render job, or None when
+            every frame of the instance is rendered.
+
+    """
+    if not instance.get("frames_to_fix"):
+        return None
+
+    frames_to_render = instance.get("frames_to_render")
+    if frames_to_render is None:
+        # No information about the rendered frames, do not filter.
+        return None
+
+    if isinstance(frames_to_render, str):
+        frames_to_render = convert_frames_str_to_list(frames_to_render)
+    return {int(frame) for frame in frames_to_render}
+
+
+def is_rendered_file(
+    file_name: str, rendered_frames: Optional[set]
+) -> bool:
+    """Return whether the file belongs to a frame the render job renders.
+
+    Args:
+        file_name (str): File name of a representation.
+        rendered_frames (Optional[set[int]]): Frames rendered by the render
+            job, or None when every frame of the instance is rendered.
+
+    Returns:
+        bool: Whether the render job writes this file.
+
+    """
+    if rendered_frames is None:
+        return True
+
+    match = R_FILE_FRAME_NUMBER.search(os.path.basename(file_name))
+    if not match:
+        # A single file (e.g. a movie) or a name without a frame number.
+        return True
+    return int(match.group("frame")) in rendered_frames
 
 
 class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
@@ -138,7 +201,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],
         "render2d": ["bakingNukeScripts", "version"],
-        "renderlayer": ["convertToScanline"]
+        "renderlayer": ["convertToScanline"],
+        # 3dsMax frame fix: the publish job has to know which frames the render
+        # job rendered, the remaining frames of the version are copied from the
+        # previous version by `ExtractLastPublished`.
+        "maxrender": ["frames_to_fix", "frames_to_render"],
     }
 
     # list of family names to transfer to new family if present
@@ -574,14 +641,22 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         This should help when DL file system is still synchronizing rendered
         files, but publish job starts prematurely.
+
+        A frame fix renders only part of the frames of its version, the other
+        frames are copied from the previous version by the publish job itself.
+        Waiting for those files would keep the job pending forever, so only
+        the files the render job writes are added.
         """
         for instance in instances:
+            rendered_frames = get_rendered_frames(instance)
             for representation in instance["representations"]:
                 if isinstance(representation["files"], str):
                     files = [representation["files"]]
                 else:
                     files = representation["files"]
                 for file_name in files:
+                    if not is_rendered_file(file_name, rendered_frames):
+                        continue
                     full_path = os.path.join(
                         representation["stagingDir"], file_name
                     )

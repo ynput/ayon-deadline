@@ -26,7 +26,13 @@ class ExtractLastVersionFiles(pyblish.api.InstancePlugin):
 
     def process(self, instance):
         """Process all the nodes in the instance"""
-        if not instance.data.get("reuseLastVersion"):
+        # A frame fix always has to fill the frames it did not render from the
+        # last version, otherwise the published version would be incomplete.
+        # `reuseLastVersion` is the explicit Deadline 'Reuse from Last Version'
+        # option; `frames_to_fix` is transferred from the host instance by the
+        # frame fix flow (3dsMax) and implies the same behaviour.
+        if not (instance.data.get("reuseLastVersion")
+                or instance.data.get("frames_to_fix")):
             return
 
         frame_start = instance.data["frameStart"]
