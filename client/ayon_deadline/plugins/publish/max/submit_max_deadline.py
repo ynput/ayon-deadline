@@ -68,10 +68,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info.EnableAutoTimeout = True
         # A frame fix renders only the frames to fix, the remaining frames are
         # copied from the previous version by the farm publish job. The
-        # restriction is applied here, on the copy of the job info, because the
-        # publish metadata has to keep the full frame range (otherwise the
-        # publish job builds representations only for the rendered frames and
-        # the copy extractor has no target frames).
+        # restriction is applied here, on the copy of the job info, and it is
+        # intentionally propagated to the publish metadata: the farm publish
+        # representations must list only the files the render job writes, so
+        # that `ExtractLastVersionFiles` sees the holes and fills them from the
+        # previous version. Listing the whole frame range would hide the holes
+        # and make the publish job wait for files that are never rendered.
         frames_to_render = instance.data.get("frames_to_render")
         if frames_to_render and not job_info.Frames:
             job_info.Frames = frames_to_deadline_string(frames_to_render)
@@ -114,15 +116,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
                            "Skipping deadline submission.")
             return
 
-        # `get_job_info` restricts the frames of the render job to the frames
-        # to fix. The abstract submitter stores its job info back into the
-        # instance metadata, which is used by `SubmitPublishJob` to build the
-        # farm publish representations - the publish job has to keep the
-        # original frame range, the remaining frames are copied from the
-        # previous version.
-        publish_frames = instance.data["deadline"]["job_info"].Frames
+        # `get_job_info` restricts the render job to the frames to fix. The
+        # abstract submitter stores that job info back into the instance, and
+        # `SubmitPublishJob` builds the farm publish representations from
+        # `job_info.Frames` - so the publish instance describes only the files
+        # this job writes and the publish job copies the remaining frames of
+        # the version from the last published version.
         super().process(instance)
-        instance.data["deadline"]["job_info"].Frames = publish_frames
 
     def process_submission(self):
 
