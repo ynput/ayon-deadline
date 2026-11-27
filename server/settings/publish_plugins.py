@@ -27,6 +27,13 @@ class CollectAYONServerToFarmJobModel(BaseSettingsModel):
     enabled: bool = SettingsField(False, title="Enabled")
 
 
+class OptionalPluginsModel(BaseSettingsModel):
+    _isGroup = True
+    enabled: bool = SettingsField(True)
+    active: bool = SettingsField(True, title="Active")
+    optional: bool = SettingsField(True, title="Optional")
+
+
 def extract_jobinfo_overrides_enum():
     """Enum of fields that could be overridden by artist in Publisher UI"""
     return [
@@ -40,6 +47,7 @@ def extract_jobinfo_overrides_enum():
         {"value": "secondary_pool", "label": "Secondary pool"},
         {"value": "machine_list", "label": "Machine List"},
         {"value": "machine_list_deny", "label": "Machine List is a Deny"},
+        {"value": "concurrent_tasks", "label": "Number of Concurrent Tasks"},
         {"value": "publish_job_state", "label": "Publish Job State"},
     ]
 
@@ -56,16 +64,24 @@ class CollectJobInfoItem(BaseSettingsModel):
     _layout = "expanded"
     host_names: list[str] = SettingsField(
         default_factory=list,
-        title="Host names"
+        title="Host names",
     )
     task_types: list[str] = SettingsField(
         default_factory=list,
         title="Task types",
-        enum_resolver=task_types_enum
+        enum_resolver=task_types_enum,
     )
     task_names: list[str] = SettingsField(
         default_factory=list,
-        title="Task names"
+        title="Task names",
+    )
+    product_base_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Product base types",
+        description=(
+            "Apply this profile only for products "
+            "with these productBaseTypes."
+        ),
     )
 
     #########################################
@@ -104,7 +120,10 @@ class CollectJobInfoItem(BaseSettingsModel):
         )
     )
     concurrent_tasks: int = SettingsField(
-        1, title="Number of concurrent tasks")
+        1,
+        title="Number of concurrent tasks",
+        description="Concurrent tasks on single render node"
+    )
     department: str = SettingsField("", title="Department")
     job_delay: str = SettingsField(
         "", title="Delay job",
@@ -122,7 +141,6 @@ class CollectJobInfoItem(BaseSettingsModel):
         True, title="Use Asset dependencies")
     use_workfile_dependency: bool = SettingsField(
         True, title="Workfile Dependency")
-    multiprocess: bool = SettingsField(False, title="Multiprocess")
 
     additional_job_info: str = SettingsField(
         "",
@@ -252,6 +270,14 @@ class NukeSubmitDeadlineModel(BaseSettingsModel):
     """Nuke-specific settings"""
 
     use_gpu: bool = SettingsField(True, title="Use GPU")
+    continue_on_error: bool = SettingsField(
+        False,
+        title="Continue On Error",
+        description=(
+            "Whether to enable continue on error on Deadline's Nuke plug-in"
+            " submission info by default in publish instance attributes."
+        )
+    )
     node_class_limit_groups: list[LimitGroupsSubmodel] = SettingsField(
         default_factory=list,
         title="Node based Limit Groups",
@@ -336,6 +362,13 @@ class ProcessSubmittedJobOnFarmModel(BaseSettingsModel):
         title="Reviewable products filter",
     )
 
+    add_rendered_dependencies: bool = SettingsField(
+        False,
+        title="Add rendered files as Dependencies",
+        description="Add all expected rendered files as job Dependencies."
+                    "Publish job won't trigger until all files are present."
+    )
+
     @validator("aov_filter")
     def validate_unique_names(cls, value):
         ensure_unique_names(value)
@@ -368,6 +401,10 @@ class PublishPluginsModel(BaseSettingsModel):
     ProcessSubmittedCacheJobOnFarm: ProcessCacheJobFarmModel = SettingsField(
         default_factory=ProcessCacheJobFarmModel,
         title="Houdini Cache Publish Job Settings")
+    ValidateFrameTokenUSDRender: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Houdini Validate Frame Token (USD Render)",
+    )
     MayaSubmitDeadline: MayaSubmitDeadlineModel = SettingsField(
         default_factory=MayaSubmitDeadlineModel,
         title="Maya")
@@ -388,124 +425,99 @@ class PublishPluginsModel(BaseSettingsModel):
     )
     ValidateExpectedFiles: ValidateExpectedFilesModel = SettingsField(
         default_factory=ValidateExpectedFilesModel,
-        title="Validate Expected Files"
+        title="Validate Expected Files",
+    )
+    ValidateDeadlineConnection: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Deadline Connection",
+    )
+    ValidateDeadlinePools: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Deadline Pools",
+    )
+    ValidateDeadlineJobInfo: OptionalPluginsModel = SettingsField(
+        default_factory=OptionalPluginsModel,
+        title="Validate Deadline Job Info",
     )
 
 
 DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
+    # Generic submission settings applying to all hosts
     "CollectJobInfo": {
-      "profiles": [
-        {
-          "group": "",
-          "priority": 50,
-          "job_delay": "",
-          "publish_job_state": "active",
-          "overrides": [
-            "department",
-            "chunk_size",
-            "group",
-            "priority",
-            "primary_pool",
-            "secondary_pool",
-            "publish_job_state"
-          ],
-          "chunk_size": 1,
-          "department": "",
-          "host_names": [],
-          "task_names": [],
-          "task_types": [],
-          "limit_groups": [],
-          "machine_list": [],
-          "multiprocess": False,
-          "primary_pool": "",
-          "machine_limit": 0,
-          "use_published": True,
-          "secondary_pool": "",
-          "concurrent_tasks": 1,
-          "machine_list_deny": False,
-          "additional_job_info": "",
-          "additional_plugin_info": "",
-          "use_asset_dependencies": False,
-          "use_workfile_dependency": True
-        },
-        {
-          "group": "",
-          "priority": 50,
-          "job_delay": "",
-          "publish_job_state": "active",
-          "overrides": [
-            "department",
-            "chunk_size",
-            "group",
-            "priority",
-            "primary_pool",
-            "secondary_pool",
-            "publish_job_state"
-          ],
-          "chunk_size": 10,
-          "department": "",
-          "host_names": [
-            "nuke",
-            "fusion",
-            "aftereffects"
-          ],
-          "task_names": [],
-          "task_types": [],
-          "limit_groups": [],
-          "machine_list": [],
-          "multiprocess": False,
-          "primary_pool": "",
-          "machine_limit": 0,
-          "use_published": True,
-          "secondary_pool": "",
-          "concurrent_tasks": 1,
-          "machine_list_deny": False,
-          "additional_job_info": "",
-          "additional_plugin_info": "",
-          "use_asset_dependencies": False,
-          "use_workfile_dependency": True
-        }
-      ]
-    },
-    "CollectAYONServerToFarmJob": {
-        "enabled": False
-    },
-    "ValidateExpectedFiles": {
-        "enabled": True,
-        "active": True,
-        "allow_user_override": True,
-        "families": [
-            "render"
-        ],
-        "targets": [
-            "deadline"
+        "profiles": [
+            {
+                "host_names": [],
+                "task_types": [],
+                "task_names": [],
+                "product_base_types": [],
+
+                "chunk_size": 1,
+                "priority": 50,
+                "group": "",
+                "limit_groups": [],
+                "primary_pool": "",
+                "secondary_pool": "",
+                "machine_limit": 0,
+                "machine_list": [],
+                "machine_list_deny": False,
+                "concurrent_tasks": 1,
+                "department": "",
+                "job_delay": "",
+                "publish_job_state": "active",
+                "use_published": True,
+                "use_asset_dependencies": False,
+                "use_workfile_dependency": True,
+                "additional_job_info": "",
+                "additional_plugin_info": "",
+                "overrides": [
+                    "department",
+                    "chunk_size",
+                    "group",
+                    "priority",
+                    "primary_pool",
+                    "secondary_pool",
+                    "publish_job_state",
+                ],
+            },
+            {
+                "host_names": [
+                    "aftereffects",
+                    "fusion",
+                    "nuke",
+                ],
+                "task_types": [],
+                "task_names": [],
+                "product_base_types": [],
+
+                "chunk_size": 10,
+                "priority": 50,
+                "group": "",
+                "limit_groups": [],
+                "primary_pool": "",
+                "secondary_pool": "",
+                "machine_limit": 0,
+                "machine_list": [],
+                "machine_list_deny": False,
+                "concurrent_tasks": 1,
+                "department": "",
+                "job_delay": "",
+                "publish_job_state": "active",
+                "use_published": True,
+                "use_asset_dependencies": False,
+                "use_workfile_dependency": True,
+                "additional_job_info": "",
+                "additional_plugin_info": "",
+                "overrides": [
+                    "department",
+                    "chunk_size",
+                    "group",
+                    "priority",
+                    "primary_pool",
+                    "secondary_pool",
+                    "publish_job_state",
+                ],
+            }
         ]
-    },
-    "FusionSubmitDeadline": {
-        "plugin": "Fusion"
-    },
-    "HoudiniSubmitDeadline": {
-        "export_priority": 50,
-        "export_chunk_size": 10,
-        "export_group": "",
-        "export_limits": "",
-        "export_machine_limit": 0
-    },
-    "MayaSubmitDeadline": {
-        "tile_assembler_plugin": "DraftTileAssembler",
-        "import_reference": False,
-        "strict_error_checking": True,
-        "tile_priority": 50,
-        "scene_patches": []
-    },
-    "NukeSubmitDeadline": {
-        "use_gpu": True
-    },
-    "ProcessSubmittedCacheJobOnFarm": {
-        "deadline_priority": 50,
-        "deadline_group": "",
-        "deadline_pool": "",
-        "deadline_department": "",
     },
     "ProcessSubmittedJobOnFarm": {
         "deadline_priority": 50,
@@ -557,6 +569,72 @@ DEFAULT_DEADLINE_PLUGINS_SETTINGS = {
                     ".*"
                 ]
             }
+        ],
+        "add_rendered_dependencies": False,
+    },
+
+    # Host-specific
+    "FusionSubmitDeadline": {
+        "plugin": "Fusion"
+    },
+    "HoudiniSubmitDeadline": {
+        "export_priority": 50,
+        "export_chunk_size": 10,
+        "export_group": "",
+        "export_limits": "",
+        "export_machine_limit": 0
+    },
+    "ProcessSubmittedCacheJobOnFarm": {
+        "deadline_priority": 50,
+        "deadline_group": "",
+        "deadline_pool": "",
+        "deadline_department": "",
+    },
+    "ValidateFrameTokenUSDRender": {
+        "enabled": True,
+        "active": True,
+        "optional": False,
+    },
+    "MayaSubmitDeadline": {
+        "import_reference": False,
+        "tile_priority": 50,
+        "tile_assembler_plugin": "DraftTileAssembler",
+        "scene_patches": [],
+        "strict_error_checking": True,
+    },
+    "NukeSubmitDeadline": {
+        "use_gpu": True,
+        "continue_on_error": False,
+    },
+
+    # Others
+    "CollectAYONServerToFarmJob": {
+        "enabled": False
+    },
+    "ValidateExpectedFiles": {
+        "enabled": True,
+        "active": True,
+        "allow_user_override": True,
+        "families": [
+            "render"
+        ],
+        "targets": [
+            "deadline"
         ]
-    }
+    },
+    "ValidateDeadlineConnection": {
+        "enabled": True,
+        "active": True,
+        "optional": False,
+    },
+    "ValidateDeadlinePools": {
+        "enabled": True,
+        "active": True,
+        "optional": True,
+    },
+    "ValidateDeadlineJobInfo": {
+        "enabled": True,
+        "active": True,
+        "optional": True,
+    },
 }

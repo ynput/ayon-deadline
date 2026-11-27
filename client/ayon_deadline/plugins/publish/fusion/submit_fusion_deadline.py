@@ -66,7 +66,10 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         saver_instances = []
         context = instance.context
         for inst in context:
-            if inst.data["productType"] in {"image", "render"}:
+            product_base_type = inst.data.get("productBaseType")
+            if not product_base_type:
+                product_base_type = inst.data["productType"]
+            if product_base_type not in {"image", "render"}:
                 # Allow only saver family instances
                 continue
 
@@ -96,10 +99,12 @@ class FusionSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         # Deadline requires integers in frame range
         job_info.Plugin = self.plugin or "Fusion"
-        job_info.Frames = "{start}-{end}".format(
-            start=int(instance.data["frameStartHandle"]),
-            end=int(instance.data["frameEndHandle"])
-        )
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            job_info.Frames = "{start}-{end}".format(
+                start=int(instance.data["frameStartHandle"]),
+                end=int(instance.data["frameEndHandle"])
+            )
 
         # We override the default behavior of AbstractSubmitDeadline here to
         # include the output directory and output filename for each individual

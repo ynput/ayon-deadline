@@ -5,14 +5,17 @@ import json
 import re
 import getpass
 from copy import deepcopy
+from typing import List, Any
 
 import clique
 import ayon_api
 import pyblish.api
 
-from ayon_core.pipeline import publish
+from ayon_core.lib import is_func_signature_supported
 from ayon_core.lib.path_templates import TemplateUnsolved
 
+from ayon_core.pipeline import publish, Anatomy
+from ayon_core.pipeline.publish import get_publish_template_name
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
@@ -144,6 +147,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # poor man exclusion
     skip_integration_repre_list = []
 
+    add_rendered_dependencies = False
+
+
     def _submit_deadline_post_job(
         self, instance, render_job, instances, rootless_metadata_path
     ):
@@ -166,13 +172,18 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if instance_version != 1:
             override_version = instance_version
 
+        product_type = instances[0]["productType"]
+        product_base_type = instances[0].get("productBaseType")
+        if not product_base_type:
+            product_base_type = product_type
         output_dir = self._get_publish_folder(
             anatomy,
             deepcopy(instance.data["anatomyData"]),
             instance.data.get("folderEntity"),
             instances[0]["productName"],
             context,
-            instances[0]["productType"],
+            product_base_type,
+            product_type,
             override_version
         )
 
@@ -195,13 +206,6 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "--targets", "deadline",
             "--targets", "farm",
         ]
-        # TODO remove settings variant handling when not needed anymore
-        #   which should be when package.py defines 'core>1.1.1' .
-        settings_variant = os.environ["AYON_DEFAULT_SETTINGS_VARIANT"]
-        if settings_variant == "staging":
-            args.append("--use-staging")
-        elif settings_variant != "production":
-            args.extend(["--bundle", settings_variant])
 
         server_name = instance.data["deadline"]["serverName"]
         self.log.debug("Submitting Deadline publish job ...")
@@ -211,10 +215,15 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         )
 
         job_info = instance.data["deadline"]["job_info"]
+        deadline_department = (
+            job_info.Department
+            or self.deadline_department
+            or None
+        )
         job_info = DeadlineJobInfo(
             Name=job_name,
             BatchName=batch_name,
-            Department=self.deadline_department,
+            Department=deadline_department,
             Priority=priority,
             InitialStatus=job_info.publish_job_state,
             Group=self.deadline_group,
@@ -227,6 +236,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             job_info.OutputDirectory.append(output_dir)
 
         job_info.EnvironmentKeyValue.update(environment)
+
+        if self.add_rendered_dependencies:
+            self._add_rendered_dependencies(anatomy, instances, job_info)
+
         return deadline_addon.submit_ayon_plugin_job(
             server_name,
             args,
@@ -347,7 +360,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 instance, instance_skeleton_data,
                 aov_filter,
                 self.skip_integration_repre_list,
-                do_not_add_review
+                do_not_add_review,
+                instance.data["deadline"]["job_info"].Frames
             )
         else:
             representations = prepare_representations(
@@ -416,7 +430,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "user": instance.context.data["user"],
             "intent": instance.context.data.get("intent"),
             "comment": instance.context.data.get("comment"),
-            "job": render_job or None,
+            "job": render_job or {},
             "instances": instances
         }
 
@@ -449,6 +463,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         folder_entity,
         product_name,
         context,
+        product_base_type,
         product_type,
         version=None
     ):
@@ -467,10 +482,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             folder_entity (dict[str, Any]): Folder entity.
             product_name (string): Product name (actually group name
                 of product)
-            product_type (string): for current deadline process it's always
+            product_base_type (str): for current deadline process it's always
                 'render'
                 TODO - for generic use family needs to be dynamically
                     calculated like IntegrateNew does
+            product_type (str): Studio defined product type.
             version (int): override version from instance if exists
 
         Returns:
@@ -480,6 +496,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         """
         project_name = context.data["projectName"]
         host_name = context.data["hostName"]
+        task_info = template_data.get("task") or {}
         if not version:
             version_entity = None
             if folder_entity:
@@ -492,33 +509,43 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             if version_entity:
                 version = int(version_entity["version"]) + 1
             else:
-                version = get_versioning_start(
-                    project_name,
-                    host_name,
-                    task_name=template_data["task"]["name"],
-                    task_type=template_data["task"]["type"],
-                    product_type="render",
+                kwargs = dict(
+                    project_name=project_name,
+                    host_name=host_name,
+                    task_name=task_info.get("name"),
+                    task_type=task_info.get("type"),
+                    product_base_type="render",
                     product_name=product_name,
-                    project_settings=context.data["project_settings"]
+                    project_settings=context.data["project_settings"],
                 )
+                if not is_func_signature_supported(
+                    get_versioning_start, **kwargs
+                ):
+                    kwargs["product_type"] = kwargs.pop("product_base_type")
+                version = get_versioning_start(**kwargs)
 
         host_name = context.data["hostName"]
-        task_info = template_data.get("task") or {}
 
-        template_name = publish.get_publish_template_name(
-            project_name,
-            host_name,
-            product_type,
-            task_info.get("name"),
-            task_info.get("type"),
+        kwargs = dict(
+            project_name=project_name,
+            host_name=host_name,
+            product_base_type=product_base_type,
+            task_name=task_info.get("name"),
+            task_type=task_info.get("type"),
+            project_settings=context.data["project_settings"],
         )
+        if not is_func_signature_supported(
+            get_publish_template_name, **kwargs
+        ):
+            kwargs["product_type"] = kwargs.pop("product_base_type")
+
+        template_name = get_publish_template_name(**kwargs)
 
         template_data["version"] = version
-        template_data["subset"] = product_name
-        template_data["family"] = product_type
         template_data["product"] = {
             "name": product_name,
             "type": product_type,
+            "basetype": product_base_type,
         }
 
         render_dir_template = anatomy.get_template_item(
@@ -536,3 +563,27 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "Publish directory template is unsolved for: "
                 f"{template_name} in anatomy. Output directory won't be set."
             )
+
+    def _add_rendered_dependencies(
+        self,
+        anatomy: Anatomy,
+        instances: List[dict[str, Any]],
+        job_info: DeadlineJobInfo,
+    ) -> None:
+        """Adds all expected rendered files as Job dependencies.
+
+        This should help when DL file system is still synchronizing rendered
+        files, but publish job starts prematurely.
+        """
+        for instance in instances:
+            for representation in instance["representations"]:
+                if isinstance(representation["files"], str):
+                    files = [representation["files"]]
+                else:
+                    files = representation["files"]
+                for file_name in files:
+                    full_path = os.path.join(
+                        representation["stagingDir"], file_name
+                    )
+                    full_path = anatomy.fill_root(full_path)
+                    job_info.AssetDependency += full_path

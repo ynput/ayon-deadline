@@ -8,7 +8,9 @@ from copy import deepcopy
 import ayon_api
 import pyblish.api
 
+from ayon_core.lib import is_func_signature_supported
 from ayon_core.pipeline import publish
+from ayon_core.pipeline.publish import get_publish_template_name
 from ayon_core.pipeline.version_start import get_versioning_start
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance_cache,
@@ -95,14 +97,20 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         if instance_version != 1:
             override_version = instance_version
 
+        product_type = instance.data["productType"]
+        product_base_type = instance.data.get("productBaseType")
+        if not product_base_type:
+            product_base_type = product_type
+
         output_dir = self._get_publish_folder(
             anatomy,
             deepcopy(instance.data["anatomyData"]),
             instance.data.get("folderEntity"),
             instance.data["productName"],
             context,
-            instance.data["productType"],
-            override_version
+            product_base_type,
+            product_type,
+            override_version,
         )
 
         # Transfer the environment from the original job to this dependent
@@ -317,9 +325,17 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
         with open(metadata_path, "w") as f:
             json.dump(publish_job, f, indent=4, sort_keys=True)
 
-    def _get_publish_folder(self, anatomy, template_data,
-                            folder_entity, product_name, context,
-                            product_type, version=None):
+    def _get_publish_folder(
+        self,
+        anatomy,
+        template_data,
+        folder_entity,
+        product_name,
+        context,
+        product_base_type,
+        product_type,
+        version=None,
+    ):
         """
             Extracted logic to pre-calculate real publish folder, which is
             calculated in IntegrateNew inside of Deadline process.
@@ -348,7 +364,8 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
 
         project_name = context.data["projectName"]
         host_name = context.data["hostName"]
-        if not version:
+        task_info = template_data.get("task") or {}
+        if version is None:
             version_entity = None
             if folder_entity:
                 version_entity = ayon_api.get_last_version_by_product_name(
@@ -360,32 +377,40 @@ class ProcessSubmittedCacheJobOnFarm(pyblish.api.InstancePlugin,
             if version_entity:
                 version = int(version_entity["version"]) + 1
             else:
-                version = get_versioning_start(
-                    project_name,
-                    host_name,
-                    task_name=template_data["task"]["name"],
-                    task_type=template_data["task"]["type"],
-                    product_type="render",
+                kwargs = dict(
+                    project_name=project_name,
+                    host_name=host_name,
+                    task_name=task_info.get("name"),
+                    task_type=task_info.get("type"),
+                    product_base_type="render",
                     product_name=product_name,
-                    project_settings=context.data["project_settings"]
+                    project_settings=context.data["project_settings"],
                 )
+                if not is_func_signature_supported(
+                    get_versioning_start, **kwargs
+                ):
+                    kwargs["product_type"] = kwargs.pop("product_base_type")
+                version = get_versioning_start(**kwargs)
 
-        task_info = template_data.get("task") or {}
-
-        template_name = publish.get_publish_template_name(
-            project_name,
-            host_name,
-            product_type,
-            task_info.get("name"),
-            task_info.get("type"),
+        kwargs = dict(
+            project_name=project_name,
+            host_name=host_name,
+            product_base_type=product_base_type,
+            task_name=task_info.get("name"),
+            task_type=task_info.get("type"),
+            project_settings=context.data["project_settings"],
         )
+        if not is_func_signature_supported(
+            get_publish_template_name, **kwargs
+        ):
+            kwargs["product_type"] = kwargs.pop("product_base_type")
+        template_name = get_publish_template_name(**kwargs)
 
-        template_data["subset"] = product_name
-        template_data["family"] = product_type
         template_data["version"] = version
         template_data["product"] = {
             "name": product_name,
             "type": product_type,
+            "basetype": product_base_type,
         }
 
         render_dir_template = anatomy.get_template_item(

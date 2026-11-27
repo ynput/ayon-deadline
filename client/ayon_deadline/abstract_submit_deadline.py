@@ -4,13 +4,14 @@
 It provides Deadline JobInfo data class.
 
 """
+from __future__ import annotations
 import json.decoder
 from abc import abstractmethod
 import getpass
 import os
 from datetime import datetime
 from copy import deepcopy
-from typing import Optional
+from typing import Any, Optional
 import clique
 
 import requests
@@ -87,12 +88,12 @@ class AbstractSubmitDeadline(
 
     def __init__(self, *args, **kwargs):
         super(AbstractSubmitDeadline, self).__init__(*args, **kwargs)
-        self._instance = None
+        self._instance: Optional[pyblish.api.Instance] = None
         self._deadline_url = None
-        self.scene_path = None
-        self.job_info = None
-        self.plugin_info = None
-        self.aux_files = None
+        self.scene_path: Optional[str] = None
+        self.job_info: Optional[PublishDeadlineJobInfo] = None
+        self.plugin_info: Optional[dict[str, Any]] = None
+        self.aux_files: Optional[list[str]] = None
 
     def process(self, instance):
         """Plugin entry point."""
@@ -110,10 +111,11 @@ class AbstractSubmitDeadline(
             job_info.use_published,
             instance.data.get("stagingDir_is_custom", False)
         )
-        self._append_job_output_paths(
-            instance,
-            self.job_info
-        )
+        if instance.data.get("expectedFiles"):
+            self._append_job_output_paths(
+                instance,
+                self.job_info
+            )
         self.plugin_info = self.get_plugin_info()
 
         self.aux_files = self.get_aux_files()
@@ -122,17 +124,39 @@ class AbstractSubmitDeadline(
         if plugin_info_data:
             self.apply_additional_plugin_info(plugin_info_data)
 
-        job_id = self.process_submission()
-        self.log.info(f"Submitted job to Deadline: {job_id}.")
+        # Houdini has  `render_target` in `creator_attributes`.
+        # When `render_target` is set `local_export_farm_render`, we want to
+        # skip submitting the first job which is an export job.
+        creator_attr = instance.data.get("creator_attributes", {})
+        local_export_farm_render = (
+            creator_attr.get("render_target", "") == "local_export_farm_render"
+        )
+        job_id = None
+        if not local_export_farm_render:
+            job_id = self.process_submission()
+            self.log.info(f"Submitted job to Deadline: {job_id}.")
 
         instance.data["deadline"]["job_info"] = deepcopy(self.job_info)
 
         # TODO: Find a way that's more generic and not render type specific
+        #  This is currently only HoudiniSubmitDeadline-specific
         if instance.data.get("splitRender"):
-            self.log.info("Splitting export and render in two jobs")
-            self.log.info("Export job id: %s", job_id)
+            dependency_job_ids = []
+            if job_id:
+                self.log.info("Splitting export and render in two jobs")
+                self.log.info("Export job id: %s", job_id)
+                dependency_job_ids = [job_id]
+            # When submitting a render job separate from the export job,
+            # we do not want to use the DCC's DL plugin. Instead, we
+            # want to use the renderer's dedicated DL plugin.
+            # The `get_job_info` method should be responsible for setting
+            # the correct DL plugin for the render job. For implementation
+            # examples, check `HoudiniSubmitDeadline.get_job_info`.
             render_job_info = self.get_job_info(
-                job_info=job_info, dependency_job_ids=[job_id])
+                job_info=job_info,
+                dependency_job_ids=dependency_job_ids,
+                use_dcc_plugin=False
+            )
             render_plugin_info = self.get_plugin_info(job_type="render")
             payload = self.assemble_payload(
                 job_info=render_job_info,
@@ -176,10 +200,12 @@ class AbstractSubmitDeadline(
             due to remapping workfile to published workfile.
         Used in JobOutput > Explore output
         """
+        # clique.PATTERNS["frames"] but also allow `_` before digits
+        pattern = r"(?P<index>(?P<padding>0*)\d+)\.\D+\d?$"
         collections, remainder = clique.assemble(
             iter_expected_files(instance.data["expectedFiles"]),
             assume_padded_when_ambiguous=True,
-            patterns=[clique.PATTERNS["frames"]])
+            patterns=[pattern])
         paths = []
         for collection in collections:
             padding = "#" * collection.padding
@@ -231,6 +257,12 @@ class AbstractSubmitDeadline(
             job_info.Pool = job_info.Pool
         if job_info.SecondaryPool != "none":
             job_info.SecondaryPool = job_info.SecondaryPool
+
+        if job_info.Frames:
+            instance.data["hasExplicitFrames"] = True
+
+        if job_info.reuse_last_version:
+            instance.data["reuseLastVersion"] = True
 
         # Adding file dependencies.
         if not is_in_tests() and job_info.use_asset_dependencies:
@@ -293,7 +325,7 @@ class AbstractSubmitDeadline(
         that field even empty must be present on Deadline submission.
 
         Returns:
-            list: List of files.
+            list[str]: List of files.
 
         """
         return []

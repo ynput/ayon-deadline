@@ -1,19 +1,15 @@
 import os
 import copy
+from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
-from ayon_core.pipeline import (
-    AYONPyblishPluginMixin
-)
-from ayon_core.pipeline.publish.lib import (
-    replace_with_published_scene_path
-)
+from ayon_core.pipeline import AYONPyblishPluginMixin
+
 from ayon_core.pipeline.publish import KnownPublishError
 from ayon_max.api.lib import (
     get_current_renderer,
     get_multipass_setting
 )
-from ayon_max.api.lib_rendersettings import RenderSettings
 from ayon_deadline import abstract_submit_deadline
 
 
@@ -40,12 +36,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         job_info.Plugin = instance.data.get("plugin") or "3dsmax"
 
         job_info.EnableAutoTimeout = True
-        # Deadline requires integers in frame range
-        frames = "{start}-{end}".format(
-            start=int(instance.data["frameStart"]),
-            end=int(instance.data["frameEnd"])
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            frames = "{start}-{end}".format(
+                start=int(instance.data["frameStart"]),
+                end=int(instance.data["frameEnd"])
+            )
+            job_info.Frames = frames
 
         # do not add expected files for multiCamera
         if instance.data.get("multiCamera"):
@@ -68,6 +66,14 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
 
         return plugin_payload
 
+    def process(self, instance):
+        if not instance.data["farm"]:
+            self.log.debug("Render on farm is disabled. "
+                           "Skipping deadline submission.")
+            return
+
+        super().process(instance)
+
     def process_submission(self):
 
         instance = self._instance
@@ -77,7 +83,7 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         if not files:
             raise KnownPublishError("No Render Elements found!")
         first_file = next(self._iter_expected_files(files))
-        output_dir = os.path.dirname(first_file)
+        output_dir = Path(first_file).parent.as_posix()
         instance.data["outputDir"] = output_dir
 
         filename = os.path.basename(filepath)
@@ -117,14 +123,13 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
             get_current_renderer,
             get_multipass_setting
         )
-        from ayon_max.api.lib_rendersettings import RenderSettings
-
+        from pymxs import runtime as rt
         instance = self._instance
         job_info = copy.deepcopy(self.job_info)
         plugin_info = copy.deepcopy(self.plugin_info)
         plugin_data = {}
-
-        multipass = get_multipass_setting(project_settings)
+        renderer = instance.data["renderer"]
+        multipass = get_multipass_setting(renderer, project_settings)
         if multipass:
             plugin_data["DisableMultipass"] = 0
         else:
@@ -133,44 +138,47 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        first_file = next(self._iter_expected_files(files))
-        old_output_dir = os.path.dirname(first_file)
-        output_beauty = RenderSettings().get_render_output(instance.name,
-                                                           old_output_dir)
-        rgb_bname = os.path.basename(output_beauty)
-        dir = os.path.dirname(first_file)
-        beauty_name = f"{dir}/{rgb_bname}"
-        beauty_name = beauty_name.replace("\\", "/")
-        plugin_data["RenderOutput"] = beauty_name
+        first_file = next(self._iter_expected_files(files), None)
+        if first_file is None:
+            raise KnownPublishError(
+                "No expected render files found. When V-Ray renders with "
+                "separate render channels the scene needs at least one render "
+                "element, otherwise there is nothing to render to."
+            )
+
         # as 3dsmax has version with different languages
         plugin_data["Language"] = "ENU"
-
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
-        if renderer in [
-            "ART_Renderer",
-            "Redshift_Renderer",
-            "V_Ray_6_Hotfix_3",
-            "V_Ray_GPU_6_Hotfix_3",
-            "Default_Scanline_Renderer",
-            "Quicksilver_Hardware_Renderer",
-        ]:
-            render_elem_list = RenderSettings().get_render_element()
-            for i, element in enumerate(render_elem_list):
-                elem_bname = os.path.basename(element)
-                new_elem = f"{dir}/{elem_bname}"
-                new_elem = new_elem.replace("/", "\\")
-                plugin_data["RenderElementOutputFilename%d" % i] = new_elem   # noqa
-
+        plugin_data = self._collect_render_output(
+            renderer, project_settings, plugin_data
+        )
         if renderer == "Redshift_Renderer":
             plugin_data["redshift_SeparateAovFiles"] = instance.data.get(
                 "separateAovFiles")
+
+        elif renderer.startswith("V_Ray_"):
+            # enable this so that V-Ray frame buffer shows up
+            plugin_data["ShowFrameBuffer"] = True
+
         if instance.data["cameras"]:
             camera = instance.data["cameras"][0]
             plugin_info["Camera0"] = camera
             plugin_info["Camera"] = camera
             plugin_info["Camera1"] = camera
+
+        plugin_info["RenderWidth"] = instance.data.get(
+            "resolutionWidth", rt.renderWidth)
+        plugin_info["RenderHeight"] = instance.data.get(
+            "resolutionHeight", rt.renderHeight)
+
+        published_workfile = os.path.basename(plugin_info["SceneFile"])
+        plugin_info["PostLoadScript"] = self.tmp_pre_load_max_script(
+            instance.data["expectedFiles"],
+            instance.data["original_workfile_pattern"],
+            os.path.splitext(published_workfile)[0],
+        )
         self.log.debug("plugin data:{}".format(plugin_data))
         plugin_info.update(plugin_data)
 
@@ -200,11 +208,12 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return job_info
         # set the output filepath with the relative camera
 
-    def get_plugin_info_through_camera(self, camera):
+    def get_plugin_info_through_camera(self, camera, project_settings):
         """Get the plugin parameters for deadline submission when
         multi-camera is enabled.
         Args:
-            infos(dict): a dictionary with plugin info.
+            camera (str): The camera name.
+            project_settings (dict): The project settings.
         """
         instance = self._instance
         # set the target camera
@@ -226,41 +235,24 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         files = instance.data.get("expectedFiles")
         if not files:
             raise KnownPublishError("No render elements found")
-        first_file = next(self._iter_expected_files(files))
-        old_output_dir = os.path.dirname(first_file)
-        rgb_output = RenderSettings().get_batch_render_output(camera)       # noqa
-        rgb_bname = os.path.basename(rgb_output)
-        dir = os.path.dirname(first_file)
-        beauty_name = f"{dir}/{rgb_bname}"
-        beauty_name = beauty_name.replace("\\", "/")
-        plugin_info["RenderOutput"] = beauty_name
+        first_file = next(self._iter_expected_files(files), None)
+        if first_file is None:
+            raise KnownPublishError(
+                "No expected render files found. When V-Ray renders with "
+                "separate render channels the scene needs at least one render "
+                "element, otherwise there is nothing to render to."
+            )
         renderer_class = get_current_renderer()
 
         renderer = str(renderer_class).split(":")[0]
-        if renderer in [
-            "ART_Renderer",
-            "Redshift_Renderer",
-            "V_Ray_6_Hotfix_3",
-            "V_Ray_GPU_6_Hotfix_3",
-            "Default_Scanline_Renderer",
-            "Quicksilver_Hardware_Renderer",
-        ]:
-            render_elem_list = RenderSettings().get_batch_render_elements(
-                instance.name, old_output_dir, camera
-            )
-            for i, element in enumerate(render_elem_list):
-                if camera in element:
-                    elem_bname = os.path.basename(element)
-                    new_elem = f"{dir}/{elem_bname}"
-                    new_elem = new_elem.replace("/", "\\")
-                    plugin_info["RenderElementOutputFilename%d" % i] = new_elem   # noqa
+        plugin_data = self._collect_render_output(
+            renderer, project_settings, plugin_data
+        )
 
         if camera:
             # set the default camera and target camera
             # (weird parameters from max)
             plugin_data["Camera"] = camera
-            plugin_data["Camera1"] = camera
-            plugin_data["Camera0"] = None
 
         plugin_info.update(plugin_data)
         return plugin_info
@@ -276,15 +268,17 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         plugin_info_list = []
         instance = self._instance
         cameras = instance.data.get("cameras", [])
+        renderer = instance.data["renderer"]
         plugin_data = {}
-        multipass = get_multipass_setting(project_settings)
+        multipass = get_multipass_setting(renderer, project_settings)
         if multipass:
             plugin_data["DisableMultipass"] = 0
         else:
             plugin_data["DisableMultipass"] = 1
         for cam in cameras:
             job_info = self.get_job_info_through_camera(cam)
-            plugin_info = self.get_plugin_info_through_camera(cam)
+            plugin_info = self.get_plugin_info_through_camera(
+                cam, project_settings)
             plugin_info.update(plugin_data)
             job_info_list.append(job_info)
             plugin_info_list.append(plugin_info)
@@ -292,12 +286,93 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         return job_info_list, plugin_info_list
 
     def from_published_scene(self, replace_in_path=True):
+        """Check and use scene workfile for rendering only when multi-camera
+        farm submission is enabled.
+
+        When rendering multi-camera scenes we can't render published workfiles
+        because X - so we require the work area workfile to be used to
+        support Y.
+
+        Args:
+            replace_in_path (bool, optional): Whether to replace the scene path
+                with the published scene path. Defaults to True.
+
+        Returns:
+            str: Published scene path.
+        """
         instance = self._instance
-        if instance.data["renderer"] == "Redshift_Renderer":
-            self.log.debug("Using Redshift...published scene wont be used..")
+        if instance.data.get("multiCamera"):
+            self.log.warning(
+                "Use published workfile for rendering "
+                "not supported for multi-camera."
+            )
             replace_in_path = False
-        return replace_with_published_scene_path(
-            instance, replace_in_path)
+
+        return super().from_published_scene(replace_in_path=replace_in_path)
+
+    @staticmethod
+    def _collect_render_output(renderer, project_settings, plugin_data):
+        """Collect the render element output paths for the Deadline plugin.
+
+        The paths come from `RenderProducts` so the submission reuses the
+        naming the publish expects for the render elements (V-Ray split
+        filename, Redshift/Scanline element filenames, ...). Entries without a
+        filename are skipped: an undefined filename makes the 3ds Max render
+        task fail with "Unable to convert: undefined to type: String".
+
+        Args:
+            renderer (str): The name of the current renderer.
+            project_settings (dict): The project settings.
+            plugin_data (dict): The dictionary to populate with output paths.
+
+        Returns:
+            dict: Updated plugin_data with render output paths.
+
+        """
+        from ayon_max.api.lib_renderproducts import RenderProducts
+        from pymxs import runtime as rt
+
+        products = RenderProducts(project_settings)
+        image_format = products.image_format()
+        # Build the expected files for a reference frame and turn the trailing
+        # frame number into the Deadline frame padding token. Only the trailing
+        # token is replaced, a "0000" elsewhere in the path (version folder,
+        # element name, ...) is left untouched.
+        reference_frame = 0
+        frame_token = f"{reference_frame:04d}"
+        expected_by_element = {}
+        for element_name, filepath in (
+                products.get_render_element_and_filepath(image_format)):
+            if not element_name or not filepath:
+                continue
+            expected_files = products.get_expected_files(
+                filepath, [reference_frame], element_name, renderer)
+            if not expected_files:
+                continue
+            expected_path = Path(expected_files[0])
+            frame_suffix = f"{frame_token}{expected_path.suffix}"
+            if not expected_path.name.endswith(frame_suffix):
+                continue
+            pattern = (
+                f"{expected_path.name[:-len(frame_suffix)]}"
+                f"####{expected_path.suffix}"
+            )
+            expected_by_element[element_name] = (
+                expected_path.parent / pattern).as_posix()
+
+        # Only pass entries for render elements that exist in the scene, the
+        # Deadline plugin maps them by their render element index.
+        element_mgr = rt.maxOps.GetCurRenderElementMgr()
+        for index in range(element_mgr.NumRenderElements()):
+            element = element_mgr.GetRenderElement(index)
+            if not element:
+                continue
+            element_name = str(element).split(":")[-1]
+            filename = expected_by_element.get(element_name)
+            if filename:
+                plugin_data[f"RenderElementOutputFilename{index}"] = filename
+
+        return plugin_data
 
     @staticmethod
     def _iter_expected_files(exp):
@@ -308,3 +383,133 @@ class MaxSubmitDeadline(abstract_submit_deadline.AbstractSubmitDeadline,
         else:
             for file in exp:
                 yield file
+
+    def tmp_pre_load_max_script(
+            self,
+            expected_files: dict,
+            original_workfile: str,
+            publish_workfile: str
+        ) -> str:
+        """Temporary function to provide pre-load maxscript for deadline
+        submission. This is a workaround for Deadline issue where it
+        doesn't load the scene properly before rendering.
+
+        Args:
+            expected_files (dict): A dictionary of expected rendered files.
+            original_workfile (str): The original workfile name pattern.
+            publish_workfile (str): The published workfile name pattern.
+
+        Returns:
+            str: Maxscript code as a string.
+        """
+
+        max_script = f"""
+    fn PublishWorkfileRenderOutput =
+    (
+        rendererName = renderers.production as string
+        original_workfile = "{original_workfile}"
+        publish_workfile = "{publish_workfile}"
+
+        if matchPattern rendererName pattern:"V_Ray*" then
+        (
+            if matchPattern rendererName pattern:"*GPU*" then
+            (
+                if renderers.production.V_Ray_settings.output_saverawfile do
+                (
+                    if renderers.production.V_Ray_settings.output_rawfilename != undefined do
+                    (
+                        original_filename = renderers.production.V_Ray_settings.output_rawfilename
+                        new_filename = substituteString original_filename original_workfile publish_workfile
+                        renderers.production.V_Ray_settings.output_rawfilename = new_filename
+                    )
+                )
+
+                if renderers.production.V_Ray_settings.output_splitgbuffer do
+                (
+                    if renderers.production.V_Ray_settings.output_splitfilename != undefined do
+                    (
+                        original_Aovfilename = renderers.production.V_Ray_settings.output_splitfilename
+                        new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                        renderers.production.V_Ray_settings.output_splitfilename = new_aovfilename
+                    )
+                )
+            )
+            else
+            (
+                if renderers.production.output_saverawfile do
+                (
+                    if renderers.production.output_rawfilename != undefined do
+                    (
+                        original_filename = renderers.production.output_rawfilename
+                        new_filename = substituteString original_filename original_workfile publish_workfile
+                        renderers.production.output_rawfilename = new_filename
+                    )
+                )
+
+                if renderers.production.output_splitgbuffer do
+                (
+                    if renderers.production.output_splitfilename != undefined do
+                    (
+                        original_Aovfilename = renderers.production.output_splitfilename
+                        new_aovfilename = substituteString original_Aovfilename original_workfile publish_workfile
+                        renderers.production.output_splitfilename = new_aovfilename
+                    )
+                )
+            )
+        )
+        else if matchPattern rendererName pattern:"Arnold*" then (
+            original_filename = rendOutputFilename
+            new_filename = substituteString original_filename original_workfile publish_workfile
+            rendOutputFilename = new_filename
+            aovmgr = renderers.production.AOVManager
+            original_arnold_filename = aovmgr.outputPath
+            new_arnold_filename = substituteString original_arnold_filename original_workfile publish_workfile
+            aovmgr.outputPath = new_arnold_filename
+
+        )
+        else
+        (
+            original_filename = rendOutputFilename
+            new_filename = substituteString original_filename original_workfile publish_workfile
+            rendOutputFilename = new_filename
+
+            rnMgr = maxOps.GetCurRenderElementMgr()
+            if rnMgr != undefined do
+            (
+                for i = 0 to rnMgr.numrenderelements()-1 do
+                (
+                    re = rnMgr.getrenderelement i
+                    if re.enabled do
+                    (
+                        originAovfilename = rnMgr.GetRenderElementFileName i
+                        if originAovfilename != undefined and originAovfilename != "" do
+                        (
+                            newAovfilename = substituteString originAovfilename original_workfile publish_workfile
+                            rnMgr.SetRenderElementFileName i newAovfilename
+                        )
+                    )
+                )
+            )
+        )
+
+        return true
+    )
+
+    -- Execute the function
+    renderOutputPublish = PublishWorkfileRenderOutput()
+
+    """  # noqa: E501
+        first_file = next(self._iter_expected_files(expected_files))
+        render_dir = Path(os.path.dirname(first_file))
+        render_dir.mkdir(parents=True, exist_ok=True)
+        script_path = render_dir / "pre_load_max_script.ms"
+        script_path = os.path.normpath(script_path.as_posix())
+
+        try:
+            with open(script_path, "w") as script_file:
+                script_file.write(max_script)
+            print(f"Temporary pre-load maxscript created at: {script_path}")
+            return script_path
+
+        except Exception as e:
+            raise RuntimeError(f"Error creating maxscript file: {str(e)}")

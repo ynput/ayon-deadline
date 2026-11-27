@@ -1,6 +1,7 @@
 import os
 import re
 from dataclasses import dataclass, field, asdict
+import copy
 
 import pyblish.api
 
@@ -9,6 +10,7 @@ from ayon_core.pipeline.publish import (
     AYONPyblishPluginMixin
 )
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -19,6 +21,7 @@ class NukePluginInfo:
     OutputFilePath: str = field(default=None)
     UseGpu: bool = field(default=True)
     WriteNode: str = field(default=None)
+    ContinueOnError: bool = field(default=False)
 
 
 class NukeSubmitDeadline(
@@ -41,6 +44,7 @@ class NukeSubmitDeadline(
     settings_category = "deadline"
 
     use_gpu = None
+    continue_on_error: bool = False
     node_class_limit_groups = {}
 
     def process(self, instance):
@@ -101,15 +105,18 @@ class NukeSubmitDeadline(
             instance.data["outputDir"] = os.path.dirname(
                 render_path).replace("\\", "/")
 
+        render_job_data = instance.data.get("deadlineSubmissionJob", {})
+        render_job_id = render_job_data.get("_id")
+
         if instance.data.get("bakingNukeScripts"):
             for baking_script in instance.data["bakingNukeScripts"]:
+                self.job_info = copy.deepcopy(self.job_info)
                 self.job_info.JobType = "Normal"
 
-                response_data = instance.data.get("deadlineSubmissionJob", {})
                 # frames_farm instance doesn't have render submission
-                if response_data.get("_id"):
-                    self.job_info.BatchName = response_data["Props"]["Batch"]
-                    self.job_info.JobDependencies.append(response_data["_id"])
+                if render_job_id:
+                    self.job_info.BatchName = render_job_data["Props"]["Batch"]
+                    self.job_info.JobDependencies.append(render_job_id)
 
                 render_path = baking_script["bakeRenderPath"]
                 scene_path = baking_script["bakeScriptPath"]
@@ -118,7 +125,9 @@ class NukeSubmitDeadline(
                 self.job_info.Name = os.path.basename(render_path)
 
                 # baking job shouldn't be split
-                self.job_info.ChunkSize = 999999
+                self.job_info.ChunkSize = MAX_CHUNK_SIZE
+
+                self.job_info.Frames = f"{start_frame}-{end_frame}"
 
                 self.plugin_info = self.get_plugin_info(
                     scene_path=scene_path,
@@ -171,7 +180,8 @@ class NukeSubmitDeadline(
             OutputFilePath=render_dir.replace("\\", "/"),
             ProjectPath=scene_path,
             UseGpu=attribute_values["use_gpu"],
-            WriteNode=write_node_name
+            WriteNode=write_node_name,
+            ContinueOnError=attribute_values["continue_on_error"],
         )
 
         plugin_payload: dict = asdict(plugin_info)
@@ -184,6 +194,11 @@ class NukeSubmitDeadline(
                 "use_gpu",
                 label="Use GPU",
                 default=cls.use_gpu,
+            ),
+            BoolDef(
+                "continue_on_error",
+                label="Continue on Error",
+                default=cls.continue_on_error,
             ),
         ]
 
@@ -207,7 +222,7 @@ class NukeSubmitDeadline(
             for node_class in limit_group["value"]:
                 for node in nuke.allNodes(recurseGroups=True):
                     # ignore all nodes not member of defined class
-                    if node.Class() not in node_class:
+                    if node.Class() != node_class:
                         continue
                     # ignore all disabled nodes
                     if node["disable"].value():
@@ -226,6 +241,12 @@ class NukeSubmitDeadline(
     ):
         """ Create expected files in instance data
         """
+        if instance.data["render_target"] == "frames_farm":
+            self.log.debug(
+                "Expected files already collected for 'frames_farm', skipping."
+            )
+            return
+
         if not instance.data.get("expectedFiles"):
             instance.data["expectedFiles"] = []
 

@@ -11,6 +11,7 @@ from ayon_core.lib import (
     NumberDef
 )
 from ayon_deadline import abstract_submit_deadline
+from ayon_deadline.lib import MAX_CHUNK_SIZE
 
 
 @dataclass
@@ -43,7 +44,7 @@ class VrayRenderPluginInfo:
 class RedshiftRenderPluginInfo:
     SceneFile: str = field(default=None)
     # Use "1" as the default Redshift version just because it
-    # default fallback version in Deadline's Redshift plugin
+    # defaults to fallback version in Deadline's Redshift plugin
     # if no version was specified
     Version: str = field(default="1")
 
@@ -60,6 +61,7 @@ class HuskStandalonePluginInfo:
     # TODO: Below parameters are only supported by custom version of the plugin
     Renderer: str = field(default=None)
     RenderSettings: str = field(default="/Render/rendersettings")
+    RenderPass: str = field(default="")
     Purpose: str = field(default="geometry,render")
     Complexity: str = field(default="veryhigh")
     Snapshot: int = field(default=-1)
@@ -70,6 +72,7 @@ class HuskStandalonePluginInfo:
     PostRender: str = field(default="")
     RestartDelegate: str = field(default="")
     Version: str = field(default="")
+    SlapCompSources: str = field(default="")
 
 
 class HoudiniSubmitDeadline(
@@ -121,7 +124,7 @@ class HoudiniSubmitDeadline(
                 default=cls.export_chunk_size,
                 decimals=0,
                 minimum=1,
-                maximum=1000
+                maximum=MAX_CHUNK_SIZE
             ),
             TextDef(
                 "export_group",
@@ -143,8 +146,24 @@ class HoudiniSubmitDeadline(
             ),
         ]
 
-    def get_job_info(self, dependency_job_ids=None, job_info=None):
+    def get_job_info(
+        self,
+        job_info=None,
+        dependency_job_ids=None,
+        use_dcc_plugin=True
+    ):
+        """Houdini specific get_job_info with extra kwargs.
 
+        Arguments:
+            job_info (None | PublishDeadlineJobInfo): dataclass
+                 object with collected values from Settings and
+                 Publisher UI.
+            dependency_job_ids (None | list[str]): Job ids that should
+                become input dependencies to this submission.
+            use_dcc_plugin (bool): Whether to submit using Deadline Houdini
+                plugin or using the renderer-specific standalone render plugin
+                like Husk, Arnold, etc.
+        """
         instance = self._instance
         context = instance.context
 
@@ -152,26 +171,33 @@ class HoudiniSubmitDeadline(
         # (extract + render)
         split_render_job = instance.data.get("splitRender")
 
-        # If there's some dependency job ids we can assume this is a render job
-        # and not an export job
-        is_export_job = True
-        if dependency_job_ids:
-            is_export_job = False
-
         job_type = "[RENDER]"
-        if split_render_job and not is_export_job:
-            product_type = instance.data["productType"]
-            plugin = {
+        if split_render_job and not use_dcc_plugin:
+            families = self._get_families(instance)
+            family_to_render_plugin = {
+                "arnold_rop": "Arnold",
+                "karma_rop": "Karma",
+                "mantra_rop": "Mantra",
+                "redshift_rop": "Redshift",
                 "usdrender": "HuskStandalone",
-            }.get(product_type)
-            if not plugin:
-                # Convert from product type to Deadline plugin name
-                # i.e., arnold_rop -> Arnold
-                plugin = product_type.replace("_rop", "").capitalize()
+                "vray_rop": "Vray",
+            }
+            for family, render_plugin in family_to_render_plugin.items():
+                if family in families:
+                    plugin = render_plugin
+                    break
+            else:
+                plugin = "Render"
+                self.log.warning(
+                    f"No matching render plugin found for families: {families}"
+                )
         else:
             plugin = "Houdini"
             if split_render_job:
-                job_type = "[EXPORT IFD]"
+                export_file = instance.data["ifdFile"]
+                extension = os.path.splitext(export_file)[-1] or "SCENE"
+                job_type = f"[EXPORT {extension.upper()}]"
+
         job_info.Plugin = plugin
 
         filepath = context.data["currentFile"]
@@ -182,30 +208,37 @@ class HoudiniSubmitDeadline(
         if is_in_tests():
             job_info.BatchName += datetime.now().strftime("%d%m%Y%H%M%S")
 
-        # Deadline requires integers in frame range
-        start = instance.data["frameStartHandle"]
-        end = instance.data["frameEndHandle"]
-        frames = "{start}-{end}x{step}".format(
-            start=int(start),
-            end=int(end),
-            step=int(instance.data["byFrameStep"]),
-        )
-        job_info.Frames = frames
+        # already collected explicit values for rendered Frames
+        if not job_info.Frames:
+            # Deadline requires integers in frame range
+            start = instance.data["frameStartHandle"]
+            end = instance.data["frameEndHandle"]
+            frames = "{start}-{end}x{step}".format(
+                start=int(start),
+                end=int(end),
+                step=int(instance.data["byFrameStep"]),
+            )
+            job_info.Frames = frames
 
         # Make sure we make job frame dependent so render tasks pick up a soon
         # as export tasks are done
-        if split_render_job and not is_export_job:
+        if split_render_job and not use_dcc_plugin:
             job_info.IsFrameDependent = bool(instance.data.get(
                 "splitRenderFrameDependent", True))
 
         attribute_values = self.get_attr_values_from_data(instance.data)
-        if split_render_job and is_export_job:
+        if split_render_job and use_dcc_plugin:
             job_info.Priority = attribute_values.get(
                 "export_priority", self.export_priority
             )
             job_info.ChunkSize = attribute_values.get(
                 "export_chunk", self.export_chunk_size
             )
+            # A render that is not frame dependent exports a single file
+            #  (e.g. a USD file without $F). Export it in one task, since
+            #  multiple machines cannot write to the same file.
+            if not instance.data.get("splitRenderFrameDependent", True):
+                job_info.ChunkSize = MAX_CHUNK_SIZE
             job_info.Group = attribute_values.get(
                 "export_group", self.export_group
             )
@@ -240,21 +273,21 @@ class HoudiniSubmitDeadline(
 
         # Output driver to render
         if job_type == "render":
-            product_type = instance.data.get("productType")
-            if product_type == "arnold_rop":
+            families = self._get_families(instance)
+            if "arnold_rop" in families:
                 plugin_info = ArnoldRenderDeadlinePluginInfo(
                     InputFile=instance.data["ifdFile"]
                 )
-            elif product_type == "mantra_rop":
+            elif "mantra_rop" in families:
                 plugin_info = MantraRenderDeadlinePluginInfo(
                     SceneFile=instance.data["ifdFile"],
                     Version=hou_major_minor,
                 )
-            elif product_type == "vray_rop":
+            elif "vray_rop" in families:
                 plugin_info = VrayRenderPluginInfo(
                     InputFilename=instance.data["ifdFile"],
                 )
-            elif product_type == "redshift_rop":
+            elif "redshift_rop" in families:
                 plugin_info = RedshiftRenderPluginInfo(
                     SceneFile=instance.data["ifdFile"]
                 )
@@ -273,14 +306,14 @@ class HoudiniSubmitDeadline(
                         " - using version configured in Deadline"
                     ))
 
-            elif product_type == "usdrender":
+            elif "usdrender" in families:
                 plugin_info = self._get_husk_standalone_plugin_info(
                     instance, hou_major_minor)
 
             else:
                 self.log.error(
-                    "Product type '%s' not supported yet to split render job",
-                    product_type
+                    "Render Product Type does not support to split render "
+                    f"job. Matched product types against: {families}"
                 )
                 return
         else:
@@ -300,12 +333,26 @@ class HoudiniSubmitDeadline(
                            "Skipping deadline submission.")
             return
 
-        super(HoudiniSubmitDeadline, self).process(instance)
+        super().process(instance)
 
         # TODO: Avoid the need for this logic here, needed for submit publish
         # Store output dir for unified publisher (filesequence)
         output_dir = os.path.dirname(instance.data["files"][0])
         instance.data["outputDir"] = output_dir
+
+    def _get_render_settings(self, instance, rop_node) -> str:
+        render_settings_prim = instance.data.get("rendersettings")
+
+        if render_settings_prim is not None:
+            render_settings = render_settings_prim.GetPath().pathString
+        else:
+            # Backwards compatibility for AYON houdini <= 0.10.8
+            render_settings = (
+                rop_node.evalParm("rendersettings")
+                or instance.data["stage"].GetMetadata("renderSettingsPrimPath")
+                or "/Render/rendersettings"
+            )
+        return render_settings
 
     def _get_husk_standalone_plugin_info(self, instance, hou_major_minor):
         # Not all hosts can import this module.
@@ -322,14 +369,19 @@ class HoudiniSubmitDeadline(
         if rop_node.evalParm("husk_restartdelegate"):
             restart_delegate = rop_node.evalParm("husk_restartdelegateframes")
 
-        rendersettings = (
-            rop_node.evalParm("rendersettings")
-            or "/Render/rendersettings"
-        )
+        render_pass = instance.data.get("renderpass")
+        render_pass_path = render_pass.GetPath().pathString if render_pass else ""  # noqa
+        render_settings = self._get_render_settings(instance, rop_node)
+
+        # Get SlapComps
+        # Instance data comes from `CollectSlapComps` plugin in Houdini addon.
+        slapcomps: "list[str]" = instance.data.get("slapComp", [])
+
         return HuskStandalonePluginInfo(
             SceneFile=instance.data["ifdFile"],
             Renderer=rop_node.evalParm("renderer"),
-            RenderSettings=rendersettings,
+            RenderSettings=render_settings,
+            RenderPass=render_pass_path,
             Purpose=rop_node.evalParm("husk_purpose"),
             Complexity=rop_node.evalParm("husk_complexity"),
             Snapshot=snapshot_interval,
@@ -338,8 +390,17 @@ class HoudiniSubmitDeadline(
             PostFrame=rop_node.evalParm("husk_postframe"),
             PostRender=rop_node.evalParm("husk_postrender"),
             RestartDelegate=restart_delegate,
-            Version=hou_major_minor
+            Version=hou_major_minor,
+            SlapCompSources="\n".join(slapcomps)
         )
+
+    def _get_families(self, instance: pyblish.api.Instance) -> "set[str]":
+        product_base_type = instance.data.get("productBaseType")
+        if not product_base_type:
+            product_base_type = instance.data["productType"]
+        families = set(instance.data.get("families", []))
+        families.add(product_base_type)
+        return families
 
 
 class HoudiniSubmitDeadlineUsdRender(HoudiniSubmitDeadline):

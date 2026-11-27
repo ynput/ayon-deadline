@@ -17,8 +17,7 @@ from .publish_plugins import (
 
 async def defined_deadline_ws_name_enum_resolver(
     addon: "BaseServerAddon",
-    settings_variant: str = "production",
-    project_name: str | None = None,
+    settings_variant: str = None,
 ) -> list[str]:
     """Provides list of names of configured Deadline webservice urls."""
     if addon is None:
@@ -65,10 +64,12 @@ class DeadlineSettings(BaseSettingsModel):
 
     # name(key) of selected server for project
     deadline_server: str = SettingsField(
-        title="Project Deadline server name",
+        title="Selected Deadline server name",
         section="---",
-        scope=["project"],
-        enum_resolver=defined_deadline_ws_name_enum_resolver
+        scope=["project", "site"],
+        enum_resolver=defined_deadline_ws_name_enum_resolver,
+        description="Select one from predefined Deadline servers from Studio "
+                    "Settings to be used for this Project"
     )
 
     publish: PublishPluginsModel = SettingsField(
