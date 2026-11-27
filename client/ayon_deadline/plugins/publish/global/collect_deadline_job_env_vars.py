@@ -15,19 +15,6 @@ class CollectDeadlineJobEnvVars(pyblish.api.ContextPlugin):
         # applications addon
         "AYON_APP_NAME",
 
-        # ftrack addon
-        "FTRACK_API_KEY",
-        "FTRACK_API_USER",
-        "FTRACK_SERVER",
-
-        # kitsu addon
-        "KITSU_SERVER",
-        "KITSU_LOGIN",
-        "KITSU_PWD",
-
-        # Shotgrid / Flow addon
-        "OPENPYPE_SG_USER",
-
         # Not sure how this is useful for farm, scared to remove
         "PYBLISHPLUGINPATH",
     ]
